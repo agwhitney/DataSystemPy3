@@ -22,7 +22,7 @@ class SerialInstrumentProtocol(basic.LineReceiver):
 
     def connectionMade(self):
         # TODO print and log
-        print("connected", self.name)
+        print(f"connected {self.name}")
 
     def connectionLost(self, reason = ...):
         # TODO print and log
