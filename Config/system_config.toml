@@ -1,10 +1,28 @@
 # Humoring an idea that this might be nicer than json.
 # Functionally though, it's the same. Splitting hairs.
+instruments = ['radiometer', 'thermistor', 'gpsimu']  # List of the top-level headers.
+
 [radiometer]
 active = true
 name = "Radiometer"
 letterid = "R"
 byte_order = "big-endian"
+
+[radiometer.serial_connection]
+parity = 'N'
+baud_rate = 921600
+stop_bits = 1
+data_bits = 8
+type = "Serial"
+port = '/dev/ttyUSB2'
+_portLinux = '/dev/ttyUSB2'
+_portWindows = 'COM36'
+
+[radiometer.tcp_connection]
+port = 7555
+
+[radiometer.characteristics]
+# This has a bunch of data that I'll get to later
 
 
 [thermistor]
