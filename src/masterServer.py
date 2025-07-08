@@ -18,7 +18,7 @@ class ServerProtocol(basic.LineReceiver):
         pass
 
     def lineReceived(self, line) -> None:
-        # py2 was `dataReceived`
+        # py2 was `dataReceived` because it was a Protocol, but LineReceiver seems adequate.
         match line.decode():
             case 'STOP':
                 self.sendLine('stopped'.encode())

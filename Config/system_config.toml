@@ -1,0 +1,56 @@
+# Humoring an idea that this might be nicer than json.
+# Functionally though, it's the same. Splitting hairs.
+[radiometer]
+active = true
+name = "Radiometer"
+letterid = "R"
+byte_order = "big-endian"
+
+
+[thermistor]
+active = true
+name = "Thermistors"
+letterid = "T"
+byte_order = "big-endian"
+
+[thermistor.characteristics]
+addresses = [1,2,3,4,5]  # Calibration target; AMR; undefined; undefined; undefined
+polling_interval = 1.1
+delimiter = '>'
+
+[thermistor.serial_connection]
+parity = 'N'
+baud_rate = 9600
+stop_bits = 1
+data_bits = 8
+type = "Serial"
+port = '/dev/ttyUSB1'
+_portLinux = '/dev/ttyUSB1'
+_portWindows = 'COM33'
+
+[thermistor.tcp_connection]
+port = 8055
+
+
+[gpsimu]
+active = true
+byte_order = "big-endian"
+name = "GPS-IMU"
+letterid = "G"
+
+[gpsimu.characteristics]
+update_frequency = 10  # in seconds? see word doc
+delimiter = '\x03\xff\x02\x90\x00\x2e'  # single '' are literal
+
+[gpsimu.serial_connection]
+parity = "N"
+baud_rate = 115200
+stop_bits = 1
+data_bits = 8
+type = "Serial"
+port = '/dev/ttyUSB3'
+_portLinux = 'dev/ttyUSB3'
+_portWindows = 'COM32'
+
+[gpsimu.tcp_connection]
+port = 9055
