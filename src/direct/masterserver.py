@@ -135,7 +135,7 @@ class MasterServer():
 
         # Parse config. Also copies sub-configs to files
         print("---------------------------------")
-        timestring = 'todo-timestamp'# TODO see py2 line 158
+        timestring = 'todo-timestamp'  # TODO see py2 line 158
         for cfg in self.system_config.values():
             print("---------------------------------")
             if cfg['name'] is 'Radiometer':

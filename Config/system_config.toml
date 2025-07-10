@@ -12,7 +12,7 @@ byte_order = "big-endian"
 
 [radiometer.serial_connection]
 parity = 'N'
-baud_rate = 921600
+baudrate = 921600
 stop_bits = 1
 data_bits = 8
 type = "Serial"
@@ -40,7 +40,7 @@ delimiter = '>'
 
 [thermistor.serial_connection]
 parity = 'N'
-baud_rate = 9600
+baudrate = 9600
 stop_bits = 1
 data_bits = 8
 type = "Serial"
@@ -64,7 +64,7 @@ delimiter = '\x03\xff\x02\x90\x00\x2e'  # single '' are literal
 
 [gpsimu.serial_connection]
 parity = "N"
-baud_rate = 115200
+baudrate = 115200
 stop_bits = 1
 data_bits = 8
 type = "Serial"
