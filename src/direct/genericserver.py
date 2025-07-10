@@ -15,12 +15,12 @@ class GenericServer():
         """
         # Only the config_file is called in masterserver.py
         parser = argparse.ArgumentParser(description="Server for the Data Acquisition and Instrument control System (DAIS)")
-        parser.add_argument('config_file', help="Equipment file (.json) to work with")
+        parser.add_argument('instr_config', help="Equipment file (.json) to work with")
         parser.add_argument('-d', '--background', action='store_true', default=False, help="Run in background")
         parser.add_argument('--http-logging', action='store_true', default=False, help="Log messages to GDAIS-control HTTP server")
         args = parser.parse_args()
 
-        self.config_file = args.config_file
+        self.instr_config = args.instr_config
         self.in_background = args.background
         self.http_logging = args.http_logging
 
@@ -39,9 +39,9 @@ class GenericServer():
 
         # Create an instrument object, which contains protocol details
         # AGW I'm pretty sure a SerialPort doesn't need a listenTCP associated with it, but I'm not sure
-        instrument = Instrument(self.config_file, log)
+        instrument = Instrument(self.instr_config, log)
         reactor.listenTCP(instrument.tcp_port, instrument.factory)
-        SerialPort(instrument.serial_client, instrument.connection.serial_port, reactor, baudrate=instrument.connection.baudrate)
+        SerialPort(instrument.serial_client, instrument.connection['port'], reactor, baudrate=instrument.connection.baudrate)
         reactor.run()
 
 
