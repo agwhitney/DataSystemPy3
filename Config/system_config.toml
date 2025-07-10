@@ -1,6 +1,8 @@
-# Humoring an idea that this might be nicer than json.
-# Functionally though, it's the same. Splitting hairs.
+# AGW - I get the impression that the configs are generally configured,
+# and are then read-only by the program. I think TOML makes more sense
+# in that case, if only for comment support.
 instruments = ['radiometer', 'thermistor', 'gpsimu']  # List of the top-level headers.
+control_server_port = 9033
 
 [radiometer]
 active = true
