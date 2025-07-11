@@ -4,7 +4,7 @@ from twisted.protocols import basic
 import struct
 import json
 
-from configfpga import ConfigFPGA
+from fpga import ConfigFPGA
 
 
 """
@@ -72,11 +72,102 @@ class SerialClientThermistors(SerialClient):
         self.delimiter = self.network.config['characteristics']['delimiter']
         self.polling_interval = self.network.config['characteristics']['polling_interval']
         self.letterid = self.network.config['letterid']
+        self.byte_order = self.network.config['byte_order']
+        self.addresses = self.network.config['characteristics']['addresses']
 
+        self.visited_adcs = 0
+        self.adc_count = len(self.addresses)
+        print("Number of ADCs = ", self.adc_count)
+
+
+    def connectionMade(self):
+        super().connectionMade()
+        print("Starting communcation with ADCs")
+        command = struct.pack('cccB', '#', '0', str(self.addresses[0]), 13)
+        self.sendLine(command)
+        self.start_acquisition()
+
+    
+    def start_acquisition(self):        
+        self.lc = task.LoopingCall(self.get_data)
+        self.lc.start(self.polling_interval)
+
+    
+    def get_data(self):
+        self.visited_adcs = 0
+        command = struct.pack('cccB', '#', '0', str(self.addresses[self.visited_adcs]), 13)
+        self.sendLine(command)
+        self.iteration += 1
+        self.data2send = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:"  # TODO
+
+
+    def lineReceived(self, line):
+        self.visited_adcs += 1
+        if self.visited_adcs < self.adc_count:
+            self.data2send += line[:-1]
+            # TODO a small sleep command for IO buffer
+            command = struct.pack('cccB', '#', '0', str(self.addresses[self.visited_adcs]), 13)
+            self.sendLine(command)
+        elif self.visited_adcs == self.adc_count:
+            self.data2send += line[:-1] + 'ENDS\n'
+            self.write_down(self.data2send)
 
 
 class SerialClientGPSIMU(SerialClient):
-    ...
+    def __init__(self, network):
+        super().__init__(network)
+        self.letterid = self.network.config['letterid']
+        self.byte_order = self.network.config['byte_order']
+        self.delimiter = self.network.config['characteristics']['delimiter']
+        self.update_freq = self.network.config['characteristics']['update_frequency']
+
+
+    def crc16(self, buffer):
+        """Not sure what this does. Bitwise operations.
+        Copied as-is, but with 'buffer' instead of 'buff'.
+        """
+        poly = 0x8408
+        crc = 0
+        i = 0
+        while i < len(buffer):
+            ch = ord(buffer[i])
+            uc = 0
+            while uc < 8:
+                if (crc & 1)^(ch & 1):
+                    crc = (crc >> 1)^poly
+                else:
+                    crc >>= 1
+                ch >>= 1
+                uc += 1
+            i += 1
+        return crc
+
+
+    def connectionMade(self) -> None:
+        super().connectionMade()
+        # Construct a command to be sent 
+        header = struct.pack('>BB', 255, 2)
+        # From py2: This is the continuous mode command (signified by the '83' to start); only relevant bytes are the second to last
+        # which determines mode (0 = disable continues trigger mode, 1 = continuous mode enable, 2 = triggered mode enable)
+        # and the last byte which is used to determine update frequency (freq = [60 / (lastByte)])
+        # see page 26 of "IG Devices Serial Protocol Specifications.pdf" for more info
+        command = struct.pack('>6B', 83, 0, 3, 0, 1, 60/self.update_freq)
+        crc = self.crc16(command)
+        # convert crc int into two unsigned int bytes
+        crc_msb = (crc - crc%256) / 256
+        crc_lsb = crc % 256
+        # packet end: two bytes crc and then unsigned int byte '3'
+        end = struct.pack('>3B', crc_msb, crc_lsb, 3)
+
+        self.sendLine(header)
+        self.sendLine(command)
+        self.sendLine(end)
+
+
+    def lineReceived(self, line):
+        self.iteration += 1
+        data = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:{line}:ENDS\n"  # TODO py2 line 286
+        self.write_down(data)
     
 
 class TCPInstrument(protocol.Protocol):

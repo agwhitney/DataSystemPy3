@@ -2,7 +2,7 @@ import json
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
-from configfpga import ConfigFPGA
+from fpga import ConfigFPGA
 from GeneralPaths import CONTROL_SERVER_PORT
 
 
