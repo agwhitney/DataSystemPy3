@@ -4,7 +4,7 @@ from twisted.protocols import basic
 import struct
 import json
 
-from fpga import ConfigFPGA
+from fpga import FPGA
 
 
 """
@@ -53,7 +53,7 @@ class SerialClientRadiometer(SerialClient):
         self.letterid = self.network.config['letterid']  # unused?
         self.byte_order = self.network.config['byte_order']  # unused?
 
-        fpga = ConfigFPGA(self.network.config, self.network.log)
+        fpga = FPGA(self.network.config, self.network.log)
         fpga.estimated_data_throughput()
         fpga.configure()
         fpga.hardware_reset()

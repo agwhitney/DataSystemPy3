@@ -2,7 +2,7 @@ import json
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
-from fpga import ConfigFPGA
+from fpga import FPGA
 from GeneralPaths import CONTROL_SERVER_PORT
 
 
@@ -75,7 +75,7 @@ class TCPHandler(protocol.Protocol):
             
             case 'MSTART':
                 print("Starting motor")
-                fpga = ConfigFPGA(self.factory.motor_instr, self.factory.log)
+                fpga = FPGA(self.factory.motor_instr, self.factory.log)
                 fpga.MotorControl(fpga.StartMotor)
                 print("Sending START to motor")
                 fpga.DisconnectTCP()
@@ -83,7 +83,7 @@ class TCPHandler(protocol.Protocol):
             
             case 'MSTOP':
                 print("Stopping motor")
-                fpga = ConfigFPGA(self.factory.motor_instr, self.factory.log)
+                fpga = FPGA(self.factory.motor_instr, self.factory.log)
                 fpga.MotorControl(fpga.StopMotor)
                 print("Sending STOP to motor")
                 fpga.DisconnectTCP()

@@ -1,4 +1,4 @@
-from src.masterServer import ServerFactory
+from masterServer import ServerFactory
 
 from twisted.test import proto_helpers
 from twisted.trial import unittest
