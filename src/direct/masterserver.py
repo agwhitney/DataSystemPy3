@@ -1,4 +1,7 @@
 import json
+import logging
+
+from datetime import datetime
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
@@ -117,36 +120,33 @@ class TCPHandlerFactory(protocol.Factory):
 class MasterServer():
     def __init__(self, log, system_config):
         """
-        AGW this loads the config and starts servers for each instrument as subprocesses.
-        The real BS, imo, is how rather than mapping things explicitly it's all just indexed.
+        This loads the config and starts servers for each instrument as subprocesses.
         """
         self.log = log
-        # Open the config file
-        with open(system_config, 'r') as fp:
-            self.system_config = json.load(fp)
+        self.config = system_config
 
-        self.instr_count = len(self.system_config)
+        self.instr_count = len(self.config)
 
         # These are set in the dumping section below
         self.motor_instr_config = {}  # py2 motor_instr
         self.instr_config_filenames = []  # py2 fname
-        self.instr_names = []  # py2 InstrumentName
+        self.instr_names = []  # py2 InstrumentName  # not used
         self.instr_active = []  #py2 active
 
         # Parse config. Also copies sub-configs to files
         print("---------------------------------")
-        timestring = 'todo-timestamp'  # TODO see py2 line 158
-        for cfg in self.system_config.values():
+        timestring = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+        for cfg in self.config.values():
             print("---------------------------------")
-            if cfg['name'] is 'Radiometer':
+            if cfg['name'] == 'Radiometer':
                 self.motor_instr_config = cfg  # AGW updated json config this includes connection info
             self.instr_names.append(cfg['name'])
             self.instr_active.append(cfg['active'])
             
-            filename = 'todo-pathname.cfg'  # TODO see py2 line 162
+            filename = timestring + cfg['name'] + ".json"  # TODO needs the folder path
             self.instr_config_filenames.append(filename)
-            with open(filename, 'w') as fp:
-                fp.write(json.dumps(cfg))  # unchanged sub-config
+            with open(filename, 'w') as f:
+                f.write(json.dumps(cfg))  # unchanged sub-config
         print("---------------------------------")
         self.start_servers()
 
@@ -164,24 +164,26 @@ class MasterServer():
                 server_count += 1
         print("---------------------------------")
         print("Starting online control server -- FYI: the script won't come back while it's running!")
-        factory = TCPHandlerFactory(self.log, processes, self.motor_instr_config, self.system_config)
+        factory = TCPHandlerFactory(self.log, processes, self.motor_instr_config, self.config)
         reactor.listenTCP(tcp_port, factory)
         reactor.run()        
 
 
 if __name__ == '__main__':
-    import logging
-
-    log_file = 'todo-datetime.log'  #TODO see py2 line 187
+    # Create a log
+    log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Server_ACQsystem.log"  # TODO needs the folder path
     logging.basicConfig(
         level = logging.DEBUG,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = log_file,
+        filename = log_filename,
         filemode = 'a'
     )
     log = logging.getLogger('ACQsystem - DAIS 2.0')
     log.addHandler(logging.StreamHandler())  # AGW logged events are also printed
     log.info('Welcome to ACQsystem - DAIS 2.0')
 
-    config_file = 'system.json'
-    MasterServer(log, config_file)
+    # Read the config file
+    config_filename = 'system.json'
+    with open(config_filename, 'r') as f:
+        system_config = json.load(f)
+    MasterServer(log, system_config)

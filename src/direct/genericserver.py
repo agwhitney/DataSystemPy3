@@ -1,8 +1,9 @@
-from twisted.internet import reactor
-from twisted.internet.serialport import SerialPort
-
 import argparse
 import logging
+
+from datetime import datetime
+from twisted.internet import reactor
+from twisted.internet.serialport import SerialPort
 
 from instruments import Instrument
 
@@ -13,7 +14,7 @@ class GenericServer():
         Called as a subprocess in masterserver.py. Makes an instrument-specific server using the classes in instruments.py.
         This actually just runs as a script. GenericServer.__init__() could just be main().
         """
-        # Only the config_file is called in masterserver.py
+        # Of these args, only the config_file is called in masterserver.py
         parser = argparse.ArgumentParser(description="Server for the Data Acquisition and Instrument control System (DAIS)")
         parser.add_argument('instr_config', help="Equipment file (.json) to work with")
         parser.add_argument('-d', '--background', action='store_true', default=False, help="Run in background")
@@ -24,12 +25,12 @@ class GenericServer():
         self.in_background = args.background
         self.http_logging = args.http_logging
 
-        # Create another log
-        log_file = 'todo-datetime.log'  #TODO see py2 line 35
+        # Create another log. I think each instrument will get its own per the timestamp.
+        log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Server_ACQsystem.log"  # TODO needs the folder path
         logging.basicConfig(
             level = logging.DEBUG,
             format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-            filename = log_file,
+            filename = log_filename,
             filemode = 'a'
         )
         log = logging.getLogger('ACQsystem - DAIS 2.0 - Server')
