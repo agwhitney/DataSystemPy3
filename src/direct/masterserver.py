@@ -1,9 +1,11 @@
-import json
-from twisted.internet import protocol, reactor
+import json  # There are 2 dumps operations holding me back from using TOML
+import logging
+
 from subprocess import Popen
+from twisted.internet import protocol, reactor
 
 from fpga import FPGA
-from GeneralPaths import CONTROL_SERVER_PORT
+from GeneralPaths import CONTROL_SERVER_PORT  # TODO
 
 
 class TCPHandler(protocol.Protocol):
@@ -115,17 +117,17 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
+    generic_server = 'genericserver.py'
+
     def __init__(self, log, system_config):
         """
         AGW this loads the config and starts servers for each instrument as subprocesses.
         The real BS, imo, is how rather than mapping things explicitly it's all just indexed.
         """
         self.log = log
-        # Open the config file
-        with open(system_config, 'r') as fp:
-            self.system_config = json.load(fp)
+        self.config = system_config
 
-        self.instr_count = len(self.system_config)
+        self.instr_count = len(self.config)
 
         # These are set in the dumping section below
         self.motor_instr_config = {}  # py2 motor_instr
@@ -136,7 +138,7 @@ class MasterServer():
         # Parse config. Also copies sub-configs to files
         print("---------------------------------")
         timestring = 'todo-timestamp'  # TODO see py2 line 158
-        for cfg in self.system_config.values():
+        for cfg in self.config.values():
             print("---------------------------------")
             if cfg['name'] is 'Radiometer':
                 self.motor_instr_config = cfg  # AGW updated json config this includes connection info
@@ -159,19 +161,18 @@ class MasterServer():
         for i in range(self.instr_count):
             print(self.instr_config_filenames[i], self.instr_active[i])
             if self.instr_active[i]:
-                processes[server_count] = Popen(['Python', 'genericserver.py', self.instr_config_filenames[i]], shell=False)
+                processes[server_count] = Popen(['Python', self.generic_server, self.instr_config_filenames[i]], shell=False)
                 print(f"Instrument in the configuration file: {i} Active instrument: {server_count} {self.instr_config_filenames[server_count]} started, Pid: {processes[server_count].pid}")
                 server_count += 1
         print("---------------------------------")
         print("Starting online control server -- FYI: the script won't come back while it's running!")
-        factory = TCPHandlerFactory(self.log, processes, self.motor_instr_config, self.system_config)
+        factory = TCPHandlerFactory(self.log, processes, self.motor_instr_config, self.config)
         reactor.listenTCP(tcp_port, factory)
         reactor.run()        
 
 
 if __name__ == '__main__':
-    import logging
-
+    # Create a log
     log_file = 'todo-datetime.log'  #TODO see py2 line 187
     logging.basicConfig(
         level = logging.DEBUG,
@@ -183,5 +184,10 @@ if __name__ == '__main__':
     log.addHandler(logging.StreamHandler())  # AGW logged events are also printed
     log.info('Welcome to ACQsystem - DAIS 2.0')
 
-    config_file = 'system.json'
-    MasterServer(log, config_file)
+    # Read the config file
+    config_filename = 'system.json'
+    with open(config_filename, 'r') as f:
+        config = json.load(f)
+
+    # Start server
+    MasterServer(log, config)

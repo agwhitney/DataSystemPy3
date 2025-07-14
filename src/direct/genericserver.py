@@ -1,8 +1,8 @@
-from twisted.internet import reactor
-from twisted.internet.serialport import SerialPort
-
 import argparse
 import logging
+
+from twisted.internet import reactor
+from twisted.internet.serialport import SerialPort
 
 from instruments import Instrument
 
@@ -38,7 +38,7 @@ class GenericServer():
         log.info("Welcome to DAIS-Server")
 
         # Create an instrument object, which contains protocol details
-        # AGW I'm pretty sure a SerialPort doesn't need a listenTCP associated with it, but I'm not sure
+        # AGW I suspect that a SerialPort doesn't need a listenTCP associated with it
         instrument = Instrument(self.instr_config, log)
         reactor.listenTCP(instrument.tcp_port, instrument.factory)
         SerialPort(instrument.serial_client, instrument.connection['port'], reactor, baudrate=instrument.connection.baudrate)
