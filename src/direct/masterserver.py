@@ -118,6 +118,8 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
+    genericserver = 'genericserver.py'  # filepath used in subprocess call
+
     def __init__(self, log, system_config):
         """
         This loads the config and starts servers for each instrument as subprocesses.
@@ -159,7 +161,7 @@ class MasterServer():
         for i in range(self.instr_count):
             print(self.instr_config_filenames[i], self.instr_active[i])
             if self.instr_active[i]:
-                processes[server_count] = Popen(['Python', 'genericserver.py', self.instr_config_filenames[i]], shell=False)
+                processes[server_count] = Popen(['Python', self.genericserver, self.instr_config_filenames[i]], shell=False)
                 print(f"Instrument in the configuration file: {i} Active instrument: {server_count} {self.instr_config_filenames[server_count]} started, Pid: {processes[server_count].pid}")
                 server_count += 1
         print("---------------------------------")

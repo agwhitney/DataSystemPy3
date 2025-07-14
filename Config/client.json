@@ -33,7 +33,7 @@
         "_file_time": "Recording time per file (seconds)", 
         "file_time": 60,
         "_total_files":"Total number of consecutive files that will be acquired",
-        "_total_files":2
+        "total_files":2
     },    
     "Context": "Parking_sky_test2_AMR_QH",
     "Instances": [
