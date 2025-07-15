@@ -6,17 +6,19 @@ from twisted.internet import protocol, reactor
 from subprocess import Popen
 
 from fpga import FPGA
-from filepaths import configs_path, configstmp_path, logs_path, CONTROL_SERVER_PORT
+from filepaths import configs_path, configstmp_path, logs_path, genericserver, CONTROL_SERVER_PORT
 
 
 class TCPHandler(protocol.Protocol):
     """
-    AGW I'm pretty sure this server protocol doesn't ever get interacted with.
+    AGW I think this protocol only interacts between the FPGA and motor. I think the master server is set up,
+    and MotorControl connects to that port using socket.
     """
-    def __init__(self):
-        print("Creating an online control server instance")
-        for i, p in enumerate(self.factory.processes):
-            print(f"Process number {i} ID: {p.pid}\n")
+    # AGW self.transport and therefore presumably self.factory are set in makeConnection(), so this doesn't work
+    # def __init__(self):
+    #     self.factory.log.info("Creating an online control server instance")
+    #     for i, p in enumerate(self.factory.processes):
+    #         self.factory.log.debug(f"Process number {i} ID: {p.pid}\n")
         
     
     def connectionMade(self):
@@ -24,28 +26,29 @@ class TCPHandler(protocol.Protocol):
             f"New TCP client received from {self.transport.getPeer()} - Instance: {self}"
         )
         self.factory.clients.append(self)
-    
+        # Moved from init
+        for i, p in enumerate(self.factory.processes):
+            self.factory.log.debug(f"Process number {i} ID {p.pid}")
+
 
     def dataReceived(self, data: bytes) -> None:
-        """
-        AGW case in point: `data` is bytes, so without decoding this wouldn't work.
-        """
         self.factory.log.info(
             f"Command received from {self.transport.getPeer()} - {data}"
         )
-        match data:
+        # AGW I think this is handled (or passed between) the MotorControl script
+        match data.decode():
             case 'STOP':  # AGW py2 labels this is not working, with lots of !
                 # Stops all processes
                 msg = "STOP -> Running processes are:\n"
                 for i, p in enumerate(self.factory.processes):
                     msg += f"Process #{i} -> ID: {p.pid}\n"
                 print(msg)
-                self.transport.write(msg)
+                self.transport.write(msg.encode())
                 msg += "Status:\n"
                 for i, p in enumerate(self.factory.processes):
                     msg += f"Process #{i} -> ID: {p.poll()}\n"
                 print(msg)
-                self.transport.write(msg)
+                self.transport.write(msg.encode())
                 for p in self.factory.processes:
                     if p.poll() != 1:
                         p.terminate()
@@ -53,16 +56,16 @@ class TCPHandler(protocol.Protocol):
                 for i, p in enumerate(self.factory.processes):
                     msg += f"Process #{i} -> ID: {p.poll()}\n"
                 print(msg)
-                self.transport.write(msg)
+                self.transport.write(msg.encode())
 
             case 'INFO':  # AGW py2 same as STOP, but commented out.
                 msg = "INFO -> Running processes are:\n"
-                self.transport.write(msg)
+                self.transport.write(msg.encode())
                 for i, p in enumerate(self.factory.processes):
                     msg += f"Process #{i} -> ID: {p.pid}\n"
                 print(msg)
                 # AGW below here doesn't make sense to me. Maybe it was for testing. It can probably be removed.
-                self.transport.write(msg)
+                self.transport.write(msg.encode())
                 msg += "Status:\n"
                 print(msg)
                 msg += str(self.processes[0])
@@ -70,11 +73,11 @@ class TCPHandler(protocol.Protocol):
                 # AGW i and p are out of scope, but will probably have the last values from above
                 msg += f"Process #{i} -> STOPPED? -> {p.poll()} -> Says -> #"
                 print(msg)
-                self.transport.write(msg)
+                self.transport.write(msg.encode())
 
             case 'SYST':
                 print("Sending configuration file to client.")
-                self.transport.write(json.dumps(self.factory.system_config))
+                self.transport.write(json.dumps(self.factory.system_config).encode())
             
             case 'MSTART':
                 print("Starting motor")
@@ -82,7 +85,7 @@ class TCPHandler(protocol.Protocol):
                 fpga.MotorControl(fpga.StartMotor)
                 print("Sending START to motor")
                 fpga.DisconnectTCP()
-                self.transport.write("Starting motor")
+                self.transport.write("Starting motor".encode())
             
             case 'MSTOP':
                 print("Stopping motor")
@@ -90,12 +93,12 @@ class TCPHandler(protocol.Protocol):
                 fpga.MotorControl(fpga.StopMotor)
                 print("Sending STOP to motor")
                 fpga.DisconnectTCP()
-                self.transport.write("Stopping motor")
+                self.transport.write("Stopping motor".encode())
 
 
 
     def connectionLost(self, reason=None) -> None:
-        self.factory.log.info(
+        self.factory.log.error(
             f"Connection lost from {self.transport.getPeer()} - Reason: {reason}"
         )
         self.factory.log.info(
@@ -118,8 +121,6 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
-    genericserver = 'genericserver.py'  # filepath used in subprocess call
-
     def __init__(self, log, system_config):
         """
         This loads the config and starts servers for each instrument as subprocesses.
@@ -155,17 +156,18 @@ class MasterServer():
     
     def start_servers(self):
         tcp_port = CONTROL_SERVER_PORT
-        processes = {}
+        processes = []
         server_count = 0
         
         for i in range(self.instr_count):
             print(self.instr_config_filenames[i], self.instr_active[i])
             if self.instr_active[i]:
-                processes[server_count] = Popen(['Python', self.genericserver, self.instr_config_filenames[i]], shell=False)
-                print(f"Instrument in the configuration file: {i} Active instrument: {server_count} {self.instr_config_filenames[server_count]} started, Pid: {processes[server_count].pid}")
+                p = Popen(['.venv/Scripts/python', genericserver, self.instr_config_filenames[i]], shell=False)
+                print(f"Instrument in the configuration file: {i} Active instrument: {server_count} {self.instr_config_filenames[server_count]} started, Pid: {p.pid}")
+                processes.append(p)
                 server_count += 1
         print("---------------------------------")
-        print("Starting online control server -- FYI: the script won't come back while it's running!")
+        self.log.info("Starting online control server -- FYI: the script won't come back while it's running!")
         factory = TCPHandlerFactory(self.log, processes, self.motor_instr_config, self.config)
         reactor.listenTCP(tcp_port, factory)
         reactor.run()        

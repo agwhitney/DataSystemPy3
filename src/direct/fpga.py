@@ -66,7 +66,7 @@ class FPGA():
                 key = self.BADMAP[key]
 
             self.int_time[key] = cfg['integration_time']
-            self.activated[key] = cfg['activated']
+            self.activated[key] = cfg['active']
             self.counter[key] = cfg['counter']
             self.sequence_length = cfg['sequence']['length']
 

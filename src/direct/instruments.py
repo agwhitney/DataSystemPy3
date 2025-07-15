@@ -31,14 +31,14 @@ class SerialClient(basic.LineReceiver, basic.Int32StringReceiver):
 
     
     def connectionLost(self, reason):
-        self.network.log.info(
-            f"ERROR {self.network.name} - Serial connection lost - Reason {reason}"
+        self.network.log.error(
+            f"{self.network.name} - Serial connection lost - Reason {reason}"
         )
 
 
     def connectionFailed(self):
-        self.network.log.info(
-            f"ERROR {self.network.name} - Connection unsuccessful: {self}. {self.network.name} is not active."
+        self.network.log.error(
+            f"{self.network.name} - Connection unsuccessful: {self}. {self.network.name} is not active."
         )
         reactor.stop()
 
@@ -63,13 +63,13 @@ class SerialClientRadiometer(SerialClient):
     def dataReceived(self, data):
         data = f"PAC{self.network.config['letterid']}:{self.iteration}TIME:todoDATA:{data}:ENDS\n"
         self.iteration += 1
-        self.write_down(data)
+        self.write_down(data.encode())
 
 
 class SerialClientThermistors(SerialClient):
     def __init__(self, network):
         super().__init__(network)
-        self.delimiter = self.network.config['characteristics']['delimiter']
+        self.delimiter : bytes = self.network.config['characteristics']['delimiter'].encode()
         self.polling_interval = self.network.config['characteristics']['polling_interval']
         self.letterid = self.network.config['letterid']
         self.byte_order = self.network.config['byte_order']
@@ -110,7 +110,7 @@ class SerialClientThermistors(SerialClient):
             self.sendLine(command)
         elif self.visited_adcs == self.adc_count:
             self.data2send += line[:-1] + 'ENDS\n'
-            self.write_down(self.data2send)
+            self.write_down(self.data2send.encode())
 
 
 class SerialClientGPSIMU(SerialClient):
@@ -118,7 +118,7 @@ class SerialClientGPSIMU(SerialClient):
         super().__init__(network)
         self.letterid = self.network.config['letterid']
         self.byte_order = self.network.config['byte_order']
-        self.delimiter = self.network.config['characteristics']['delimiter']
+        self.delimiter : bytes = self.network.config['characteristics']['delimiter'].encode()
         self.update_freq = self.network.config['characteristics']['update_frequency']
 
 
@@ -130,7 +130,7 @@ class SerialClientGPSIMU(SerialClient):
         crc = 0
         i = 0
         while i < len(buffer):
-            ch = ord(buffer[i])
+            ch = buffer[i]  # py2 uses ord because socket.recv returns str not bytes
             uc = 0
             while uc < 8:
                 if (crc & 1)^(ch & 1):
@@ -151,10 +151,10 @@ class SerialClientGPSIMU(SerialClient):
         # which determines mode (0 = disable continues trigger mode, 1 = continuous mode enable, 2 = triggered mode enable)
         # and the last byte which is used to determine update frequency (freq = [60 / (lastByte)])
         # see page 26 of "IG Devices Serial Protocol Specifications.pdf" for more info
-        command = struct.pack('>6B', 83, 0, 3, 0, 1, 60/self.update_freq)
+        command = struct.pack('>6B', 83, 0, 3, 0, 1, int(60/self.update_freq))
         crc = self.crc16(command)
         # convert crc int into two unsigned int bytes
-        crc_msb = (crc - crc%256) / 256
+        crc_msb = int((crc - crc%256) / 256)
         crc_lsb = crc % 256
         # packet end: two bytes crc and then unsigned int byte '3'
         end = struct.pack('>3B', crc_msb, crc_lsb, 3)
@@ -167,7 +167,7 @@ class SerialClientGPSIMU(SerialClient):
     def lineReceived(self, line):
         self.iteration += 1
         data = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:{line}:ENDS\n"  # TODO py2 line 286
-        self.write_down(data)
+        self.write_down(data.encode())
     
 
 class TCPInstrument(protocol.Protocol):
@@ -180,7 +180,7 @@ class TCPInstrument(protocol.Protocol):
             f"{self.factory.name} - New TCP client received from {self.transport.getPeer()} - Instance {self}"
         )
         self.transport.write(
-            f"Welcome to {self.factory.name} you are at {self.transport.getPeer()}\n"
+            f"Welcome to {self.factory.name} you are at {self.transport.getPeer()}\n".encode()
         )
         self.factory.clients.append(self)
 
@@ -240,8 +240,8 @@ class Instrument():
         # Define the serial connection
         match config['name']:
             case 'Radiometer':
-                self.serial_client = SerialClientRadiometer(config, log)
+                self.serial_client = SerialClientRadiometer(self.factory)
             case 'Thermistors':
-                self.serial_client = SerialClientThermistors(config, log)
+                self.serial_client = SerialClientThermistors(self.factory)
             case 'GPS-IMU':
-                self.serial_client = SerialClientGPSIMU(config, log)
+                self.serial_client = SerialClientGPSIMU(self.factory)

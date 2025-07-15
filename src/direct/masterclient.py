@@ -13,12 +13,10 @@ from datetime import datetime
 from subprocess import Popen
 
 from motorcontrol import MotorControl
-from filepaths import configs_path, configstmp_path, data_path, logs_path
+from filepaths import configs_path, configstmp_path, data_path, logs_path, genericclient
 
 
 class MasterClient():
-    genericclient = 'genericclient.py'
-
     def __init__(self, config, log):
         self.log = log
         
@@ -60,12 +58,12 @@ class MasterClient():
         self.motor = MotorControl(self.server_ip, self.server_port)
         system_config = self.motor.send_getsysconfig()  # AGW changed this function to return rather than keep
         filename = self.timestamp + self.context + "_ServerInformation.bin"
-        with open(filename, 'w') as f:
+        with open(data_path / filename, 'w') as f:
             f.write(json.dumps(system_config))
 
         for instrument in system_config.values():
             print(f"## SERVER: {instrument['name']} Active: {instrument['active']}")
-            if instrument['name'] == 'Radiometer':
+            if instrument['name'] == 'Radiometer' and instrument['active']:
                 # It does the bad indexing thing here.
                 # BUT this whole block is just for logging, I think. I've removed a lot of self.
                 mapkey = ('mw', 'mmw', 'snd')
@@ -100,7 +98,7 @@ class MasterClient():
                 self.log.info(f"Estimated data throughput from radiometer: {data_throughput} kBps - {self.items_rad} items")
                 self.items_rad = self.file_acqtime  # Each section has these three lines like this.
             
-            elif instrument['name'] == 'Thermistors':
+            elif instrument['name'] == 'Thermistors' and instrument['active']:
                 polling_rate = instrument['characteristics']['polling_interval']
                 addresses = instrument['characteristics']['addresses']
                 print(f"## Polling interval {polling_rate}s - Active ADC: {addresses}")
@@ -109,7 +107,7 @@ class MasterClient():
                 self.log.info(f"Estimated GPS-IMU data throughput: {5*8*len(addresses) / polling_rate} Bps - {self.items_thm} items")
                 self.items_thm = self.file_acqtime
 
-            elif instrument['name'] == 'GPS-IMU':
+            elif instrument['name'] == 'GPS-IMU' and instrument['active']:
                 update_freq = instrument['characteristics']['update_frequency']
                 print(f"Update frequency = {update_freq} Hz")
 
@@ -157,11 +155,11 @@ class MasterClient():
                 case 'Thermistors':
                     instance['num_items'] = self.items_thm
                 case 'GPS-IMU':
-                    instance['nam_items'] = self.items_gps
+                    instance['num_items'] = self.items_gps
 
             self.active_instances.append(instance)
             self.active_instruments.append(instance['name'])
-            self.active_filenames.append(configstmp_path / f"Client_{self.timestamp}{instance['name']}.json")
+            self.active_filenames.append(configstmp_path / f"{self.timestamp}{instance['name']}.json")
 
         fileparser_name = data_path / f"{self.timestamp}{self.context}.bin"
         parser_file = open(fileparser_name, 'w')
@@ -179,9 +177,9 @@ class MasterClient():
             new_context = f"{self.timestamp}{nfile}of{self.num_files}_{self.context}"
 
             # Update raw file name
-            for instance in self.active_instances:
+            for instance, filename in zip(self.active_instances, self.active_filenames):
                 instance['context'] = new_context
-                with open() as f:
+                with open(filename, 'w') as f:
                     f.write(json.dumps(instance))
                 
             # Keep raw file name for parsing
@@ -194,7 +192,7 @@ class MasterClient():
             # Start client subprocesses
             processes = []
             for i in range(len(self.active_instances)):
-                p = Popen(['python', self.genericclient, self.active_filenames[i]], shell=False)
+                p = Popen(['.venv/Scripts/python', genericclient, self.active_filenames[i]], shell=False)
                 processes.append(p)
                 print(f"{self.active_filenames[i]} communication started, Pid: {processes[i].pid}")
                 print('--------------------')
@@ -231,7 +229,7 @@ class MasterClient():
 
         # Launch the parser
         if self.parsing:
-            ...  # TODO parsing module
+            print("TODO - parser")  # TODO parsing module
         else:
             print("Not running L0a -> L0b parser.")
 
@@ -254,5 +252,5 @@ if __name__ == '__main__':
     with open(config_path, 'r') as f:
         config = json.load(f)
 
-    client = MasterClient(log, config)
+    client = MasterClient(config, log)
     client.acquire()

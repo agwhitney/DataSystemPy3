@@ -43,7 +43,7 @@ class GenericServer():
         # AGW I'm pretty sure a SerialPort doesn't need a listenTCP associated with it, but I'm not sure
         instrument = Instrument(self.instr_config_file, log)
         reactor.listenTCP(instrument.tcp_port, instrument.factory)
-        SerialPort(instrument.serial_client, instrument.connection['port'], reactor, baudrate=instrument.connection.baudrate)
+        SerialPort(instrument.serial_client, instrument.connection['port'], reactor, baudrate=instrument.connection['baudrate'])
         reactor.run()
 
 

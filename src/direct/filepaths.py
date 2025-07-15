@@ -9,11 +9,13 @@ from pathlib import Path
 
 # TODO These really belong elsewhere, like system_config
 CONTROL_SERVER_IP ='127.0.0.1'
-CONTROL_SERVER_PORT = 9083
+CONTROL_SERVER_PORT = 9022
 
 
+
+# Folder structure
 # parent = Path().home() / 'HAMMR'
-parent = Path().cwd() / 'test_paths'
+parent = Path().cwd() / 'test_paths'  # This is for testing. Note that cwd() is where Python is called from
 
 base = parent / 'AcqSystem'
 configs_path = base / 'Configs'
@@ -22,6 +24,18 @@ logs_path = base / 'Logs'
 
 configstmp_path = configs_path / 'tmp'
 h5data_path = data_path / 'h5_files'
+
+
+# genericserver and genericclient filepaths
+genericserver = Path(__file__).parent / 'genericserver.py'
+genericclient = Path(__file__).parent / 'genericclient.py'
+
+
+# Check and print functions
+def check_structure():
+    for path in [parent, base, configs_path, data_path, logs_path, configstmp_path, h5data_path]:
+        path.mkdir(exist_ok=True)
+    print("Folder structure is set up")
 
 
 def print_tree(root):
@@ -35,12 +49,6 @@ def print_tree(root):
     print("-" * 20)
 
 
-def check_structure():
-    for path in [parent, base, configs_path, data_path, logs_path, configstmp_path, h5data_path]:
-        path.mkdir(exist_ok=True)
-        print("Folder structure is set up")
-
-
 # Not an ifmain so this will run whenever the module is imported
-check_structure()
-print_tree(parent)
+# check_structure()
+# print_tree(parent)
