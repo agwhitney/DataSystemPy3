@@ -1,12 +1,16 @@
 """
 py2 has a BasicClient protocol and factory, which don't get used. I've omitted them.
 The log was implemented but not used. Most print statements could probably also get logged.
+MasterClient basically runs as a script. There are a lot of self. variables that aren't 
+used outside of the scope of the method that uses them. I've removed some, but really what
+should happen is things should be moved into more specific methods.
 """
 import json
 import logging
 import time
 
 from datetime import datetime
+from subprocess import Popen
 
 from motorcontrol import MotorControl
 
@@ -20,25 +24,40 @@ class MasterClient():
         # Parse the config
         self.server_ip : str = config['master_server']['ip']
         self.server_port : int = config['master_server']['port']
+        self.parsing : bool = config['parsing']['active']
         self.observer_client : bool = config['observer']['active']
+        self.start_motor : bool = config['motor_start']['value']
+        self.stop_motor : bool = config['motor_stop']['value']
 
         self.context : str = config['context']
         self.instances : list = config['instances']  # Not in py2 but trims a lot of typing
+        self.num_files : int = config['acquisition_time']['total_files']
         self.file_acqtime : int = config['acquisition_time']['file_time']
 
         # Additional variables
         self.delay = 3  # used for sleep timer
         self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')  # This will be slightly behind the log
+        self.active_instruments = []  # AGW this and below should be a dict, again
+        self.active_filenames = []
+        self.active_instances = []  # AGW new
+
+        # py2 runs get_serverconfig() in acquire().
+        self.motor : MotorControl
+        self.items_rad : int
+        self.items_thm : int
+        self.items_gps : int
+        self.get_serverconfig()
         
 
-    def get_server_config(self):
+    def get_serverconfig(self):
         """
         This gets server config info from motorcontrol.py, which I believe actually does connect
         to the FGPA via TCP/IP. As a bonus, it has the same weird indexing hack that FPGA uses.
         Realistically... why pass the data? Why not just call it again?
         """
+        # Get the system config from the motor-FPGA connection
         self.motor = MotorControl(self.server_ip, self.server_port)
-        system_config = self.motor.get_systemconfig()  # AGW changed this function to return rather than keep
+        system_config = self.motor.send_getsysconfig()  # AGW changed this function to return rather than keep
         filename = self.timestamp + self.context + "_ServerInformation.bin"
         with open(filename, 'w') as f:
             f.write(json.dumps(system_config))
@@ -46,8 +65,8 @@ class MasterClient():
         for instrument in system_config.values():
             print(f"## SERVER: {instrument['name']} Active: {instrument['active']}")
             if instrument['name'] == 'Radiometer':
-                # It does the bad indexing thing here, with both keys.
-                # At least this whole block is just for logging, I think.
+                # It does the bad indexing thing here.
+                # BUT this whole block is just for logging, I think. I've removed a lot of self.
                 # TODO check config varnames.
                 mapkey = ('mw', 'mmw', 'snd')
                 badmap = {'mw':'mw', 'mmw':'snd', 'snd':'mmw'}
@@ -104,7 +123,117 @@ class MasterClient():
         
 
     def acquire(self):
-        ...
+        print(f"For configuration using {self.server_ip} @ port {self.server_port}")
+
+        if self.observer_client:
+            self.timestamp = "ObserverMode_FileToBeDeleted_"
+        print(f"""
+              --------------------------------
+              -- CLIENTS CONFIG INFORMATION --
+              Total: {self.num_files} files of {self.file_acqtime} seconds each
+              --------------------------------
+              -- System will pause for {self.delay} seconds and then continue
+              --------------------------------
+        """)
+        time.sleep(self.delay)
+        # if radiometer is among client instances, start the motor
+        for instance in self.instances:
+            if instance['name'] == 'Radiometer' and instance['active'] and self.start_motor:
+                print("--------------------------------\nStarting Motor")
+                self.motor.send_start()
+                self.motor.disconnect()
+                print("--------------------------------")
+
+        # Prepare the parserfile
+        # AGW this could probably be put into the loop above
+        for instance in self.instances:
+            if not instance['active']:
+                print(f"Warning: {instance['name']} is set to inactive and will not acquire data.")
+                continue
+            # This could be simplified to by making a keyed items dict
+            match instance['name']:
+                case 'Radiometer':
+                    instance['num_items'] = self.items_rad
+                case 'Thermistors':
+                    instance['num_items'] = self.items_thm
+                case 'GPS-IMU':
+                    instance['nam_items'] = self.items_gps
+
+            self.active_instances.append(instance)
+            self.active_instruments.append(instance['name'])
+            self.active_filenames.append(f"Client_{self.timestamp}{instance['name']}.json")  # TODO needs path, py2 150
+
+        fileparser_name = self.timestamp + self.context + '.bin'  # TODO prepend path and make file
+        parser_file = open(fileparser_name, 'w')
+        file_merger = {}
+        file_merger['instruments'] = self.active_instruments
+        file_merger['filesID'] = fileparser_name  # TODO just timestamp and context
+        file_merger['filename'] = []
+        file_merger['description'] = []
+        
+        # Loop for as many files are required per the client config file
+        for nfile in range(1, self.num_files+1):
+            # AGW just use self.active_instances and len()
+            # active_instances = []
+            # num_clients = 0
+            new_context = f"{self.timestamp}{nfile}of{self.num_files}_{self.context}"
+
+            # Update raw file name
+            for instance in self.active_instances:
+                instance['context'] = new_context
+                with open() as f:
+                    f.write(json.dumps(instance))
+                
+            # Keep raw file name for parsing
+            file_merger['description'].append(self.active_instances)
+            file_merger['filename'].append(new_context)
+            parser_file.seek(0)
+            parser_file.write(json.dumps(file_merger))
+            print(f"----------\n{file_merger}\n----------")
+
+            # Start client subprocesses
+            processes = []
+            for i in range(len(self.active_instances)):
+                p = Popen(['python', self.genericclient, self.active_filenames[i]], shell=False)
+                processes.append(p)
+                print(f"{self.active_filenames[i]} communication started, Pid: {processes[i].pid}")
+                print('--------------------')
+
+            # Wait for them to finish
+            t1 = time.time()
+            while True:
+                time.sleep(2)  # Not delay?
+                active_proc = 0
+                msg = "--------------------"
+                for i in range(len(self.active_instances)):
+                    if processes[i].poll() is None:
+                        active_proc += 1
+                        msg += f"\n({nfile} / {self.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {processes[i].pid} -> STOPPED: {processes[i].poll()})"
+                print(msg)
+                if active_proc == 0:
+                    break
+            t2 = time.time() - t1
+            print(f"Total elapsed time: {t2} seconds")
+            # update timestring for next file
+            self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+        parser_file.close()
+
+        # Stop the motor if needed
+        if not self.observer_client:
+            for instance in self.active_instances:
+                if instance['name'] == 'Radiometer' and self.stop_motor:
+                    print("Stopping motor")
+                    self.motor = MotorControl(self.server_ip, self.server_port)
+                    self.motor.send_stop()
+                    self.motor.disconnect()
+                elif not self.stop_motor:
+                    print("Motor is configured to NOT stop.")
+
+        # Launch the parser
+        if self.parsing:
+            ...  # TODO parsing module
+        else:
+            print("Not running L0a -> L0b parser.")
 
 
 if __name__ == '__main__':

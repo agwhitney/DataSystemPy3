@@ -23,10 +23,12 @@ class MotorControl():
         print(self.client_socket.recv(50))
 
     
-    def send_getconfig(self):
+    def send_getsysconfig(self):
         self.client_socket.send("SYST")
         syst = StringIO(self.client_socket.recv(5000))
-        self.config = json.load(syst)
+        # py2 loads config as a class variable, I've opted to return it
+        config = json.load(syst)
+        return config
 
 
     def disconnect(self):
