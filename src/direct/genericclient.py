@@ -10,6 +10,8 @@ from twisted.internet import protocol, reactor
 from twisted.protocols import basic
 from time import time
 
+from filepaths import data_path
+
 
 class TCPClient(basic.Int32StringReceiver):
     def connectionMade(self):
@@ -88,9 +90,9 @@ class GenericClient():
         # Print some metadata
         print(f"Name: {name}\nIP: {ip}\nPort: {port}\nNumber of Items: {num_items}")
 
-        # Open a file object that will be written to
-        filename = f"{context}_{name}.bin"  # I think these aren't in the same level, but this is what's written
-        file = open(filename, 'wb')
+        # Open a file object that will be written to. Closed by protocol.
+        filepath = data_path / f"{context}_{name}.bin"
+        file = open(filepath, 'wb')
 
         # Create client
         factory = TCPClientFactory(file, num_items, name)

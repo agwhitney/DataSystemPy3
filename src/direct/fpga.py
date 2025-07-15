@@ -191,4 +191,3 @@ class FPGA():
 
     def start_acquisition(self):
         self.send_instruction(0, 0, 1)
-

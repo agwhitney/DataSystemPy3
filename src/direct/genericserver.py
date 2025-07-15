@@ -6,6 +6,7 @@ from twisted.internet import reactor
 from twisted.internet.serialport import SerialPort
 
 from instruments import Instrument
+from filepaths import configs_path, logs_path
 
 
 class GenericServer():
@@ -21,16 +22,16 @@ class GenericServer():
         parser.add_argument('--http-logging', action='store_true', default=False, help="Log messages to GDAIS-control HTTP server")
         args = parser.parse_args()
 
-        self.instr_config = args.instr_config
+        self.instr_config_file = configs_path / args.instr_config
         self.in_background = args.background
         self.http_logging = args.http_logging
 
         # Create another log. I think each instrument will get its own per the timestamp.
-        log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Server_ACQsystem.log"  # TODO needs the folder path
+        log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Server_ACQsystem.log"
         logging.basicConfig(
             level = logging.DEBUG,
             format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-            filename = log_filename,
+            filename = logs_path / log_filename,
             filemode = 'a'
         )
         log = logging.getLogger('ACQsystem - DAIS 2.0 - Server')
@@ -40,7 +41,7 @@ class GenericServer():
 
         # Create an instrument object, which contains protocol details
         # AGW I'm pretty sure a SerialPort doesn't need a listenTCP associated with it, but I'm not sure
-        instrument = Instrument(self.instr_config, log)
+        instrument = Instrument(self.instr_config_file, log)
         reactor.listenTCP(instrument.tcp_port, instrument.factory)
         SerialPort(instrument.serial_client, instrument.connection['port'], reactor, baudrate=instrument.connection.baudrate)
         reactor.run()

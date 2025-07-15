@@ -13,6 +13,7 @@ from datetime import datetime
 from subprocess import Popen
 
 from motorcontrol import MotorControl
+from filepaths import configs_path, configstmp_path, data_path, logs_path
 
 
 class MasterClient():
@@ -41,7 +42,7 @@ class MasterClient():
         self.active_filenames = []
         self.active_instances = []  # AGW new
 
-        # py2 runs get_serverconfig() in acquire().
+        # py2 runs get_serverconfig() in acquire(). It makes these vars
         self.motor : MotorControl
         self.items_rad : int
         self.items_thm : int
@@ -67,10 +68,9 @@ class MasterClient():
             if instrument['name'] == 'Radiometer':
                 # It does the bad indexing thing here.
                 # BUT this whole block is just for logging, I think. I've removed a lot of self.
-                # TODO check config varnames.
                 mapkey = ('mw', 'mmw', 'snd')
                 badmap = {'mw':'mw', 'mmw':'snd', 'snd':'mmw'}
-                bytesPerDatagram = {'mw': 22, 'mmw': 14, 'snd': 38}
+                bytesPerDatagram = {'mw': 22, 'mmw': 14, 'snd': 38}  # MW = ARM; MMW = ACT
                 value = []
                 length = []
                 int_time = {}
@@ -80,7 +80,7 @@ class MasterClient():
                 for key in mapkey:
                     badkey = badmap[key]  # AGW what the fuck is this
                     int_time[key] = instrument['characteristics'][key]['integration_time']
-                    activated[key] = instrument['characteristics'][key]['activated']
+                    activated[key] = instrument['characteristics'][key]['active']
                     seq_length[key] = instrument['characteristics'][key]['sequence']['length']
                     # Below should fail because of badkey
                     print(f"## {key} -> Active: {activated[badkey]} Ts = {int_time[badkey]} ms")
@@ -161,13 +161,13 @@ class MasterClient():
 
             self.active_instances.append(instance)
             self.active_instruments.append(instance['name'])
-            self.active_filenames.append(f"Client_{self.timestamp}{instance['name']}.json")  # TODO needs path, py2 150
+            self.active_filenames.append(configstmp_path / f"Client_{self.timestamp}{instance['name']}.json")
 
-        fileparser_name = self.timestamp + self.context + '.bin'  # TODO prepend path and make file
+        fileparser_name = data_path / f"{self.timestamp}{self.context}.bin"
         parser_file = open(fileparser_name, 'w')
         file_merger = {}
         file_merger['instruments'] = self.active_instruments
-        file_merger['filesID'] = fileparser_name  # TODO just timestamp and context
+        file_merger['filesID'] = fileparser_name.stem
         file_merger['filename'] = []
         file_merger['description'] = []
         
@@ -238,11 +238,11 @@ class MasterClient():
 
 if __name__ == '__main__':
     # Create a log
-    log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Client_ACQsystem.log"  # TODO needs the folder path
+    log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Client_ACQsystem.log"
     logging.basicConfig(
         level = logging.DEBUG,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = log_filename,
+        filename = logs_path / log_filename,
         filemode = 'a'
     )
     log = logging.getLogger('ACQsystem Client - DAIS 2.0')
@@ -250,8 +250,8 @@ if __name__ == '__main__':
     log.info('Welcome to ACQsystem Client - DAIS 2.0')
 
     # Read the config file
-    config_filename = 'client.json'
-    with open(config_filename, 'r') as f:
+    config_path = configs_path / 'client.json'
+    with open(config_path, 'r') as f:
         config = json.load(f)
 
     client = MasterClient(log, config)

@@ -6,7 +6,7 @@ from twisted.internet import protocol, reactor
 from subprocess import Popen
 
 from fpga import FPGA
-from GeneralPaths import CONTROL_SERVER_PORT
+from filepaths import configs_path, configstmp_path, logs_path, CONTROL_SERVER_PORT
 
 
 class TCPHandler(protocol.Protocol):
@@ -137,7 +137,7 @@ class MasterServer():
 
         # Parse config. Also copies sub-configs to files
         print("---------------------------------")
-        timestring = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+        timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
         for cfg in self.config.values():
             print("---------------------------------")
             if cfg['name'] == 'Radiometer':
@@ -145,9 +145,9 @@ class MasterServer():
             self.instr_names.append(cfg['name'])
             self.instr_active.append(cfg['active'])
             
-            filename = timestring + cfg['name'] + ".json"  # TODO needs the folder path
-            self.instr_config_filenames.append(filename)
-            with open(filename, 'w') as f:
+            filepath = configstmp_path / f"{timestamp}{cfg['name']}.json"
+            self.instr_config_filenames.append(filepath)
+            with open(filepath, 'w') as f:
                 f.write(json.dumps(cfg))  # unchanged sub-config
         print("---------------------------------")
         self.start_servers()
@@ -173,11 +173,11 @@ class MasterServer():
 
 if __name__ == '__main__':
     # Create a log
-    log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Server_ACQsystem.log"  # TODO needs the folder path
+    log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Server_ACQsystem.log"
     logging.basicConfig(
         level = logging.DEBUG,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = log_filename,
+        filename = logs_path / log_filename,
         filemode = 'a'
     )
     log = logging.getLogger('ACQsystem - DAIS 2.0')
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     log.info('Welcome to ACQsystem - DAIS 2.0')
 
     # Read the config file
-    config_filename = 'system.json'
-    with open(config_filename, 'r') as f:
+    config_filepath = configs_path / 'system.json'
+    with open(config_filepath, 'r') as f:
         system_config = json.load(f)
     MasterServer(log, system_config)
