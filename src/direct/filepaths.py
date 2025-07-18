@@ -50,5 +50,5 @@ def print_tree(root):
 
 
 # Not an ifmain so this will run whenever the module is imported
-# check_structure()
+check_structure()
 # print_tree(parent)
