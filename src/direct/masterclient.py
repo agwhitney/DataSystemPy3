@@ -21,17 +21,17 @@ class MasterClient():
         self.log = log
         
         # Parse the config
-        self.server_ip : str = config['master_server']['ip']
-        self.server_port : int = config['master_server']['port']
-        self.parsing : bool = config['parsing']['active']
+        self.server_ip       : str = config['master_server']['ip']
+        self.server_port     : int = config['master_server']['port']
+        self.parsing         : bool = config['parsing']['active']
         self.observer_client : bool = config['observer']['active']
-        self.start_motor : bool = config['motor_start']['value']
-        self.stop_motor : bool = config['motor_stop']['value']
+        self.start_motor     : bool = config['motor_start']['value']
+        self.stop_motor      : bool = config['motor_stop']['value']
 
-        self.context : str = config['context']
-        self.instances : list = config['instances']  # Not in py2 but trims a lot of typing
-        self.num_files : int = config['acquisition_time']['total_files']
-        self.file_acqtime : int = config['acquisition_time']['file_time']
+        self.context         : str = config['context']
+        self.instances       : list = config['instances']  # Not in py2 but trims a lot of typing
+        self.num_files       : int = config['acquisition_time']['total_files']
+        self.file_acqtime    : int = config['acquisition_time']['file_time']
 
         # Additional variables
         self.delay = 3  # used for sleep timer
@@ -62,13 +62,15 @@ class MasterClient():
             f.write(json.dumps(system_config))
 
         for instrument in system_config.values():
-            print(f"## SERVER: {instrument['name']} Active: {instrument['active']}")
-            if instrument['name'] == 'Radiometer' and instrument['active']:
-                # It does the bad indexing thing here.
+            print(f"## SERVER: {instrument['name']} -- Active: {instrument['active']}")
+            if not instrument['active']:
+                continue
+
+            if instrument['name'] == 'Radiometer':
+                # It did the bad indexing thing here (see fpga.py)
                 # BUT this whole block is just for logging, I think. I've removed a lot of self.
                 mapkey = ('mw', 'mmw', 'snd')
-                badmap = {'mw':'mw', 'mmw':'snd', 'snd':'mmw'}
-                bytesPerDatagram = {'mw': 22, 'mmw': 14, 'snd': 38}  # MW = ARM; MMW = ACT
+                bytesPerDatagram = {'mw': 22, 'mmw': 14, 'snd': 38}  # MW = ARM; MMW = ACT. See fpga.py
                 value = []
                 length = []
                 int_time = {}
@@ -76,16 +78,15 @@ class MasterClient():
                 meaning = []
                 seq_length = {}
                 for key in mapkey:
-                    badkey = badmap[key]  # AGW what the fuck is this
                     int_time[key] = instrument['characteristics'][key]['integration_time']
                     activated[key] = instrument['characteristics'][key]['active']
                     seq_length[key] = instrument['characteristics'][key]['sequence']['length']
                     # Below should fail because of badkey
-                    print(f"## {key} -> Active: {activated[badkey]} Ts = {int_time[badkey]} ms")
-                    if activated[badkey]:
-                        data_throughput = bytesPerDatagram[badkey] / int_time[badkey]
+                    print(f"## {key} -> Active: {activated[key]} Ts = {int_time[key]} ms")
+                    if activated[key]:
+                        data_throughput = bytesPerDatagram[key] / int_time[key]
                         print("## Running Sequence")
-                        for i in range(seq_length[badkey]):
+                        for i in range(seq_length[key]):
                             meaning.append(instrument['characteristics'][key]['sequence'][f'slot{i}']['meaning'])
                             value.append(instrument['characteristics'][key]['sequence'][f'slot{i}']['value'])
                             length.append(instrument['characteristics'][key]['sequence'][f'slot{i}']['length'])
@@ -98,7 +99,7 @@ class MasterClient():
                 self.log.info(f"Estimated data throughput from radiometer: {data_throughput} kBps - {self.items_rad} items")
                 self.items_rad = self.file_acqtime  # Each section has these three lines like this.
             
-            elif instrument['name'] == 'Thermistors' and instrument['active']:
+            elif instrument['name'] == 'Thermistors':
                 polling_rate = instrument['characteristics']['polling_interval']
                 addresses = instrument['characteristics']['addresses']
                 print(f"## Polling interval {polling_rate}s - Active ADC: {addresses}")
@@ -107,7 +108,7 @@ class MasterClient():
                 self.log.info(f"Estimated GPS-IMU data throughput: {5*8*len(addresses) / polling_rate} Bps - {self.items_thm} items")
                 self.items_thm = self.file_acqtime
 
-            elif instrument['name'] == 'GPS-IMU' and instrument['active']:
+            elif instrument['name'] == 'GPS-IMU':
                 update_freq = instrument['characteristics']['update_frequency']
                 print(f"Update frequency = {update_freq} Hz")
 
@@ -121,6 +122,7 @@ class MasterClient():
         
 
     def acquire(self):
+        # TODO This method does a lot, and some of its functions should maybe be separated for better understanding.
         print(f"For configuration using {self.server_ip} @ port {self.server_port}")
 
         if self.observer_client:

@@ -1,10 +1,12 @@
 import json
 import socket
 
-from io import StringIO
-
 
 class MotorControl():
+    """
+    This class is called in MasterClient and creates a connection to the MasterServer -- the FPGA, in practice.
+    
+    """
     def __init__(self, ip, port):
         self.tcp_address = (ip, port)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

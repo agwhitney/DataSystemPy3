@@ -1,8 +1,8 @@
 """
-Only deals with the radiometer. A change I'm making is to have more dictionaries for explicit rather than implicit indexing.
-For example, py2 has a a mapkey like below as a set {}, and and index map {'MW':0, 'MMW':2, 'SND':1}. It seems like things should
-be ordered as [mw, snd, mmw], and init is the only place where they didn't do this. Rather than fix it, they made a key to loop
-as [0, 2, 1] instead. However, this index was used after logging.
+Only deals with the radiometer. py2 uses implicit ordering with lists, and I am actively changing those to dictionaries
+(XB confirms this is the idea he prefers as well). Note that py2 used a set for keys = {'MW', 'MMW', 'SND'} and this was
+unordered. This consistently returns with the order set(['MW', 'SND', 'MMW']), and a key was made to adjust and correct
+the order. It was weird and confusing and I confirmed with XB that the config should in fact not be swapped.
 
 In general (i.e., in the config) I've brought keys to lowercase. 
 """
@@ -12,21 +12,18 @@ import struct
 
 class FPGA():
     # Defined parameters
-    BADMAP = {'mw':'mw', 'mmw':'snd', 'snd':'mmw'}  # AGW What the fuck is this
-    USE_BADMAP = True
-
     mapkey = ('mw', 'mmw', 'snd')
-    header = {'mw': 85, 'mmw': 87, 'snd': 93}  # 'U' #85; 'W' #87 ']' #93
+    header = {'mw': 85, 'mmw': 87, 'snd': 93}  # 'U' #85; 'W' #87 ']' #93  # Unused
     offmap = {'mw': 0, 'mmw': 16, 'snd': 32}
-    bytesPerDatagram = {'arm': 22, 'act': 14, 'snd': 38}
+    bytesPerDatagram = {'arm': 22, 'act': 14, 'snd': 38}  # py2 this is ordered ARM, SND, ACT. bytes_remap = {'mw': 22, 'mmw': 14, 'snd': 38}
 
     activate_val = 15
     deactivate_val = 0
     counter_val = 240
     nocounter_val = 0
 
-    start_motor = 170
-    stop_motor = 85
+    start_motor = 170  # Unused
+    stop_motor = 85  # Unused
     
     inst = {'ac': 0, 'fr': 1, 'lt': 12}
     inst_base = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]  # py2 Inst_S#, with # = 0--9.
@@ -59,11 +56,6 @@ class FPGA():
         self.slot = {}
         for key in self.mapkey:
             cfg = config['characteristics'][key]
-
-            # Swaps the mapping of 'mmw' and 'snd' data. This should collect the issue in py2
-            # where for key in mapkey loops then access the below values in order [0, 2, 1].
-            if self.USE_BADMAP:
-                key = self.BADMAP[key]
 
             self.int_time[key] = cfg['integration_time']
             self.activated[key] = cfg['active']
