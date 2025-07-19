@@ -164,7 +164,7 @@ class MasterClient():
             self.active_filenames.append(configstmp_path / f"{self.timestamp}{instance['name']}.json")
 
         fileparser_name = data_path / f"{self.timestamp}{self.context}.bin"
-        parser_file = open(fileparser_name, 'w')
+        open_parser_file = open(fileparser_name, 'w')
         file_merger = {}
         file_merger['instruments'] = self.active_instruments
         file_merger['filesID'] = fileparser_name.stem
@@ -187,8 +187,8 @@ class MasterClient():
             # Keep raw file name for parsing
             file_merger['description'].append(self.active_instances)
             file_merger['filename'].append(new_context)
-            parser_file.seek(0)
-            parser_file.write(json.dumps(file_merger))
+            open_parser_file.seek(0)
+            open_parser_file.write(json.dumps(file_merger))
             print(f"----------\n{file_merger}\n----------")
 
             # Start client subprocesses
@@ -216,7 +216,7 @@ class MasterClient():
             print(f"Total elapsed time: {t2} seconds")
             # update timestring for next file
             self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
-        parser_file.close()
+        open_parser_file.close()
 
         # Stop the motor if needed
         if not self.observer_client:
