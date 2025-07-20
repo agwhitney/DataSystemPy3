@@ -23,3 +23,15 @@ class GenericParser():
             toparse = json.load(f)
         
         num_clients = len(toparse['instruments'])
+        filenames = toparse['filename']
+        num_files = len(filenames)
+        filesID = toparse['filesID']
+        print(f"Parsing {num_clients} clients & {num_files} files from {filesID}")
+
+        # Reade server config
+        sv_filename = "saved from masterserver I think"  # TODO
+        with open(sv_filename, 'r') as f:
+            sv_config = json.load(f)
+
+        for parsing_file in range(num_files):
+            ...
