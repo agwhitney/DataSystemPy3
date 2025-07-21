@@ -5,11 +5,13 @@
         "port": 9022,
         "port_config": 9083
     },
+
     "observer": {
         "_active": "Do not change this value, it should be always false when acquiring",
         "_description": "It desables any control to the motor, the client becomes an observer of another active client which is already in the system",
         "active": false
     },
+
     "parsing": {
         "_description": "Controls the parser once the acquisiton of all files has end",
         "_active": "true or false",
@@ -20,21 +22,25 @@
         "verbose": false,
         "_single_file": "If more than a single file has been acquired then true creates a single parsed file which contains all the information | false keeps the parsed files individually",
         "single_file": false
-    }, 
+    },
+
     "motor_start":{
         "_description": "If this value is set to true then it will start the motor before start acquiring",
         "value": true
     },
+
     "motor_stop":{
         "_description": "If this value is set to true then it will stop the motor when the system finish to acquire all the files",
         "value": true
-    }, 
+    },
+
     "acquisition_time": {
         "_file_time": "Recording time per file (seconds)", 
         "file_time": 60,
         "_total_files":"Total number of consecutive files that will be acquired",
         "total_files":2
-    },    
+    },
+      
     "context": "Parking_sky_test2_AMR_QH",
     "instances": [
         {"name": "Thermistors", "active": true, "ip": "127.0.0.1", "port": 8055, "num_items": 0},

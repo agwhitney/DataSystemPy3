@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 
 from filepaths import data_path, h5data_path
-from parsingmethods import DataFile
+from instrumentparsers import DataFile
 
 
 class GenericParser():
