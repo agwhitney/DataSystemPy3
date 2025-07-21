@@ -7,7 +7,7 @@ Note that Path / str is Path
 
 from pathlib import Path
 
-# TODO These really belong elsewhere, like system_config
+# TODO These really belong elsewhere, like system_config (except system_config is more like instruments_config)
 CONTROL_SERVER_IP ='127.0.0.1'
 CONTROL_SERVER_PORT = 9022
 
@@ -50,5 +50,5 @@ def print_tree(root):
 
 
 # Not an ifmain so this will run whenever the module is imported
-# check_structure()
+check_structure()
 # print_tree(parent)

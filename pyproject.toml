@@ -8,5 +8,6 @@ dependencies = [
     "matplotlib>=3.10.3",
     "pyserial>=3.5",
     "pywin32>=310",
+    "tables>=3.10.2",
     "twisted>=25.5.0",
 ]
