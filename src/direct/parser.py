@@ -7,10 +7,9 @@ This object functions as a script (all of its logic is with __init__())
 import time
 import json
 
-from pathlib import Path
-
 from filepaths import data_path, h5data_path
-from instrumentparsers import DataFile
+from datastructures import DataFile
+from instrumentparsers import GPSParser, RadiometerParser, ThermistorParser
 
 
 class GenericParser():
@@ -27,7 +26,8 @@ class GenericParser():
             sv_config = json.load(f)
 
         # Read parser file created by masterclient.py
-        with open(h5data_path / parserfile, 'r') as f:
+        parsing_filename = h5data_path / parserfile
+        with open(parsing_filename, 'r') as f:
             toparse = json.load(f)
         
         num_clients = len(toparse['instruments'])
@@ -54,35 +54,37 @@ class GenericParser():
 
             for j in range(num_clients):
                 instrument = toparse['instruments'][j]
-                suffix = f"_{instrument}.bin"
+                instr_filename = data_path / rootfilename / f"_{instrument}.bin"
                 df.rows['IGeneral']['General'] = toparse['description'][i][j]
                 df.rows['IGeneral'].append()
                 df.tables['IGeneral'].flush()
 
-                print(f"Parsing {instrument} -> {data_path/rootfilename/suffix}")
-                instr_datafile = open(data_path/suffix, 'rb')
+                print(f"Parsing {instrument} -> {instr_filename}")
+                instr_datafile = open(instr_filename, 'rb')  # Closed in the InstrumentParser
                 match instrument:
                     case 'Radiometer':
                         t4a = time.time()
-                        # InstrumentParser(instr_datafile, df.row[], verbose)
-                        # flush relevant tables
+                        rad_parser = RadiometerParser(instr_datafile, df.rows['ACT'], df.rows['AMR'], df.rows['SND'], verbose)
+                        df.tables['ACT'].flush()
+                        df.tables['AMR'].flush()
+                        df.tables['SND'].flush()
                         t4b = time.time()
                         rad_found = True
                     case 'Thermistors':
                         t5a = time.time()
-                        # InstrumentParser(instr_datafile, df.row[], verbose)
-                        # flush relevant tables
+                        thm_parser = ThermistorParser(instr_datafile, df.rows['THM'], verbose)
+                        df.tables['THM'].flush()
                         t5b = time.time()
                         thm_found = True
                     case 'GPS-IMU':
                         t6a = time.time()
-                        # InstrumentParser(instr_datafile, df.row[], verbose)
-                        # flush relevant tables
+                        gps_parser = GPSParser(instr_datafile, df.rows['IMU'], verbose)
+                        df.tables['IMU'].flush()
                         t6b = time.time()
                         gps_found = True
 
                 if removebinfiles:
-                    ...  # TODO Path.rm or something
+                    instr_filename.unlink()  # method of Path
 
             t7 = time.time()
             if not singlefile:
@@ -94,15 +96,16 @@ class GenericParser():
                 f"Parsing summary for {rootfilename} -----\n",
                 "-" * 30, "\n",
                 f"Total elapsed time: {t7 - t3} seconds\n",
-                summarize(None, 'Radiometer', t4a, t4b) if rad_found else "\n",
-                summarize(None, 'Thermistors', t5a, t5b) if thm_found else "\n",
-                summarize(None, 'GPS-IMU', t6a, t6b) if gps_found else "\n",
+                summary_string(rad_parser, 'Radiometer', t4a, t4b) if rad_found else "\n",
+                summary_string(thm_parser, 'Thermistors', t5a, t5b) if thm_found else "\n",
+                summary_string(gps_parser, 'GPS-IMU', t6a, t6b) if gps_found else "\n",
                 "-" * 30
             )
         if removebinfiles:
-            ...  # TODO Path.rm or something
+            sv_filename.unlink()
+            parsing_filename.unlink()
         del df
 
 
-def summarize(parser, label, t1, t2) -> str:
+def summary_string(parser, label, t1, t2) -> str:
     return f"--{label} parse results: {parser.package} packages out of {parser.nReadLines} read lines -- Elapsed time: {int(t2 - t1)} seconds\n"
