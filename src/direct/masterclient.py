@@ -14,6 +14,7 @@ from subprocess import Popen
 
 from motorcontrol import MotorControl
 from filepaths import configs_path, configstmp_path, data_path, logs_path, genericclient
+from genericparser import GenericParser
 
 
 class MasterClient():
@@ -23,7 +24,7 @@ class MasterClient():
         # Parse the config
         self.server_ip       : str = config['master_server']['ip']
         self.server_port     : int = config['master_server']['port']
-        self.parsing         : bool = config['parsing']['active']
+        self.parsing_cfg     : dict = config['parsing']
         self.observer_client : bool = config['observer']['active']
         self.start_motor     : bool = config['motor_start']['value']
         self.stop_motor      : bool = config['motor_stop']['value']
@@ -230,10 +231,14 @@ class MasterClient():
                     print("Motor is configured to NOT stop.")
 
         # Launch the parser
-        if self.parsing:
-            print("TODO - parser")  # TODO parsing module
+        if self.parsing_cfg['active']:
+            print(f"Starting parser. Verbose: {self.parsing_cfg['verbose']}. Remove .bin: {self.parsing_cfg['remove_bin_files']}. Single file: {self.parsing_cfg['single_file']}")
+            try:
+                GenericParser(fileparser_name, self.parsing_cfg['verbose'], self.parsing_cfg['remove_bin_files'], self.parsing_cfg['single_file'])
+            except:
+                print("Some type of error preventing parsing.")
         else:
-            print("Not running L0a -> L0b parser.")
+            print("Not running L0a -> L0b(?) parser.")
 
 
 if __name__ == '__main__':
