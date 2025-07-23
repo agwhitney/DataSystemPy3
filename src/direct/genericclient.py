@@ -22,6 +22,7 @@ class TCPClient(basic.Int32StringReceiver):
 
     
     def dataReceived(self, data):
+        print("genericclient TCPClient dataReceived")
         self.write_down(data)
     
 

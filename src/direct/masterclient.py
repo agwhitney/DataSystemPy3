@@ -151,7 +151,7 @@ class MasterClient():
             if not instance['active']:
                 print(f"Warning: {instance['name']} is set to inactive and will not acquire data.")
                 continue
-            # This could be simplified to by making a keyed items dict
+            # This could be simplified with a key?
             match instance['name']:
                 case 'Radiometer':
                     instance['num_items'] = self.items_rad
@@ -232,9 +232,9 @@ class MasterClient():
 
         # Launch the parser
         if self.parsing_cfg['active']:
-            print(f"Starting parser. Verbose: {self.parsing_cfg['verbose']}. Remove .bin: {self.parsing_cfg['remove_bin_files']}. Single file: {self.parsing_cfg['single_file']}")
+            print(f"Starting parser. Verbose: {self.parsing_cfg['verbose']}. Remove .bin: {self.parsing_cfg['delete_raw_files']}. Single file: {self.parsing_cfg['single_file']}")
             try:
-                GenericParser(fileparser_name, self.parsing_cfg['verbose'], self.parsing_cfg['remove_bin_files'], self.parsing_cfg['single_file'])
+                GenericParser(fileparser_name, self.parsing_cfg['verbose'], self.parsing_cfg['delete_raw_files'], self.parsing_cfg['single_file'])
             except:
                 print("Some type of error preventing parsing.")
         else:
