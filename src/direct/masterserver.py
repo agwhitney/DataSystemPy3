@@ -163,7 +163,7 @@ class MasterServer():
             print(self.instr_config_filenames[i], self.instr_active[i])
             if self.instr_active[i]:
                 p = Popen(['.venv/Scripts/python', genericserver, self.instr_config_filenames[i]], shell=False)
-                print(f"Instrument in the configuration file: {i} Active instrument: {server_count} {self.instr_config_filenames[server_count]} started, Pid: {p.pid}")
+                print(f"Instrument in the configuration file: {i} Active instrument: {server_count} {self.instr_config_filenames[i]} started, Pid: {p.pid}")
                 processes.append(p)
                 server_count += 1
         print("---------------------------------")

@@ -197,7 +197,7 @@ class MasterClient():
             for i in range(len(self.active_instances)):
                 p = Popen(['.venv/Scripts/python', genericclient, self.active_filenames[i]], shell=False)
                 processes.append(p)
-                print(f"{self.active_filenames[i]} communication started, Pid: {processes[i].pid}")
+                print(f"{self.active_filenames[i]} communication started, Pid: {p.pid}")
                 print('--------------------')
 
             # Wait for them to finish

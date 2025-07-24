@@ -143,7 +143,7 @@ class SerialClientGPSIMU(SerialClient):
         return crc
 
 
-    def connectionMade(self) -> None:
+    def connectionMade(self):
         super().connectionMade()
         # Construct a command to be sent 
         header = struct.pack('>BB', 255, 2)
@@ -165,6 +165,7 @@ class SerialClientGPSIMU(SerialClient):
 
 
     def lineReceived(self, line):
+        print("SerialClientGPSIMU received a line")  # debug
         self.iteration += 1
         data = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:{line}:ENDS\n"  # TODO py2 line 286
         self.write_down(data.encode())

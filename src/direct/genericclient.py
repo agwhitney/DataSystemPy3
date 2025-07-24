@@ -22,15 +22,17 @@ class TCPClient(basic.Int32StringReceiver):
 
     
     def dataReceived(self, data):
-        print("genericclient TCPClient dataReceived")
+        print("genericclient TCPClient dataReceived")  # debug
+        print(data)
         self.write_down(data)
     
 
     def write_down(self, data):
+        print("writing down") # debug
         self.factory.file.write(data)
 
         if self.end_time <= time():
-            print("Stopping acquisition. Send STOP to server")  # When?
+            print("Stopping acquisition. Send STOP to server")
             self.factory.file.close()
             print("Data file closed.")
             
@@ -39,8 +41,6 @@ class TCPClient(basic.Int32StringReceiver):
             except:  # Case: late command?
                 print("Reactor already stopped.")
             
-
-
 
 class TCPClientFactory(protocol.ClientFactory):
     protocol = TCPClient
@@ -91,7 +91,7 @@ class GenericClient():
         # Print some metadata
         print(f"Name: {name}\nIP: {ip}\nPort: {port}\nNumber of Items: {num_items}")
 
-        # Open a file object that will be written to. Closed by protocol.
+        # Open a file object that will be written to. Passed to and closed by protocol.
         filepath = data_path / f"{context}_{name}.bin"
         file = open(filepath, 'wb')
 
