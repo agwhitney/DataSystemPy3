@@ -120,6 +120,17 @@ class MasterClient():
         if not self.observer_client:
             print(f"System will pause for {self.delay} seconds then continue.")
             time.sleep(self.delay)
+
+
+    def send_to_parser(self, filename):
+        if self.parsing_cfg['active']:
+            print(f"Starting parser. Verbose: {self.parsing_cfg['verbose']}. Remove .bin: {self.parsing_cfg['delete_raw_files']}. Single file: {self.parsing_cfg['single_file']}")
+            try:
+                GenericParser(filename, self.parsing_cfg['verbose'], self.parsing_cfg['delete_raw_files'], self.parsing_cfg['single_file'])
+            except:
+                print("Some type of error preventing parsing.")
+        else:
+            print("Not running L0a -> L0b(?) parser.")
         
 
     def acquire(self):
@@ -231,14 +242,7 @@ class MasterClient():
                     print("Motor is configured to NOT stop.")
 
         # Launch the parser
-        if self.parsing_cfg['active']:
-            print(f"Starting parser. Verbose: {self.parsing_cfg['verbose']}. Remove .bin: {self.parsing_cfg['delete_raw_files']}. Single file: {self.parsing_cfg['single_file']}")
-            try:
-                GenericParser(fileparser_name, self.parsing_cfg['verbose'], self.parsing_cfg['delete_raw_files'], self.parsing_cfg['single_file'])
-            except:
-                print("Some type of error preventing parsing.")
-        else:
-            print("Not running L0a -> L0b(?) parser.")
+        self.send_to_parser()
 
 
 if __name__ == '__main__':

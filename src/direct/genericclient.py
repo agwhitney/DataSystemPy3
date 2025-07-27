@@ -15,20 +15,19 @@ from filepaths import data_path
 
 class TCPClient(basic.Int32StringReceiver):
     def connectionMade(self):
-        print("Connected to TCP")  # AGW seems like logging was intended but not implemented
+        print("genericclient.TCPClient.connectionMade Connected to TCP")  # AGW seems like logging was intended but not implemented
         start_time = time()  # seconds since epoch
         self.end_time = start_time + self.factory.measure_time
         print(f"Starting time: {start_time} - Ending time: {self.end_time}")
 
     
     def dataReceived(self, data):
-        print("genericclient TCPClient dataReceived")  # debug
-        print(data)
+        # print("genericclient.TCPClient.dataReceived")  # debug
         self.write_down(data)
     
 
     def write_down(self, data):
-        print("writing down") # debug
+        # print("genericclient.TCPClient.write_down") # debug
         self.factory.file.write(data)
 
         if self.end_time <= time():
@@ -65,7 +64,7 @@ class TCPClientFactory(protocol.ClientFactory):
             print("Data file closed.")
             reactor.stop()
         except: # Case: client shut down cleanly.
-            print("Connection closed per the client.")
+            print("Connection cleanly closed!")
 
 
 class GenericClient():

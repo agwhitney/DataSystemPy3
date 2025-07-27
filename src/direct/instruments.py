@@ -14,6 +14,8 @@ This is in place of having the client list as a global. Fear is that the follow-
 
 I've removed the two Connection classes. It seems the plan was to introduce compatability for different types of connections,
 but the final version only implements Serial. Literally all it does is load instr_config['serial_connection'] to a class.
+
+The serial client is connected to a SERVER protocol in genericserver.py, so it should be renamed to Serial Transport or something.
 """
 
 
@@ -164,10 +166,10 @@ class SerialClientGPSIMU(SerialClient):
         self.sendLine(end)
 
 
-    def lineReceived(self, line):
-        print("SerialClientGPSIMU received a line")  # debug
+    def dataReceived(self, data):
+        print("instruments.SerialClientGPSIMU.dataReceived")
         self.iteration += 1
-        data = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:{line}:ENDS\n"  # TODO py2 line 286
+        data = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:{data}:ENDS\n"  # TODO py2 line 286
         self.write_down(data.encode())
     
 
