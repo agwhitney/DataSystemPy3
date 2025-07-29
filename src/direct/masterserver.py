@@ -35,7 +35,6 @@ class TCPHandler(protocol.Protocol):
         self.factory.log.info(
             f"Command received from {self.transport.getPeer()} - {data}"
         )
-        # AGW I think this is handled (or passed between) the MotorControl script
         match data.decode():
             case 'STOP':  # AGW py2 labels this is not working, with lots of !
                 # Stops all processes

@@ -20,47 +20,48 @@ class GenericParser():
         thm_found = False
         gps_found = False
 
-        # Read server config saved in masterserver
-        sv_filename = h5data_path / "saved from masterserver I think"  # TODO
-        with open(sv_filename, 'r') as f:
-            sv_config = json.load(f)
-
         # Read parser file created by masterclient.py
         parsing_filename = h5data_path / parserfile
         with open(parsing_filename, 'r') as f:
             toparse = json.load(f)
         
+        file_context = toparse['filesID']
+        # Read server config
+        sv_filename = data_path / f"{file_context}.bin"
+        with open(sv_filename, 'r') as f:
+            sv_config = json.load(f)
+
         num_clients = len(toparse['instruments'])
         filenames = toparse['filename']
         num_files = len(filenames)
-        filesID = toparse['filesID']
-        print(f"Parsing {num_clients} clients & {num_files} files from {filesID}")
+        print(f"Parsing {num_clients} clients & {num_files} files from {file_context}")
 
         for i in range(num_files):
-            rootfilename = filenames[i]
+            rootfilestem = filenames[i]
+            print(f"Working in file {h5data_path/rootfilestem}.h5")
             
             if not singlefile:
-                df = DataFile(h5data_path / f"{rootfilename}.h5")
+                df = DataFile(h5data_path / f"{rootfilestem}.h5")
                 df.rows['IServer']['General'] = json.dumps(sv_config)
                 df.rows['IServer'].append()
                 df.tables['IServer'].flush()
 
             elif i == 0:
                 # Same deal but to a different file name (seems unnecessary?)
-                df = DataFile(h5data_path / f"{filesID}.h5")
+                df = DataFile(h5data_path / f"{file_context}.h5")
                 df.rows['IServer']['General'] = json.dumps(sv_config)
                 df.rows['IServer'].append()
                 df.tables['IServer'].flush()
 
             for j in range(num_clients):
                 instrument = toparse['instruments'][j]
-                instr_filename = data_path / rootfilename / f"_{instrument}.bin"
+                instr_filename = data_path / f"{rootfilestem}_{instrument}.bin"
                 df.rows['IGeneral']['General'] = toparse['description'][i][j]
                 df.rows['IGeneral'].append()
                 df.tables['IGeneral'].flush()
 
                 print(f"Parsing {instrument} -> {instr_filename}")
-                instr_datafile = open(instr_filename, 'rb')  # Closed in the InstrumentParser
+                instr_datafile = open(instr_filename, 'rb')  # Closed by InstrumentParser
                 match instrument:
                     case 'Radiometer':
                         t4a = time.time()
@@ -93,7 +94,7 @@ class GenericParser():
             # Printed summary 
             print(
                 "-" * 30, "\n",
-                f"Parsing summary for {rootfilename} -----\n",
+                f"Parsing summary for {rootfilestem}.h5 -----\n",
                 "-" * 30, "\n",
                 f"Total elapsed time: {t7 - t3} seconds\n",
                 summary_string(rad_parser, 'Radiometer', t4a, t4b) if rad_found else "\n",
@@ -104,8 +105,12 @@ class GenericParser():
         if removebinfiles:
             sv_filename.unlink()
             parsing_filename.unlink()
-        del df
+
+        try:
+            del df
+        except UnboundLocalError:
+            print("DataFile has already been closed.")
 
 
 def summary_string(parser, label, t1, t2) -> str:
-    return f"--{label} parse results: {parser.package} packages out of {parser.nReadLines} read lines -- Elapsed time: {int(t2 - t1)} seconds\n"
+    return f"--{label} parse results: {parser.package} packages out of {parser.read_lines} read lines -- Elapsed time: {int(t2 - t1)} seconds\n"

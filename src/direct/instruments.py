@@ -3,6 +3,7 @@ from twisted.protocols import basic
 
 import struct
 import json
+import time
 
 from fpga import FPGA
 
@@ -63,7 +64,7 @@ class SerialClientRadiometer(SerialClient):
 
 
     def dataReceived(self, data):
-        data = f"PAC{self.network.config['letterid']}:{self.iteration}TIME:todoDATA:{data}:ENDS\n"
+        data = f"PAC{self.network.config['letterid']}:{self.iteration}TIME:{time.time()}DATA:{data}:ENDS\n"
         self.iteration += 1
         self.write_down(data.encode())
 
@@ -100,7 +101,7 @@ class SerialClientThermistors(SerialClient):
         command = struct.pack('cccB', '#', '0', str(self.addresses[self.visited_adcs]), 13)
         self.sendLine(command)
         self.iteration += 1
-        self.data2send = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:"  # TODO
+        self.data2send = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:"
 
 
     def lineReceived(self, line):
@@ -167,9 +168,9 @@ class SerialClientGPSIMU(SerialClient):
 
 
     def dataReceived(self, data):
-        print("instruments.SerialClientGPSIMU.dataReceived")
+        # print("instruments.SerialClientGPSIMU.dataReceived")  # debug
         self.iteration += 1
-        data = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:{data}:ENDS\n"  # TODO py2 line 286
+        data = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:{data}:ENDS\n"
         self.write_down(data.encode())
     
 
