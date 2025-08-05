@@ -3,6 +3,7 @@ from twisted.protocols import basic
 
 import struct
 import json
+import time
 
 from fpga import FPGA
 
@@ -17,7 +18,7 @@ but the final version only implements Serial. Literally all it does is load inst
 """
 
 
-class SerialClient(basic.LineReceiver, basic.Int32StringReceiver):
+class SerialTransport(basic.LineReceiver, basic.Int32StringReceiver):
     iteration = 0  # AGW not sure if this needs to be persistent
     
     def __init__(self, network):
@@ -44,10 +45,14 @@ class SerialClient(basic.LineReceiver, basic.Int32StringReceiver):
 
 
     def write_down(self, data):
+        """
+        Writes via transport to clients in network.
+        Because each instrument gets its own server/client, that's probably just one client.
+        """
         self.network.notifyAll(data)
 
 
-class SerialClientRadiometer(SerialClient):
+class SerialTransportRadiometer(SerialTransport):
     def __init__(self, network):
         super().__init__(network)
         self.letterid = self.network.config['letterid']  # unused?
@@ -61,12 +66,12 @@ class SerialClientRadiometer(SerialClient):
 
 
     def dataReceived(self, data):
-        data = f"PAC{self.network.config['letterid']}:{self.iteration}TIME:todoDATA:{data}:ENDS\n"
+        data = f"PAC{self.network.config['letterid']}:{self.iteration}TIME:{time.time()}DATA:{data}:ENDS\n"
         self.iteration += 1
         self.write_down(data.encode())
 
 
-class SerialClientThermistors(SerialClient):
+class SerialTransportThermistors(SerialTransport):
     def __init__(self, network):
         super().__init__(network)
         self.delimiter : bytes = self.network.config['characteristics']['delimiter'].encode()
@@ -98,7 +103,7 @@ class SerialClientThermistors(SerialClient):
         command = struct.pack('cccB', '#', '0', str(self.addresses[self.visited_adcs]), 13)
         self.sendLine(command)
         self.iteration += 1
-        self.data2send = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:"  # TODO
+        self.data2send = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:"
 
 
     def lineReceived(self, line):
@@ -113,17 +118,19 @@ class SerialClientThermistors(SerialClient):
             self.write_down(self.data2send.encode())
 
 
-class SerialClientGPSIMU(SerialClient):
+class SerialTransportGPSIMU(SerialTransport):
     def __init__(self, network):
         super().__init__(network)
-        self.letterid = self.network.config['letterid']
-        self.byte_order = self.network.config['byte_order']
-        self.delimiter : bytes = self.network.config['characteristics']['delimiter'].encode()
-        self.update_freq = self.network.config['characteristics']['update_frequency']
+        self.letterid    : str = self.network.config['letterid']
+        self.byte_order  : str = self.network.config['byte_order']
+        self.delimiter   : bytes = self.network.config['characteristics']['delimiter'].encode()
+        self.update_freq : int = self.network.config['characteristics']['update_frequency']
 
 
-    def crc16(self, buffer):
-        """Not sure what this does. Bitwise operations.
+    @staticmethod
+    def crc16(buffer):
+        """
+        Not sure what this does. Bitwise operations, returning a specific value.
         Copied as-is, but with 'buffer' instead of 'buff'.
         """
         poly = 0x8408
@@ -143,19 +150,23 @@ class SerialClientGPSIMU(SerialClient):
         return crc
 
 
-    def connectionMade(self) -> None:
+    def connectionMade(self):
+        """
+        Sends a configuration command to the GPS.
+        From py2: This is the continuous mode command (signified by the '83' to start); only relevant bytes are the second to last
+        which determines mode (0 = disable continues trigger mode, 1 = continuous mode enable, 2 = triggered mode enable)
+        and the last byte which is used to determine update frequency (freq = [60 / (lastByte)])
+        see page 26 of "IG Devices Serial Protocol Specifications.pdf" for more info
+        """
         super().connectionMade()
-        # Construct a command to be sent 
+
         header = struct.pack('>BB', 255, 2)
-        # From py2: This is the continuous mode command (signified by the '83' to start); only relevant bytes are the second to last
-        # which determines mode (0 = disable continues trigger mode, 1 = continuous mode enable, 2 = triggered mode enable)
-        # and the last byte which is used to determine update frequency (freq = [60 / (lastByte)])
-        # see page 26 of "IG Devices Serial Protocol Specifications.pdf" for more info
         command = struct.pack('>6B', 83, 0, 3, 0, 1, int(60/self.update_freq))
-        crc = self.crc16(command)
-        # convert crc int into two unsigned int bytes
-        crc_msb = int((crc - crc%256) / 256)
-        crc_lsb = crc % 256
+        
+        # not sure what crc is, but we get it and turn it into two unsigned bytes
+        crc = self.crc16(command)  # crc = 5439; confirmed same in Python 2 with online evaluator
+        crc_msb = int((crc - crc%256) / 256)  # = 21
+        crc_lsb = crc % 256  # = 63
         # packet end: two bytes crc and then unsigned int byte '3'
         end = struct.pack('>3B', crc_msb, crc_lsb, 3)
 
@@ -164,10 +175,10 @@ class SerialClientGPSIMU(SerialClient):
         self.sendLine(end)
 
 
-    def lineReceived(self, line):
-        self.iteration += 1
-        data = f"PAC{self.letterid}:{self.iteration}TIME:todoDATA:{line}:ENDS\n"  # TODO py2 line 286
-        self.write_down(data.encode())
+    def dataReceived(self, data: bytes):
+        self.iteration += 1  # AGW This is called a LOT so it seems silly to count it
+        line = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode() + data + ":ENDS\n".encode()
+        self.write_down(line)
     
 
 class TCPInstrument(protocol.Protocol):
@@ -210,19 +221,24 @@ class TCPInstrument(protocol.Protocol):
 class TCPInstrumentFactory(protocol.Factory):
     protocol = TCPInstrument
     
-    def __init__(self, config_data, log):
+    def __init__(self, config_data: dict, log):
         self.clients = []
         self.name = config_data['name']
         self.log = log
         self.config = config_data
 
     
-    def notifyAll(self, data):
+    def notifyAll(self, data: bytes):
         for client in self.clients:
             client.transport.write(data)
         
 
 class Instrument():
+    """
+    Holds details to create an instrument server listening on a TCP port via a serial connection.
+    Protocols are above, and connection details are provided in the passed config (forked from the server config).
+    This is applied in genericserver.py.
+    """
     def __init__(self, config_file, log):
         # Load in instrument config, which was passed as config[instrument].values()
         with open(config_file, 'r') as fp:
@@ -240,8 +256,8 @@ class Instrument():
         # Define the serial connection
         match config['name']:
             case 'Radiometer':
-                self.serial_client = SerialClientRadiometer(self.factory)
+                self.serial_client = SerialTransportRadiometer(network=self.factory)
             case 'Thermistors':
-                self.serial_client = SerialClientThermistors(self.factory)
+                self.serial_client = SerialTransportThermistors(network=self.factory)
             case 'GPS-IMU':
-                self.serial_client = SerialClientGPSIMU(self.factory)
+                self.serial_client = SerialTransportGPSIMU(network=self.factory)

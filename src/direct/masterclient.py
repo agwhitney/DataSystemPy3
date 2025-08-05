@@ -52,10 +52,9 @@ class MasterClient():
     def get_serverconfig(self):
         """
         This gets server config info from motorcontrol.py, which I believe actually does connect
-        to the FGPA via TCP/IP. As a bonus, it has the same weird indexing hack that FPGA uses.
-        Realistically... why pass the data? Why not just call it again?
+        to the FGPA via TCP/IP. Why pass the data? Why not just call it again?
         """
-        # Get the system config from the motor-FPGA connection
+        # Get the running system config from the motor-FPGA connection
         self.motor = MotorControl(self.server_ip, self.server_port)
         system_config = self.motor.send_getsysconfig()  # AGW changed this function to return rather than keep
         filename = self.timestamp + self.context + "_ServerInformation.bin"
@@ -68,8 +67,8 @@ class MasterClient():
                 continue
 
             if instrument['name'] == 'Radiometer':
-                # It did the bad indexing thing here (see fpga.py)
-                # BUT this whole block is just for logging, I think. I've removed a lot of self.
+                # This whole block is just for logging, I think. I've removed a lot of self.
+                # It doesn't seem to be used (logging isn't implemented)
                 mapkey = ('mw', 'mmw', 'snd')
                 bytesPerDatagram = {'mw': 22, 'mmw': 14, 'snd': 38}  # MW = ARM; MMW = ACT. See fpga.py
                 value = []
@@ -120,6 +119,15 @@ class MasterClient():
         if not self.observer_client:
             print(f"System will pause for {self.delay} seconds then continue.")
             time.sleep(self.delay)
+
+
+    def sendto_parser(self, filename):
+        if self.parsing_cfg['active']:
+            print(f"Starting parser. Verbose: {self.parsing_cfg['verbose']}. Remove .bin: {self.parsing_cfg['delete_raw_files']}. Single file: {self.parsing_cfg['single_file']}")
+            GenericParser(filename, self.parsing_cfg['verbose'], self.parsing_cfg['delete_raw_files'], self.parsing_cfg['single_file'])
+            # AGW removed an unlabeled try-except.
+        else:
+            print("Not running L0a -> L0b(?) parser.")
         
 
     def acquire(self):
@@ -151,7 +159,7 @@ class MasterClient():
             if not instance['active']:
                 print(f"Warning: {instance['name']} is set to inactive and will not acquire data.")
                 continue
-            # This could be simplified to by making a keyed items dict
+            # This could be simplified with a key?
             match instance['name']:
                 case 'Radiometer':
                     instance['num_items'] = self.items_rad
@@ -166,12 +174,13 @@ class MasterClient():
 
         fileparser_name = data_path / f"{self.timestamp}{self.context}.bin"
         open_parser_file = open(fileparser_name, 'w')
-        file_merger = {}
-        file_merger['instruments'] = self.active_instruments
-        file_merger['filesID'] = fileparser_name.stem
-        file_merger['filename'] = []
-        file_merger['description'] = []
-        
+        file_merger = {
+            'instruments': self.active_instruments,
+            'filesID': fileparser_name.stem,
+            'filename': [],
+            'description': [],
+        }
+
         # Loop for as many files are required per the client config file
         for nfile in range(1, self.num_files+1):
             # AGW just use self.active_instances and len()
@@ -186,8 +195,8 @@ class MasterClient():
                     f.write(json.dumps(instance))
                 
             # Keep raw file name for parsing
-            file_merger['description'].append(self.active_instances)
             file_merger['filename'].append(new_context)
+            file_merger['description'].append(self.active_instances)
             open_parser_file.seek(0)
             open_parser_file.write(json.dumps(file_merger))
             print(f"----------\n{file_merger}\n----------")
@@ -197,7 +206,7 @@ class MasterClient():
             for i in range(len(self.active_instances)):
                 p = Popen(['.venv/Scripts/python', genericclient, self.active_filenames[i]], shell=False)
                 processes.append(p)
-                print(f"{self.active_filenames[i]} communication started, Pid: {processes[i].pid}")
+                print(f"{self.active_filenames[i]} communication started, Pid: {p.pid}")
                 print('--------------------')
 
             # Wait for them to finish
@@ -231,14 +240,7 @@ class MasterClient():
                     print("Motor is configured to NOT stop.")
 
         # Launch the parser
-        if self.parsing_cfg['active']:
-            print(f"Starting parser. Verbose: {self.parsing_cfg['verbose']}. Remove .bin: {self.parsing_cfg['remove_bin_files']}. Single file: {self.parsing_cfg['single_file']}")
-            try:
-                GenericParser(fileparser_name, self.parsing_cfg['verbose'], self.parsing_cfg['remove_bin_files'], self.parsing_cfg['single_file'])
-            except:
-                print("Some type of error preventing parsing.")
-        else:
-            print("Not running L0a -> L0b(?) parser.")
+        self.sendto_parser(fileparser_name)
 
 
 if __name__ == '__main__':

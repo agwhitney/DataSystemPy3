@@ -41,10 +41,10 @@
         "total_files":2
     },
       
-    "context": "Parking_sky_test2_AMR_QH",
+    "context": "Py3 test",
     "instances": [
-        {"name": "Thermistors", "active": true, "ip": "127.0.0.1", "port": 8055, "num_items": 0},
-        {"name": "Radiometer", "active": true, "ip": "127.0.0.1", "port": 7555, "num_items": 0},
+        {"name": "Thermistors", "active": false, "ip": "127.0.0.1", "port": 8055, "num_items": 0},
+        {"name": "Radiometer", "active": false, "ip": "127.0.0.1", "port": 7555, "num_items": 0},
         {"name": "GPS-IMU", "active": true, "ip": "127.0.0.1", "port": 9055, "num_items": 0}
     ]
 }

@@ -78,7 +78,7 @@ class FPGA():
 
     def connect(self):
         tcp_address = (self.ip, self.port)
-        self.client_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect(tcp_address)
         self.log.info(f"TCP/IP connected @ {tcp_address} ---> ;^)")
 

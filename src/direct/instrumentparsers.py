@@ -10,18 +10,18 @@ from datetime import datetime
 
 
 class BasicParser:
-    package_header = ''
-    time_header = 'TIME'
-    data_header = 'DATA:'
-    end_header = ':ENDS'
+    package_header : bytes
+    time_header = b'TIME'
+    data_header = b'DATA:'
+    end_header = b':ENDS'
     verbose = True
     package = 0
-    nReadlines = 0
     toplot = []
     datalength = [] 
     sampleAMR = ''
     sampleACT = ''
     sampleSND = ''
+    read_lines = 0
 
 
     def parse_h5(self, timestamp, input_vals, package_number):
@@ -38,12 +38,11 @@ class BasicParser:
         isCompleteLine = True
 
         welcome = fileDescription.readline()
-        print(welcome)
+        print(welcome.decode())
         
         # Reads lines from a structured data file and detects if a line is complete or not
         for line in fileDescription.readlines():
-            self.nReadLines += 1
-            print(line)
+            BasicParser.read_lines += 1
             
             if isCompleteLine:
                 iterData = ''
@@ -51,23 +50,23 @@ class BasicParser:
                 b = line.index(self.time_header)
                 c = line.index(self.data_header)
                 
-                package_number = int(''.join(line[a+5:b]))
-                timestamp = float(''.join(line[b+5:c]))
+                package_number = int(line[a+5:b])
+                timestamp = float(line[b+5:c])
         
                 #The line is not complete
                 if line[-6:-1] != self.end_header:
                     isCompleteLine = False
-                    print(f"TRUE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
+                    # print(f"TRUE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
                     iterData = line[c+5:]
         
                 else:
                     isCompleteLine = True
-                    print (f"TRUE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER-> {line[:5]}")
+                    # print (f"TRUE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER-> {line[:5]}")
                     iterData = line[c+5:-6]
-                    print(self.package,'->', time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp))), '->', package_number, 'DATA LENGTH:', len(iterData))
+                    # print(self.package,'->', time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp))), '->', package_number, 'DATA LENGTH:', len(iterData))
                     self.toplot = np.append(self.toplot, package_number)
                     self.datalength = np.append(self.datalength, len(iterData))
-                    to5hparser = ''.join([left_vals, iterData])
+                    to5hparser = iterData
                     left_vals = self.parse_h5(timestamp, to5hparser, package_number)
                     self.package += 1
         
@@ -75,30 +74,27 @@ class BasicParser:
                 # Line not complete yet
                 if line[-6:-1] != self.end_header:
                     isCompleteLine = False
-                    print(f"FALSE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
+                    # print(f"FALSE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
                     iterData += line
         
                 # Line complete
                 else:
                     isCompleteLine = True
-                    print(f"FALSE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
+                    # print(f"FALSE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
                     iterData += line[:-6]
-                    print (self.package,'->', time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp))), '->', package_number, 'DATA LENGTH:', len(iterData))
+                    # print (self.package,'->', time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp))), '->', package_number, 'DATA LENGTH:', len(iterData))
                     self.toplot = np.append(self.toplot, package_number)
                     self.datalength = np.append(self.datalength, len(iterData))
-                    to5hparser = ''.join([left_vals, iterData])
+                    to5hparser = iterData
                     left_vals = self.parse_h5(timestamp, to5hparser, package_number)
                     self.package += 1
-
-                    # Commented out, so probably for debugging
-                    # if self.package == 2:
-                    #         break           
+     
         fileDescription.close()
 
  
 class RadiometerParser(BasicParser):
     def __init__(self, filedescription, sampleACT, sampleAMR, sampleSND, verbose):
-        self.package_header = 'PACR'
+        self.package_header = 'PACR:'
         self.sampleAMR = sampleAMR
         self.sampleACT = sampleACT
         self.sampleSND = sampleSND
@@ -244,7 +240,7 @@ class ThermistorParser(BasicParser):
 
 class GPSParser(BasicParser):
     def __init__(self, fileDescription, sampleIMU, verbose):
-        self.PackageHeader = 'PACG:'
+        self.package_header = b'PACG:'
         self.sampleIMU = sampleIMU
         self.verbose = verbose
 
@@ -253,20 +249,20 @@ class GPSParser(BasicParser):
 
 
     def parse_h5(self, timestamp, input_vals, package_number):
-        if len(input_vals) == 48:
-            Value = struct.unpack('>fffdddBBBBBBI', input_vals[0:46])
+        # Why is this 48 I get 54 bytes TODO
+        if True: #len(input_vals) == 48:
+            value = struct.unpack('>fffdddBBBBBBI', input_vals[0:46])
 
-            self.sampleIMU['EulerAngles'] = Value[:3]
-            self.sampleIMU['Position'] = Value[3:6]
-            print(repr(Value[6:13]))
+            self.sampleIMU['EulerAngles'] = value[:3]
+            self.sampleIMU['Position'] = value[3:6]
+            print(repr(value[6:13]))
             
-            d = datetime(Value[6] + 2000, Value[7], Value[8], Value[9], Value[10], Value[11])
-            ## For testing purposes only, GPS/IMU does only provide time and position if it is receiving GPS satellites, XB
-            self.sampleIMU['GPSTime'] = time.mktime(d.timetuple())
+            # d = datetime(value[6] + 2000, value[7], value[8], value[9], value[10], value[11])
+            # XB For testing purposes only, GPS/IMU does only provide time and position if it is receiving GPS satellites
+            # self.sampleIMU['GPSTime'] = time.mktime(d.timetuple())
             self.sampleIMU['Timestamp'] = timestamp
             self.sampleIMU['Packagenumber'] = package_number
             self.sampleIMU.append()
             vals = ''
             return vals
-
-
+        

@@ -40,7 +40,7 @@ class GenericServer():
         log.info("Welcome to DAIS-Server")
 
         # Create an instrument object, which contains protocol details
-        # AGW I'm pretty sure a SerialPort doesn't need a listenTCP associated with it, but I'm not sure
+        # The TCP connection is made, and the SerialPort is instanced to be used as a transport.
         instrument = Instrument(self.instr_config_file, log)
         reactor.listenTCP(instrument.tcp_port, instrument.factory)
         SerialPort(instrument.serial_client, instrument.connection['port'], reactor, baudrate=instrument.connection['baudrate'])
