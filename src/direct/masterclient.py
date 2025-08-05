@@ -52,8 +52,7 @@ class MasterClient():
     def get_serverconfig(self):
         """
         This gets server config info from motorcontrol.py, which I believe actually does connect
-        to the FGPA via TCP/IP. As a bonus, it has the same weird indexing hack that FPGA uses.
-        Realistically... why pass the data? Why not just call it again?
+        to the FGPA via TCP/IP. Why pass the data? Why not just call it again?
         """
         # Get the running system config from the motor-FPGA connection
         self.motor = MotorControl(self.server_ip, self.server_port)
@@ -69,6 +68,7 @@ class MasterClient():
 
             if instrument['name'] == 'Radiometer':
                 # This whole block is just for logging, I think. I've removed a lot of self.
+                # It doesn't seem to be used (logging isn't implemented)
                 mapkey = ('mw', 'mmw', 'snd')
                 bytesPerDatagram = {'mw': 22, 'mmw': 14, 'snd': 38}  # MW = ARM; MMW = ACT. See fpga.py
                 value = []
@@ -121,7 +121,7 @@ class MasterClient():
             time.sleep(self.delay)
 
 
-    def send_to_parser(self, filename):
+    def sendto_parser(self, filename):
         if self.parsing_cfg['active']:
             print(f"Starting parser. Verbose: {self.parsing_cfg['verbose']}. Remove .bin: {self.parsing_cfg['delete_raw_files']}. Single file: {self.parsing_cfg['single_file']}")
             GenericParser(filename, self.parsing_cfg['verbose'], self.parsing_cfg['delete_raw_files'], self.parsing_cfg['single_file'])
@@ -240,7 +240,7 @@ class MasterClient():
                     print("Motor is configured to NOT stop.")
 
         # Launch the parser
-        self.send_to_parser(fileparser_name)
+        self.sendto_parser(fileparser_name)
 
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@ class TCPHandler(protocol.Protocol):
     
     def connectionMade(self):
         self.factory.log.info(
-            f"New TCP client received from {self.transport.getPeer()} - Instance: {self}"
+            f"MasterServer: New TCP client received from {self.transport.getPeer()} - Instance: {self}"
         )
         self.factory.clients.append(self)
         # Moved from init
@@ -33,7 +33,7 @@ class TCPHandler(protocol.Protocol):
 
     def dataReceived(self, data: bytes) -> None:
         self.factory.log.info(
-            f"Command received from {self.transport.getPeer()} - {data}"
+            f"MasterServer: Command received from {self.transport.getPeer()} - {data}"
         )
         match data.decode():
             case 'STOP':  # AGW py2 labels this is not working, with lots of !
@@ -81,8 +81,8 @@ class TCPHandler(protocol.Protocol):
             case 'MSTART':
                 print("Starting motor")
                 fpga = FPGA(self.factory.motor_instr, self.factory.log)
-                fpga.MotorControl(fpga.StartMotor)
                 print("Sending START to motor")
+                fpga.MotorControl(fpga.StartMotor)
                 fpga.DisconnectTCP()
                 self.transport.write("Starting motor".encode())
             
@@ -98,10 +98,10 @@ class TCPHandler(protocol.Protocol):
 
     def connectionLost(self, reason=None) -> None:
         self.factory.log.error(
-            f"Connection lost from {self.transport.getPeer()} - Reason: {reason}"
+            f"MasterServer: Connection lost from {self.transport.getPeer()} - Reason: {reason}"
         )
         self.factory.log.info(
-            f"Removing TCP client {self} at {self.transport.getPeer()}"
+            f"MasterServer: Removing TCP client {self} at {self.transport.getPeer()}"
         )
         self.factory.clients.remove(self)
 

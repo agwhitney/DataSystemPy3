@@ -10,7 +10,7 @@ from datetime import datetime
 
 
 class BasicParser:
-    package_header = b''
+    package_header : bytes
     time_header = b'TIME'
     data_header = b'DATA:'
     end_header = b':ENDS'
@@ -94,7 +94,7 @@ class BasicParser:
  
 class RadiometerParser(BasicParser):
     def __init__(self, filedescription, sampleACT, sampleAMR, sampleSND, verbose):
-        self.package_header = 'PACR'
+        self.package_header = 'PACR:'
         self.sampleAMR = sampleAMR
         self.sampleACT = sampleACT
         self.sampleSND = sampleSND
@@ -240,7 +240,7 @@ class ThermistorParser(BasicParser):
 
 class GPSParser(BasicParser):
     def __init__(self, fileDescription, sampleIMU, verbose):
-        self.PackageHeader = 'PACG:'
+        self.package_header = b'PACG:'
         self.sampleIMU = sampleIMU
         self.verbose = verbose
 
@@ -249,21 +249,20 @@ class GPSParser(BasicParser):
 
 
     def parse_h5(self, timestamp, input_vals, package_number):
-        # Why is this 48 TODO
-        if len(input_vals) == 48:
+        # Why is this 48 I get 54 bytes TODO
+        if True: #len(input_vals) == 48:
             value = struct.unpack('>fffdddBBBBBBI', input_vals[0:46])
 
             self.sampleIMU['EulerAngles'] = value[:3]
             self.sampleIMU['Position'] = value[3:6]
             print(repr(value[6:13]))
             
-            d = datetime(value[6] + 2000, value[7], value[8], value[9], value[10], value[11])
+            # d = datetime(value[6] + 2000, value[7], value[8], value[9], value[10], value[11])
             # XB For testing purposes only, GPS/IMU does only provide time and position if it is receiving GPS satellites
-            self.sampleIMU['GPSTime'] = time.mktime(d.timetuple())
+            # self.sampleIMU['GPSTime'] = time.mktime(d.timetuple())
             self.sampleIMU['Timestamp'] = timestamp
             self.sampleIMU['Packagenumber'] = package_number
             self.sampleIMU.append()
             vals = ''
             return vals
-
-
+        

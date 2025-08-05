@@ -7,6 +7,7 @@ import argparse
 import json
 
 from twisted.internet import protocol, reactor
+from twisted.internet.error import ReactorNotRunning
 from twisted.protocols import basic
 from time import time
 
@@ -15,29 +16,29 @@ from filepaths import data_path
 
 class TCPClient(basic.Int32StringReceiver):
     def connectionMade(self):
-        print("genericclient.TCPClient.connectionMade Connected to TCP")  # AGW seems like logging was intended but not implemented
+        print("genericclient.TCPClient.connectionMade Connected to TCP")  # AGW seems like logging was intended but not implemented. TODO
         start_time = time()  # seconds since epoch
         self.end_time = start_time + self.factory.measure_time
         print(f"Starting time: {start_time} - Ending time: {self.end_time}")
 
     
-    def dataReceived(self, data):
+    def dataReceived(self, data: bytes):
         # print("genericclient.TCPClient.dataReceived")  # debug
         self.write_down(data)
     
 
-    def write_down(self, data):
+    def write_down(self, data: bytes):
         # print("genericclient.TCPClient.write_down") # debug
         self.factory.file.write(data)
 
         if self.end_time <= time():
-            print("Stopping acquisition. Send STOP to server")
+            print("Client: Stopping acquisition. Send STOP to server")
             self.factory.file.close()
             print("Data file closed.")
-            
+
             try:
                 reactor.stop()
-            except:  # Case: late command?
+            except ReactorNotRunning:  # This comes up I think because write_down is called again while closing
                 print("Reactor already stopped.")
             
 
@@ -59,11 +60,12 @@ class TCPClientFactory(protocol.ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         print(f"Connection lost: {reason.getErrorMessage()}")
+
+        self.file.close()
+        print("Data file closed.")
         try:
-            self.file.close()
-            print("Data file closed.")
             reactor.stop()
-        except: # Case: client shut down cleanly.
+        except ReactorNotRunning: # Case: client shut down cleanly.
             print("Connection cleanly closed!")
 
 
