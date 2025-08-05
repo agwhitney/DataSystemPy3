@@ -1,12 +1,12 @@
 import json
-import logging
 
 from datetime import datetime
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
+from create_log import create_log
 from fpga import FPGA
-from filepaths import configs_path, configstmp_path, logs_path, genericserver, CONTROL_SERVER_PORT
+from filepaths import configs_path, configstmp_path, genericserver, CONTROL_SERVER_PORT
 
 
 class TCPHandler(protocol.Protocol):
@@ -120,7 +120,7 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
-    def __init__(self, log, system_config):
+    def __init__(self, system_config, log):
         """
         This loads the config and starts servers for each instrument as subprocesses.
         """
@@ -174,19 +174,15 @@ class MasterServer():
 
 if __name__ == '__main__':
     # Create a log
-    log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Server_ACQsystem.log"
-    logging.basicConfig(
-        level = logging.DEBUG,
-        format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = logs_path / log_filename,
-        filemode = 'a'
+    log = create_log(
+        filename = "Server_ACQSystem.log",
+        title = "ACQSystem Server - DAIS 2.0",
+        timestamp = True,
     )
-    log = logging.getLogger('ACQsystem - DAIS 2.0')
-    log.addHandler(logging.StreamHandler())  # AGW logged events are also printed
-    log.info('Welcome to ACQsystem - DAIS 2.0')
 
     # Read the config file
     config_filepath = configs_path / 'system.json'
     with open(config_filepath, 'r') as f:
         system_config = json.load(f)
-    MasterServer(log, system_config)
+
+    MasterServer(system_config, log)

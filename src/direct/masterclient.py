@@ -6,14 +6,15 @@ used outside of the scope of the method that uses them. I've removed some, but r
 should happen is things should be moved into more specific methods.
 """
 import json
-import logging
+import logging  # type hinting
 import time
 
 from datetime import datetime
 from subprocess import Popen
 
+from create_log import create_log
 from motorcontrol import MotorControl
-from filepaths import configs_path, configstmp_path, data_path, logs_path, genericclient
+from filepaths import configs_path, configstmp_path, data_path, genericclient
 from genericparser import GenericParser
 
 
@@ -22,9 +23,9 @@ class MasterClient():
         self.log = log
         
         # Parse the config
+        self.parsing_cfg     : dict = config['parsing']  # Sub-config for parsing
         self.server_ip       : str = config['master_server']['ip']
         self.server_port     : int = config['master_server']['port']
-        self.parsing_cfg     : dict = config['parsing']
         self.observer_client : bool = config['observer']['active']
         self.start_motor     : bool = config['motor_start']['value']
         self.stop_motor      : bool = config['motor_stop']['value']
@@ -242,16 +243,11 @@ class MasterClient():
 
 if __name__ == '__main__':
     # Create a log
-    log_filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + "Client_ACQsystem.log"
-    logging.basicConfig(
-        level = logging.DEBUG,
-        format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = logs_path / log_filename,
-        filemode = 'a'
+    log = create_log(
+        filename = "Client_ACQSystem.log",
+        title = "ACQSystem Client - DAIS 2.0",
+        timestamp = True
     )
-    log = logging.getLogger('ACQsystem Client - DAIS 2.0')
-    log.addHandler(logging.StreamHandler())  # AGW logged events are also printed
-    log.info('Welcome to ACQsystem Client - DAIS 2.0')
 
     # Read the config file
     config_path = configs_path / 'client.json'
