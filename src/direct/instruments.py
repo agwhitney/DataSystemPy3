@@ -22,18 +22,18 @@ class SerialTransport(basic.LineReceiver, basic.Int32StringReceiver):
     iteration = 0  # AGW not sure if this needs to be persistent
     
     def __init__(self, network):
-        self.network = network
+        self.network = network  # This is the associated protocol factory.
 
 
     def connectionMade(self):
         self.network.log.info(
-            f"{self.network.name} - Serial connection made"
+            f"{self.network.name} - Serial connection made."
         )
 
     
     def connectionLost(self, reason):
         self.network.log.error(
-            f"{self.network.name} - Serial connection lost - Reason {reason}"
+            f"{self.network.name} - Serial connection lost - Reason: {reason}"
         )
 
 
@@ -47,7 +47,6 @@ class SerialTransport(basic.LineReceiver, basic.Int32StringReceiver):
     def write_down(self, data):
         """
         Writes via transport to clients in network.
-        Because each instrument gets its own server/client, that's probably just one client.
         """
         self.network.notifyAll(data)
 

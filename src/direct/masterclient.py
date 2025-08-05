@@ -18,7 +18,7 @@ from genericparser import GenericParser
 
 
 class MasterClient():
-    def __init__(self, config, log):
+    def __init__(self, config: dict, log: logging.Logger):
         self.log = log
         
         # Parse the config
@@ -35,7 +35,7 @@ class MasterClient():
         self.file_acqtime    : int = config['acquisition_time']['file_time']
 
         # Additional variables
-        self.delay = 3  # used for sleep timer
+        self.delay = 3  # used for sleep timer (but notably not used waiting for sub-clients)
         self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')  # This will be slightly behind the log
         self.active_instruments = []  # AGW this and below should be a dict, again
         self.active_filenames = []
@@ -145,16 +145,8 @@ class MasterClient():
               --------------------------------
         """)
         time.sleep(self.delay)
-        # if radiometer is among client instances, start the motor
-        for instance in self.instances:
-            if instance['name'] == 'Radiometer' and instance['active'] and self.start_motor:
-                print("--------------------------------\nStarting Motor")
-                self.motor.send_start()
-                self.motor.disconnect()
-                print("--------------------------------")
 
         # Prepare the parserfile
-        # AGW this could probably be put into the loop above
         for instance in self.instances:
             if not instance['active']:
                 print(f"Warning: {instance['name']} is set to inactive and will not acquire data.")
@@ -163,8 +155,16 @@ class MasterClient():
             match instance['name']:
                 case 'Radiometer':
                     instance['num_items'] = self.items_rad
+
+                    if self.start_motor:
+                        print("-" * 30, "\nStarting motor.")
+                        self.motor.send_start()
+                        self.motor.disconnect()
+                        print("-" * 30)
+
                 case 'Thermistors':
                     instance['num_items'] = self.items_thm
+
                 case 'GPS-IMU':
                     instance['num_items'] = self.items_gps
 
@@ -172,21 +172,18 @@ class MasterClient():
             self.active_instruments.append(instance['name'])
             self.active_filenames.append(configstmp_path / f"{self.timestamp}{instance['name']}.json")
 
-        fileparser_name = data_path / f"{self.timestamp}{self.context}.bin"
-        open_parser_file = open(fileparser_name, 'w')
+        parserfile_name = data_path / f"{self.timestamp}{self.context}.bin"
+        parserfile_obj = open(parserfile_name, 'w')
         file_merger = {
             'instruments': self.active_instruments,
-            'filesID': fileparser_name.stem,
+            'filesID': parserfile_name.stem,
             'filename': [],
             'description': [],
         }
 
         # Loop for as many files are required per the client config file
-        for nfile in range(1, self.num_files+1):
-            # AGW just use self.active_instances and len()
-            # active_instances = []
-            # num_clients = 0
-            new_context = f"{self.timestamp}{nfile}of{self.num_files}_{self.context}"
+        for n in range(self.num_files):
+            new_context = f"{self.timestamp}{n+1}of{self.num_files}_{self.context}"
 
             # Update raw file name
             for instance, filename in zip(self.active_instances, self.active_filenames):
@@ -197,8 +194,8 @@ class MasterClient():
             # Keep raw file name for parsing
             file_merger['filename'].append(new_context)
             file_merger['description'].append(self.active_instances)
-            open_parser_file.seek(0)
-            open_parser_file.write(json.dumps(file_merger))
+            parserfile_obj.seek(0)
+            parserfile_obj.write(json.dumps(file_merger))
             print(f"----------\n{file_merger}\n----------")
 
             # Start client subprocesses
@@ -218,15 +215,15 @@ class MasterClient():
                 for i in range(len(self.active_instances)):
                     if processes[i].poll() is None:
                         active_proc += 1
-                        msg += f"\n({nfile} / {self.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {processes[i].pid} -> STOPPED: {processes[i].poll()})"
+                        msg += f"\n({n+1} / {self.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {processes[i].pid} -> STOPPED: {processes[i].poll()})"
                 print(msg)
                 if active_proc == 0:
                     break
-            t2 = time.time() - t1
-            print(f"Total elapsed time: {t2} seconds")
+            dt = time.time() - t1
+            print(f"Total elapsed time: {dt} seconds")
             # update timestring for next file
             self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
-        open_parser_file.close()
+        parserfile_obj.close()
 
         # Stop the motor if needed
         if not self.observer_client:
@@ -240,7 +237,7 @@ class MasterClient():
                     print("Motor is configured to NOT stop.")
 
         # Launch the parser
-        self.sendto_parser(fileparser_name)
+        self.sendto_parser(parserfile_name)
 
 
 if __name__ == '__main__':
