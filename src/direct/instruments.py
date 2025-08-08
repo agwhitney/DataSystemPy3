@@ -71,8 +71,9 @@ class TCPInstrumentFactory(protocol.Factory):
 
 
 
-class SerialTransport(basic.LineReceiver, basic.Int32StringReceiver):
-    iteration = 0  # AGW not sure if this needs to be persistent
+class SerialTransport(basic.LineReceiver):
+    iteration = 0
+    delimiter = b'\r\n'  # Default.
     
     def __init__(self, network: TCPInstrumentFactory):
         self.network = network
@@ -171,24 +172,30 @@ class SerialTransportThermistors(SerialTransport):
 
 
 class SerialTransportGPSIMU(SerialTransport):
+    """
+    Serial connection details for the IG-500N unit are contained in the "IG Devices Serial Protocol Specifications" manual by SBG.
+    This has been saved as a .pdf. Page numbers refer to this manual.
+    """
     def __init__(self, network):
         super().__init__(network)
         self.letterid    : str = self.network.config['letterid']
         self.byte_order  : str = self.network.config['byte_order']
-        self.delimiter   : bytes = self.network.config['characteristics']['delimiter'].encode()
         self.update_freq : int = self.network.config['characteristics']['update_frequency']
+        self.delimiter   : bytes = struct.pack(">6B", *self.network.config['characteristics']['delimiter'])
+        # Delimiter is set as the wrapper of a frame, minus the CRC at the suffix. Manual pg. 7
+        # I don't think it really matters, since data is sent in frames. Trimming now vs later. A wrapping delimiter seems odd.
 
 
     @staticmethod
     def crc16(buffer: bytes):
         """
-        Calculates Cyclic Redundancy Check (CRC) value for a given command of size `buffer`.
+        Calculates Cyclic Redundancy Check (CRC) value for a given command of size `buffer`. Manual pg. 7.
         """
         poly = 0x8408
         crc = 0
         i = 0
         while i < len(buffer):
-            ch = buffer[i]  # py2 uses ord because socket.recv returns str not bytes
+            ch = buffer[i]
             uc = 0
             while uc < 8:
                 if (crc & 1)^(ch & 1):
@@ -204,8 +211,9 @@ class SerialTransportGPSIMU(SerialTransport):
     def connectionMade(self):
         """
         Sends a configuration command to the GPS.
-        See the "IG Devices Serial Protocol Specifications.pdf" manual for detail on the serial interface with the GPS unit.
-        This configuration sets continuous mode at the given update frequency (pgs. 7, 26)
+        This configuration sets continuous mode at the given update frequency (pgs. 7, 26).
+        I'm fairly convinced that this doesn't get acknowledged...
+        Time and position data is provided by connected GPS satellite.
         """
         super().connectionMade()
 
@@ -228,13 +236,12 @@ class SerialTransportGPSIMU(SerialTransport):
         frame = header + command + footer
         self.sendLine(frame)
 
-        # self.sendLine(header)
-        # self.sendLine(command)
-        # self.sendLine(footer)
 
-
-    def dataReceived(self, data: bytes):
-        self.iteration += 1  # AGW This is called a LOT so it seems silly to count it
+    def lineReceived(self, data: bytes):
+        """
+        LineReceiver.dataReceived() trims the delimiter and calls LineReceiver.lineReceived().
+        """
+        self.iteration += 1
         line = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode() + data + ":ENDS\n".encode()
         self.write_down(line)
     
@@ -262,7 +269,7 @@ class Instrument():
         self.factory = TCPInstrumentFactory(config, log)
 
         # Define the serial connection
-        self.serial_client = None
+        self.serial_client : SerialTransport
         match config['name']:
             case 'Radiometer':
                 self.serial_client = SerialTransportRadiometer(network=self.factory)

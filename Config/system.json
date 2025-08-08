@@ -240,7 +240,7 @@
         "letterid": "G",
         "characteristics": {
             "update_frequency": 10,
-            "delimiter": "\\x03\\xff\\x02\\x90\\x00\\x2e"
+            "delimiter": [3, 255, 2, 144, 0, 46]
         },
         "serial_connection": {
             "parity": "N",

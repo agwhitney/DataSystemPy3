@@ -246,7 +246,7 @@ if __name__ == '__main__':
     log = create_log(
         filename = "Client_ACQSystem.log",
         title = "ACQSystem Client - DAIS 2.0",
-        timestamp = True
+        timestamp = True,
     )
 
     # Read the config file

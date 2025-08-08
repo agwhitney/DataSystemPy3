@@ -53,7 +53,7 @@ class BasicParser:
                 package_number = int(line[a+5:b])
                 timestamp = float(line[b+5:c])
         
-                #The line is not complete
+                # The line is not complete
                 if line[-6:-1] != self.end_header:
                     isCompleteLine = False
                     # print(f"TRUE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
@@ -80,7 +80,6 @@ class BasicParser:
                 # Line complete
                 else:
                     isCompleteLine = True
-                    # print(f"FALSE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
                     iterData += line[:-6]
                     # print (self.package,'->', time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp))), '->', package_number, 'DATA LENGTH:', len(iterData))
                     self.toplot = np.append(self.toplot, package_number)
@@ -94,7 +93,7 @@ class BasicParser:
  
 class RadiometerParser(BasicParser):
     def __init__(self, filedescription, sampleACT, sampleAMR, sampleSND, verbose):
-        self.package_header = 'PACR:'
+        self.package_header = b'PACR:'
         self.sampleAMR = sampleAMR
         self.sampleACT = sampleACT
         self.sampleSND = sampleSND
@@ -216,7 +215,7 @@ class RadiometerParser(BasicParser):
 
 class ThermistorParser(BasicParser):
     def __init__(self, fileDescription, sampleTHM, verbose):
-            self.package_header = 'PACT:'
+            self.package_header = b'PACT:'
             self.sampleTHM = sampleTHM
             self.verbose = verbose
 
@@ -248,21 +247,26 @@ class GPSParser(BasicParser):
         self.iterative_parsing(fileDescription)
 
 
-    def parse_h5(self, timestamp, input_vals, package_number):
-        # Why is this 48 I get 54 bytes TODO
-        if True: #len(input_vals) == 48:
-            value = struct.unpack('>fffdddBBBBBBI', input_vals[0:46])
+    def parse_h5(self, timestamp, data, package_number):
+        """
+        data is a frame from the GPS with the delimiter trimmed. The delimiter was chosen to be the frame end and prefix.
+        This leaves the data (46 bytes) and two extra variable bytes from the suffix.
+        I assume the data length should be a function of the GPS settings. See instruments.py.
+        """
+        if len(data) == 48:
+            vals = struct.unpack('>fffdddBBBBBBI', data[:46])  # 13 values
 
-            self.sampleIMU['EulerAngles'] = value[:3]
-            self.sampleIMU['Position'] = value[3:6]
-            print(repr(value[6:13]))
+            self.sampleIMU['EulerAngles'] = vals[:3]
+            self.sampleIMU['Position'] = vals[3:6]
             
-            # d = datetime(value[6] + 2000, value[7], value[8], value[9], value[10], value[11])
+            d = datetime(vals[6] + 2000, vals[7], vals[8], vals[9], vals[10], vals[11])
             # XB For testing purposes only, GPS/IMU does only provide time and position if it is receiving GPS satellites
-            # self.sampleIMU['GPSTime'] = time.mktime(d.timetuple())
+            self.sampleIMU['GPSTime'] = time.mktime(d.timetuple())
             self.sampleIMU['Timestamp'] = timestamp
             self.sampleIMU['Packagenumber'] = package_number
             self.sampleIMU.append()
             vals = ''
             return vals
         
+        else:
+            print(f"Frame is {len(data)} bytes. Skipping this line (instrumentparsers.py).")
