@@ -1,4 +1,5 @@
 import json
+import logging  # type checking
 
 from datetime import datetime
 from twisted.internet import protocol, reactor
@@ -6,21 +7,15 @@ from subprocess import Popen
 
 from create_log import create_log
 from fpga import FPGA
-from filepaths import configs_path, configstmp_path, genericserver, CONTROL_SERVER_PORT
+from filepaths import configs_path, configstmp_path, generic_server_script, CONTROL_SERVER_PORT
 
 
 class TCPHandler(protocol.Protocol):
     """
     AGW I think this protocol only interacts between the FPGA and motor. I think the master server is set up,
-    and MotorControl connects to that port using socket.
+    and MotorControl connects to that port using socket. Instruments are controlled using the protocols in
+    instruments.py.
     """
-    # AGW self.transport and therefore presumably self.factory are set in makeConnection(), so this doesn't work
-    # def __init__(self):
-    #     self.factory.log.info("Creating an online control server instance")
-    #     for i, p in enumerate(self.factory.processes):
-    #         self.factory.log.debug(f"Process number {i} ID: {p.pid}\n")
-        
-    
     def connectionMade(self):
         self.factory.log.info(
             f"MasterServer: New TCP client received from {self.transport.getPeer()} - Instance: {self}"
@@ -110,7 +105,7 @@ class TCPHandler(protocol.Protocol):
 class TCPHandlerFactory(protocol.Factory):
     protocol = TCPHandler
 
-    def __init__(self, log, processes, motor_instr, system_config):
+    def __init__(self, log: logging.Logger, processes: list, motor_instr: dict, system_config: dict):
         # AGW py2 set protocol params here, but this is the preferred way.
         self.clients = []
         self.log = log
@@ -120,64 +115,56 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
-    def __init__(self, system_config, log):
+    def __init__(self, system_config: dict, log: logging.Logger):
         """
         This loads the config and starts servers for each instrument as subprocesses.
         """
         self.log = log
         self.config = system_config
 
-        self.instr_count = len(self.config)
-
-        # These are set in the dumping section below
-        self.motor_instr_config = {}  # py2 motor_instr
-        self.instr_config_filenames = []  # py2 fname
-        self.instr_names = []  # py2 InstrumentName  # not used
-        self.instr_active = []  #py2 active
-
-        # Parse config. Also copies sub-configs to files
+        # Instrument configs are extracted from the system config
         print("---------------------------------")
         timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
         for cfg in self.config.values():
             print("---------------------------------")
-            if cfg['name'] == 'Radiometer':
-                self.motor_instr_config = cfg  # AGW updated json config this includes connection info
-            self.instr_names.append(cfg['name'])
-            self.instr_active.append(cfg['active'])
-            
             filepath = configstmp_path / f"{timestamp}{cfg['name']}.json"
-            self.instr_config_filenames.append(filepath)
+            cfg['filepath'] = str(filepath)
             with open(filepath, 'w') as f:
-                f.write(json.dumps(cfg))  # unchanged sub-config
+                f.write(json.dumps(cfg))  # Sub-config is saved with one change (filepath added)
         print("---------------------------------")
-        self.start_servers()
+
+        # Start instrument subservers
+        processes = self.start_servers()
+
+        # Start master server
+        self.log.info("Starting online control server -- FYI: the script won't come back while it's running!")
+        factory = TCPHandlerFactory(self.log, processes, self.config['radiometer'], self.config)
+        reactor.listenTCP(CONTROL_SERVER_PORT, factory)
+        reactor.run()        
 
     
-    def start_servers(self):
-        tcp_port = CONTROL_SERVER_PORT
+    def start_servers(self) -> list:
         processes = []
         server_count = 0
         
-        for i in range(self.instr_count):
-            print(self.instr_config_filenames[i], self.instr_active[i])
-            if self.instr_active[i]:
-                p = Popen(['.venv/Scripts/python', genericserver, self.instr_config_filenames[i]], shell=False)
-                print(f"Instrument in the configuration file: {i} Active instrument: {server_count} {self.instr_config_filenames[i]} started, Pid: {p.pid}")
+        # Subprocess servers for each instrument.
+        for instrument in self.config.values():
+            print(instrument['filepath'], instrument['active'])
+            if instrument['active']:
+                p = Popen(['.venv/Scripts/python', generic_server_script, instrument['filepath']], shell=False)
+                self.log.info(f"Instrument in the configuration file: {instrument['name']} Active instrument: {server_count} {instrument['filepath']} started, Pid: {p.pid}")
                 processes.append(p)
                 server_count += 1
         print("---------------------------------")
-        self.log.info("Starting online control server -- FYI: the script won't come back while it's running!")
-        factory = TCPHandlerFactory(self.log, processes, self.motor_instr_config, self.config)
-        reactor.listenTCP(tcp_port, factory)
-        reactor.run()        
+        return processes
 
 
 if __name__ == '__main__':
     # Create a log
     log = create_log(
+        timestamp = True,
         filename = "Server_ACQSystem.log",
         title = "ACQSystem Server - DAIS 2.0",
-        timestamp = True,
     )
 
     # Read the config file

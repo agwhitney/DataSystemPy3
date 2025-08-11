@@ -27,8 +27,8 @@ h5data_path = data_path / 'h5_files'
 
 
 # genericserver and genericclient filepaths
-genericserver = Path(__file__).parent / 'genericserver.py'
-genericclient = Path(__file__).parent / 'genericclient.py'
+generic_server_script = Path(__file__).parent / 'genericserver.py'
+generic_client_script = Path(__file__).parent / 'genericclient.py'
 
 
 # Check and print functions

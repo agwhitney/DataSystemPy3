@@ -6,7 +6,6 @@ This is in place of having the client list as a global. Fear is that the follow-
 I've removed the two Connection classes. It seems the plan was to introduce compatability for different types of connections,
 but the final version only implements Serial. Literally all it does is load instr_config['serial_connection'] to a class.
 """
-import json
 import logging  # type hinting only
 import struct
 import time
@@ -57,11 +56,11 @@ class TCPInstrument(protocol.Protocol):
 class TCPInstrumentFactory(protocol.Factory):
     protocol = TCPInstrument
     
-    def __init__(self, config_data: dict, log: logging.Logger):
+    def __init__(self, config: dict, log: logging.Logger):
         self.clients = []
-        self.name = config_data['name']
+        self.name = config['name']
         self.log = log
-        self.config = config_data
+        self.config = config
 
     
     def notifyAll(self, data: bytes):
@@ -73,10 +72,14 @@ class TCPInstrumentFactory(protocol.Factory):
 
 class SerialTransport(basic.LineReceiver):
     iteration = 0
-    delimiter = b'\r\n'  # Default.
     
     def __init__(self, network: TCPInstrumentFactory):
         self.network = network
+
+        # Common configuration settings        
+        self.letterid   : str = self.network.config['letterid']
+        self.byte_order : str = self.network.config['byte_order']
+        self.delimiter = b'\r\n'  # Default
 
 
     def connectionMade(self):
@@ -108,8 +111,6 @@ class SerialTransport(basic.LineReceiver):
 class SerialTransportRadiometer(SerialTransport):
     def __init__(self, network):
         super().__init__(network)
-        self.letterid = self.network.config['letterid']  # unused?
-        self.byte_order = self.network.config['byte_order']  # unused?
 
         fpga = FPGA(self.network.config, self.network.log)
         fpga.estimated_data_throughput()
@@ -118,10 +119,10 @@ class SerialTransportRadiometer(SerialTransport):
         fpga.disconnect_tcp()
 
 
-    def dataReceived(self, data):
-        data = f"PAC{self.network.config['letterid']}:{self.iteration}TIME:{time.time()}DATA:{data}:ENDS\n"
+    def dataReceived(self, data: bytes):
+        dataline = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode + data + ":ENDS\n".encode()
         self.iteration += 1
-        self.write_down(data.encode())
+        self.write_down(dataline)
 
 
 class SerialTransportThermistors(SerialTransport):
@@ -129,46 +130,52 @@ class SerialTransportThermistors(SerialTransport):
         super().__init__(network)
         self.delimiter        : bytes = self.network.config['characteristics']['delimiter'].encode()
         self.polling_interval : float = self.network.config['characteristics']['polling_interval']
-        self.letterid         : str = self.network.config['letterid']
-        self.byte_order       : str = self.network.config['byte_order']
         self.addresses        : list = self.network.config['characteristics']['addresses']
 
         self.visited_adcs = 0
         self.adc_count = len(self.addresses)
-        print("Number of ADCs = ", self.adc_count)
+        self.network.log.info(f"Number of ADCs = {self.adc_count}")
 
 
     def connectionMade(self):
         super().connectionMade()
-        print("Starting communcation with ADCs")
-        command = struct.pack('cccB', '#', '0', str(self.addresses[0]), 13)
+        self.network.log.info("Starting communcation with ADCs")
+        command = self.command(str(self.addresses[0]).encode())
         self.sendLine(command)
         self.start_acquisition()
 
+
+    def command(self, byte_three: bytes):
+        # TODO str/bytes confusion. Need to confirm against hardware. Is there a manual?
+        return struct.pack('cccB', '#'.encode(), '0'.encode(), byte_three, 13)
     
-    def start_acquisition(self):        
+    
+    def start_acquisition(self):
+        # Calls self.get_data() at the polling interval (seconds)
         self.lc = task.LoopingCall(self.get_data)
         self.lc.start(self.polling_interval)
 
     
     def get_data(self):
         self.visited_adcs = 0
-        command = struct.pack('cccB', '#', '0', str(self.addresses[self.visited_adcs]), 13)
+        command = self.command(str(self.addresses[self.visited_adcs]).encode())
         self.sendLine(command)
         self.iteration += 1
-        self.data2send = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:"
+        self.dataline = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode()
 
 
-    def lineReceived(self, line):
+    def lineReceived(self, line: bytes):
         self.visited_adcs += 1
         if self.visited_adcs < self.adc_count:
-            self.data2send += line[:-1]
-            # TODO a small sleep command for IO buffer
-            command = struct.pack('cccB', '#', '0', str(self.addresses[self.visited_adcs]), 13)
+            self.dataline += line[:-1]
+            # "Next command gives some extratime to the SLAVE to release the comm. bus, further reducing this value could end with comm. problems... up to you!"
+            time.sleep(0.2)
+            command = self.command(str(self.addresses[self.visited_adcs]).encode())
             self.sendLine(command)
+
         elif self.visited_adcs == self.adc_count:
-            self.data2send += line[:-1] + 'ENDS\n'
-            self.write_down(self.data2send.encode())
+            self.dataline += line[:-1] + 'ENDS\n'.encode()
+            self.write_down(self.dataline)
 
 
 class SerialTransportGPSIMU(SerialTransport):
@@ -178,12 +185,10 @@ class SerialTransportGPSIMU(SerialTransport):
     """
     def __init__(self, network):
         super().__init__(network)
-        self.letterid    : str = self.network.config['letterid']
-        self.byte_order  : str = self.network.config['byte_order']
-        self.update_freq : int = self.network.config['characteristics']['update_frequency']
-        self.delimiter   : bytes = struct.pack(">6B", *self.network.config['characteristics']['delimiter'])
         # Delimiter is set as the wrapper of a frame, minus the CRC at the suffix. Manual pg. 7
         # I don't think it really matters, since data is sent in frames. Trimming now vs later. A wrapping delimiter seems odd.
+        self.delimiter   : bytes = struct.pack(">6B", *self.network.config['characteristics']['delimiter'])
+        self.update_freq : int = self.network.config['characteristics']['update_frequency']
 
 
     @staticmethod
@@ -254,14 +259,8 @@ class Instrument():
     Protocols are above, and connection details are provided in the passed config (forked from the server config).
     This is applied in genericserver.py.
     """
-    def __init__(self, config_filename: str, log: logging.Logger):
-        # Load in instrument config, which was passed as config[instrument].values()
-        with open(config_filename, 'r') as fp:
-            config = json.load(fp)
-        log.info(config)
-
-        # AGW py2 does a bunch of subsetting of the config file, but I say just keep it whole.
-        # what was config['instrument'] is now just config.values() (but also includes serial and tcp data)
+    def __init__(self, config: dict, log: logging.Logger):
+        # Store connection details from config
         self.connection = config['serial_connection']
         self.tcp_port = config['tcp_connection']['port']
 

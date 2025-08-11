@@ -5,102 +5,107 @@ I've added a couple of file.close() to the failed-connection cases.
 """
 import argparse
 import json
+import io, logging  # Type checking (ruff override for oneliner ->) # noqa: E401
 
 from twisted.internet import protocol, reactor
 from twisted.internet.error import ReactorNotRunning
 from twisted.protocols import basic
 from time import time
 
+from create_log import create_log
 from filepaths import data_path
 
 
 class TCPClient(basic.Int32StringReceiver):
     def connectionMade(self):
-        print("genericclient.TCPClient.connectionMade Connected to TCP")  # AGW seems like logging was intended but not implemented. TODO
+        self.factory.log.info("genericclient.TCPClient.connectionMade Connected to TCP")
         start_time = time()  # seconds since epoch
         self.end_time = start_time + self.factory.measure_time
-        print(f"Starting time: {start_time} - Ending time: {self.end_time}")
+        self.factory.log.info(f"Starting time: {start_time} - Ending time: {self.end_time}")
 
     
     def dataReceived(self, data: bytes):
-        # print("genericclient.TCPClient.dataReceived")  # debug
         self.write_down(data)
     
 
     def write_down(self, data: bytes):
-        # print("genericclient.TCPClient.write_down") # debug
         self.factory.file.write(data)
 
         if self.end_time <= time():
-            print("Client: Stopping acquisition. Send STOP to server")
+            self.factory.log.info("Client: Stopping acquisition. Send STOP to server")
             self.factory.file.close()
-            print("Data file closed.")
+            self.factory.log.info("Data file closed.")
 
             try:
                 reactor.stop()
-            except ReactorNotRunning:  # This comes up I think because write_down is called again while closing
-                print("Reactor already stopped.")
+            except ReactorNotRunning:  # This comes up I think when write_down is called again while closing
+                self.factory.log.info("Reactor already stopped.")
             
 
 class TCPClientFactory(protocol.ClientFactory):
     protocol = TCPClient
 
-    def __init__(self, file, num_items, name):
+    def __init__(self, open_file: io.TextIOWrapper, num_items: int, name: str, log: logging.Logger):
         self.name = name
-        self.file = file
+        self.file = open_file
         self.measure_time = num_items  # py2 per comment `NumItems` contains seconds, not items.
+        self.log = log
 
     
     def clientConnectionFailed(self, connector, reason):
-        print(f"Connection failed: {reason.getErrorMessage()}")
+        self.log.info(f"Connection failed: {reason.getErrorMessage()}")
         self.file.close()
-        print("Data file closed.")
+        self.log.info("Data file closed.")
         reactor.stop()
 
 
     def clientConnectionLost(self, connector, reason):
-        print(f"Connection lost: {reason.getErrorMessage()}")
+        self.log.info(f"Connection lost: {reason.getErrorMessage()}")
 
         self.file.close()
-        print("Data file closed.")
+        self.log.info("Data file closed.")
         try:
             reactor.stop()
         except ReactorNotRunning: # Case: client shut down cleanly.
-            print("Connection cleanly closed!")
+            self.log.info("Connection cleanly closed!")
 
 
-class GenericClient():
-    def __init__(self):
-        """
-        Like genericserver.py, this is called as a subprocess in masterclient.py for each instrument and is a class
-        that only inits (could refactor as def main())
-        """
-        # Parse commandline arguments
-        parser = argparse.ArgumentParser(description="Client for the Data Acquisition and Instrument control System (DAIS Client)")
-        parser.add_argument('instance_config', help="Client file (.json) to work with")
-        args = parser.parse_args()
+def main():
+    """
+    Like genericserver.py, this is called as a subprocess in masterclient.py for each instrument.
+    """
+    # Parse commandline arguments
+    parser = argparse.ArgumentParser(description="Client for the Data Acquisition and Instrument control System (DAIS Client)")
+    parser.add_argument('instance_config', help="Client file (.json) to work with")
+    args = parser.parse_args()
 
-        with open(args.instance_config, 'r') as f:
-            config = json.load(f)
-        name = config['name']
-        ip = config['ip']
-        port = config['port']
-        num_items = config['num_items']
-        context = config['context']  # TODO I don't think this is part of the instance. Check masterclient.py
+    with open(args.instance_config, 'r') as f:
+        config = json.load(f)
+    name = config['name']
+    ip = config['ip']
+    port = config['port']
+    num_items = config['num_items']
+    context = config['context']
 
+    # Create another log analogous to the one in genericserver.py
+    log = create_log(
+        timestamp = True,
+        filename = f"{name}_Client_ACQSystem.log",
+        title = f"{name}_ACQSystem SubClient - DAIS 2.0",
+    )
 
-        # Print some metadata
-        print(f"Name: {name}\nIP: {ip}\nPort: {port}\nNumber of Items: {num_items}")
+    # Print some metadata
+    log.info(f"Name: {name}\nIP: {ip}\nPort: {port}\nNumber of Items: {num_items}")
 
-        # Open a file object that will be written to. Passed to and closed by protocol.
-        filepath = data_path / f"{context}_{name}.bin"
-        file = open(filepath, 'wb')
+    # Open a file object that will be written to. Passed to and closed by protocol.
+    filepath = data_path / f"{context}_{name}.bin"
+    file = open(filepath, 'wb')
 
-        # Create client
-        factory = TCPClientFactory(file, num_items, name)
-        reactor.connectTCP(ip, port, factory)
-        reactor.run()
+    # Create client
+    factory = TCPClientFactory(file, num_items, name, log)
+    reactor.connectTCP(ip, port, factory)
+    reactor.run()
 
 
 if __name__ == '__main__':
-    GenericClient()
+    main()
