@@ -4,6 +4,8 @@ py2 h5classes.py
 from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
 import tables as tb
 
+from utils import get_thermistor_map
+
 
 class AMRSample(IsDescription):
     Counts		  = UInt16Col(8)     # Unsigned short integer         
@@ -53,10 +55,11 @@ class Information(IsDescription):
     General       = StringCol(8192)
 
 
+
 class DataFile:
     """
     This replaces py2 `CreateFile` and is an object primarily to avoid returning a 15-tuple of the rows, tables, and file.
-    Since it's really just a data container for an open file, it's probably best to just delete it when finished.
+    It's really just a data container for an open file.
     """
     def __init__(self, filename):
         self.h5file = tb.open_file(filename, 'w', title="Acquisition data")
@@ -88,50 +91,7 @@ class DataFile:
         infoRow.append()
         infoRow['General'] = 'tempInv = (A + B * log(resist) + C * log(resist)^3 + D * log(resist)^5), temp = 1 / tempInv'
         infoRow.append()
-        # All of these will need to be reassigned/checked.
-        infoRow['General'] = '''
-            thermistorName[0]="Pyramidal BaseRight" 
-            thermistorName[1]="Pyramidal TopLeft" 
-            thermistorName[2]="ABEB Case Top"
-            thermistorName[3]="NC"
-            thermistorName[4]="NC"
-            thermistorName[5]="NC"
-            thermistorName[6]="NC"
-            thermistorName[7]="NC"
-            thermistorName[8]="CalTar|Upper Left[1]"
-            thermistorName[9]="CalTar|Lower Left[3]"
-            thermistorName[10]="CalTar|Center[2]"
-            thermistorName[11]="CalTar|Bottom Left[1]"
-            thermistorName[12]="CalTar|Bottom Right[3]"
-            thermistorName[13]="CalTar|Upper Right[3]"        
-            thermistorName[14]="CalTar|Lower Right[1]"
-            thermistorName[15]="CalTar|Top[2]"
-            thermistorName[16]="?"
-            thermistorName[17]="?"   
-            thermistorName[18]="?"
-            thermistorName[19]="?"
-            thermistorName[20]="QH-18/24"
-            thermistorName[21]="QV-18/24"
-            thermistorName[22]="QV-34"
-            thermistorName[23]="QH-34"
-            thermistorName[24]="Power Chamber"
-            thermistorName[25]="Power Chamber"
-            thermistorName[26]="Paraboloid Middle"
-            thermistorName[27]="Paraboloid Top" 
-            thermistorName[28]="Paraboloid Bottom"
-            thermistorName[29]="Motor Cavity"
-            thermistorName[30]="Motor Cavity"
-            thermistorName[31]="Motor Cavity"
-            #The following thermistor names need to be filled with the correct locations after hardware installation
-            thermistorName[32]="...."
-            thermistorName[33]="...."
-            thermistorName[34]="...."
-            thermistorName[35]="...."
-            thermistorName[36]="...."
-            thermistorName[37]="...."
-            thermistorName[38]="...."
-            thermistorName[39]="...."
-            thermistorName[40]="...." '''
+        infoRow['General'] = get_thermistor_map()
         infoRow.append()
         self.tables['IThermistors'].flush()
 

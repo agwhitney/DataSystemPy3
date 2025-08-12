@@ -12,8 +12,8 @@ from twisted.internet.error import ReactorNotRunning
 from twisted.protocols import basic
 from time import time
 
-from create_log import create_log
-from filepaths import ACQ_DATA
+from utils import create_log
+from filepaths import data_path
 
 
 class TCPClient(basic.Int32StringReceiver):
