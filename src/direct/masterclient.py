@@ -12,7 +12,7 @@ import time
 from datetime import datetime
 from subprocess import Popen
 
-from create_log import create_log
+from utils import create_log
 from motorcontrol import MotorControl
 from filepaths import configs_path, configstmp_path, data_path, generic_client_script
 from genericparser import GenericParser

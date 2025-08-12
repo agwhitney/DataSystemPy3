@@ -12,7 +12,7 @@ from twisted.internet.error import ReactorNotRunning
 from twisted.protocols import basic
 from time import time
 
-from create_log import create_log
+from utils import create_log
 from filepaths import data_path
 
 
