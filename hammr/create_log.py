@@ -5,7 +5,7 @@ Other util functionscould also make sense here.
 import logging
 from datetime import datetime
 
-from filepaths import logs_path
+from filepaths import ACQ_LOGS
 
 
 def create_log(filename="Log", title="ACQSystem", timestamp=True) -> logging.Logger:
@@ -18,7 +18,7 @@ def create_log(filename="Log", title="ACQSystem", timestamp=True) -> logging.Log
     logging.basicConfig(
         level = logging.DEBUG,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = logs_path / filename,
+        filename = ACQ_LOGS / filename,
         filemode = 'a',
     )
     log = logging.getLogger(title)

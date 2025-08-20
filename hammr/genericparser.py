@@ -7,7 +7,7 @@ This object functions as a script (all of its logic is with __init__())
 import time
 import json
 
-from filepaths import data_path, h5data_path
+from filepaths import ACQ_DATA, ACQ_DATA_H5
 from datastructures import DataFile
 from instrumentparsers import GPSParser, RadiometerParser, ThermistorParser
 
@@ -21,13 +21,13 @@ class GenericParser():
         gps_found = False
 
         # Read parser file created by masterclient.py
-        parsing_filename = h5data_path / parserfile
+        parsing_filename = ACQ_DATA_H5 / parserfile
         with open(parsing_filename, 'r') as f:
             toparse = json.load(f)
         
         file_context = toparse['filesID']
         # Read server config
-        sv_filename = data_path / f"{file_context}.bin"
+        sv_filename = ACQ_DATA / f"{file_context}.bin"
         with open(sv_filename, 'r') as f:
             sv_config = json.load(f)
 
@@ -38,24 +38,24 @@ class GenericParser():
 
         for i in range(num_files):
             rootfilestem = filenames[i]
-            print(f"Working in file {h5data_path/rootfilestem}.h5")
+            print(f"Working in file {ACQ_DATA_H5/rootfilestem}.h5")
             
             if not singlefile:
-                df = DataFile(h5data_path / f"{rootfilestem}.h5")
+                df = DataFile(ACQ_DATA_H5 / f"{rootfilestem}.h5")
                 df.rows['IServer']['General'] = json.dumps(sv_config)
                 df.rows['IServer'].append()
                 df.tables['IServer'].flush()
 
             elif i == 0:
                 # Same deal but to a different file name (seems unnecessary?)
-                df = DataFile(h5data_path / f"{file_context}.h5")
+                df = DataFile(ACQ_DATA_H5 / f"{file_context}.h5")
                 df.rows['IServer']['General'] = json.dumps(sv_config)
                 df.rows['IServer'].append()
                 df.tables['IServer'].flush()
 
             for j in range(num_clients):
                 instrument = toparse['instruments'][j]
-                instr_filename = data_path / f"{rootfilestem}_{instrument}.bin"
+                instr_filename = ACQ_DATA / f"{rootfilestem}_{instrument}.bin"
                 df.rows['IGeneral']['General'] = toparse['description'][i][j]
                 df.rows['IGeneral'].append()
                 df.tables['IGeneral'].flush()

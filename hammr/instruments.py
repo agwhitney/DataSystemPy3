@@ -14,6 +14,7 @@ from twisted.internet import protocol, reactor, task
 from twisted.protocols import basic
 
 from fpga import FPGA
+from filepaths import SERIAL_PORT
 
 
 class TCPInstrument(protocol.Protocol):
@@ -262,6 +263,7 @@ class Instrument():
     def __init__(self, config: dict, log: logging.Logger):
         # Store connection details from config
         self.connection = config['serial_connection']
+        self.connection['port'] = self.connection[SERIAL_PORT]
         self.tcp_port = config['tcp_connection']['port']
 
         # Define the TCP connection

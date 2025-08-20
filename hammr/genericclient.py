@@ -13,7 +13,7 @@ from twisted.protocols import basic
 from time import time
 
 from create_log import create_log
-from filepaths import data_path
+from filepaths import ACQ_DATA
 
 
 class TCPClient(basic.Int32StringReceiver):
@@ -98,7 +98,7 @@ def main():
     log.info(f"Name: {name}\nIP: {ip}\nPort: {port}\nNumber of Items: {num_items}")
 
     # Open a file object that will be written to. Passed to and closed by protocol.
-    filepath = data_path / f"{context}_{name}.bin"
+    filepath = ACQ_DATA / f"{context}_{name}.bin"
     file = open(filepath, 'wb')
 
     # Create client

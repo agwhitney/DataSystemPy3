@@ -14,7 +14,7 @@ from subprocess import Popen
 
 from create_log import create_log
 from motorcontrol import MotorControl
-from filepaths import configs_path, configstmp_path, data_path, generic_client_script
+from filepaths import ACQ_CONFIGS, ACQ_CONFIGS_TMP, ACQ_DATA, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from genericparser import GenericParser
 
 
@@ -95,7 +95,7 @@ class MasterClient():
         self.motor = MotorControl(self.server_ip, self.server_port)
         system_config = self.motor.send_getsysconfig()
         filename = self.timestamp + self.context + "_ServerInformation.bin"
-        with open(data_path / filename, 'w') as f:
+        with open(ACQ_DATA / filename, 'w') as f:
             f.write(json.dumps(system_config))
 
         for instrument in system_config.values():
@@ -148,7 +148,7 @@ class MasterClient():
     def start_clients(self) -> list:
         processes = []
         for i in range(len(self.active_instances)):
-            p = Popen(['.venv/Scripts/python', generic_client_script, self.active_filenames[i]], shell=False)
+            p = Popen([PATH_TO_PYTHON, PATH_TO_GENCLIENT, self.active_filenames[i]], shell=False)
             processes.append(p)
             self.log.info(f"{self.active_filenames[i]} communication started, Pid: {p.pid}")
             print('--------------------')
@@ -199,9 +199,9 @@ class MasterClient():
 
             self.active_instances.append(instance)
             self.active_instruments.append(instance['name'])
-            self.active_filenames.append(configstmp_path / f"{self.timestamp}{instance['name']}.json")
+            self.active_filenames.append(ACQ_CONFIGS_TMP / f"{self.timestamp}{instance['name']}.json")
 
-        parserfile_name = data_path / f"{self.timestamp}{self.context}.bin"
+        parserfile_name = ACQ_DATA / f"{self.timestamp}{self.context}.bin"
         parserfile_obj = open(parserfile_name, 'w')
         file_merger = {
             'instruments': self.active_instruments,
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     )
 
     # Read the config file
-    config_path = configs_path / 'client.json'
+    config_path = ACQ_CONFIGS / 'client.json'
     with open(config_path, 'r') as f:
         config = json.load(f)
 

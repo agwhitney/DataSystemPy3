@@ -4,7 +4,7 @@ py2 also contained a handful of constants that already exist in places that make
 so I've omitted them.
 Note that Path / str is Path
 """
-
+import platform
 from pathlib import Path
 
 
@@ -15,25 +15,38 @@ CONTROL_SERVER_PORT = 9022
 # Project folder
 code = Path(__file__).parent
 project = code.parent
-configs = project / 'config'
+PATH_TO_CONFIGS = project / 'config'
+
+# Handle differences between Linux and Windows systems
+system = platform.system()
+if system == 'Windows':
+    PATH_TO_PYTHON = project / '.venv/Scripts/python'
+    SERIAL_PORT = 'portWindows'
+
+elif system == 'Linux':
+    PATH_TO_PYTHON = project / '.venv/bin/python'
+    SERIAL_PORT = 'portLinux'
 
 # genericserver and genericclient filepaths
-generic_server_script = code / 'genericserver.py'
-generic_client_script = code / 'genericclient.py'
+PATH_TO_GENSERVER = code / 'genericserver.py'
+PATH_TO_GENCLIENT = code / 'genericclient.py'
+
 
 # Output folder structure
-top = project / 'AcqSystem'
-configs_path = top / 'Configs'
-data_path = top / 'Data'
-logs_path = top / 'Logs'
+ACQ = project / 'AcqSystem'
 
-configstmp_path = configs_path / 'tmp'
-h5data_path = data_path / 'h5_files'
+ACQ_CONFIGS = ACQ / 'Configs'
+ACQ_CONFIGS_TMP = ACQ_CONFIGS / 'tmp'
+
+ACQ_DATA = ACQ / 'Data'
+ACQ_DATA_H5 = ACQ_DATA / 'h5_files'
+
+ACQ_LOGS = ACQ / 'Logs'
 
 
 # Methods to verify and debug
 def check_structure():
-    for path in [top, configs_path, data_path, logs_path, configstmp_path, h5data_path]:
+    for path in [ACQ, ACQ_CONFIGS, ACQ_DATA, ACQ_LOGS, ACQ_CONFIGS_TMP, ACQ_DATA_H5]:
         path.mkdir(exist_ok=True)
     print("Folder structure is set up")
 
@@ -50,5 +63,4 @@ def print_tree(root):
 
 
 # Not an ifmain so this will run whenever the module is imported
-# check_structure()
-print(configs)
+check_structure()

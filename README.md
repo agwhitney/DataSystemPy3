@@ -44,9 +44,8 @@ Each object is structured like in the snippets below.
     "stop_bits"    : int,
     "data_bits"    : int,
     "type"         : string,  // Not implemented
-    "port"         : string,  // Path to the hardware connection in the OS
-    "_portLinux"   : string,  // Mnemonic for above
-    "_portWindows" : string   // Mnemonic for above
+    "portWindows"  : string,  // OS is determined in `filepaths.py` 
+    "portLinux"    : string   // Applied in `instruments.py`
 }
 ```
 

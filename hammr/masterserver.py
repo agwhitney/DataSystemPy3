@@ -7,7 +7,7 @@ from subprocess import Popen
 
 from create_log import create_log
 from fpga import FPGA
-from filepaths import configs, configs_path, configstmp_path, generic_server_script, CONTROL_SERVER_PORT
+from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 
 
 class TCPHandler(protocol.Protocol):
@@ -127,7 +127,7 @@ class MasterServer():
         timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
         for cfg in self.config.values():
             print("---------------------------------")
-            filepath = configstmp_path / f"{timestamp}{cfg['name']}.json"
+            filepath = ACQ_CONFIGS_TMP / f"{timestamp}{cfg['name']}.json"
             cfg['filepath'] = str(filepath)
             with open(filepath, 'w') as f:
                 f.write(json.dumps(cfg))  # Sub-config is saved with one change (filepath added)
@@ -151,7 +151,7 @@ class MasterServer():
         for instrument in self.config.values():
             print(instrument['filepath'], instrument['active'])
             if instrument['active']:
-                p = Popen(['.venv/Scripts/python', generic_server_script, instrument['filepath']], shell=False)
+                p = Popen([PATH_TO_PYTHON, PATH_TO_GENSERVER, instrument['filepath']], shell=False)
                 self.log.info(f"Instrument in the configuration file: {instrument['name']} Active instrument: {server_count} {instrument['filepath']} started, Pid: {p.pid}")
                 processes.append(p)
                 server_count += 1
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     )
 
     # Read the config file
-    config_filepath = configs / 'system.json'
+    config_filepath = PATH_TO_CONFIGS / 'system.json'
     with open(config_filepath, 'r') as f:
         system_config = json.load(f)
 

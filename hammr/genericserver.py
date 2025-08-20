@@ -6,7 +6,7 @@ from twisted.internet.serialport import SerialPort
 
 from create_log import create_log
 from instruments import Instrument
-from filepaths import configs_path
+from filepaths import ACQ_CONFIGS
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--http-logging', action='store_true', default=False, help="Log messages to GDAIS-control HTTP server")
     args = parser.parse_args()
 
-    instr_config_file = configs_path / args.instr_config
+    instr_config_file = ACQ_CONFIGS / args.instr_config
     in_background = args.background
     http_logging = args.http_logging
 
