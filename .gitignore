@@ -6,5 +6,6 @@ uv.lock
 
 _trial_temp/
 test_paths/
+AcqSystem/
 
 .Rhistory

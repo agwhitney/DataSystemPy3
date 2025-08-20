@@ -7,7 +7,7 @@ from subprocess import Popen
 
 from create_log import create_log
 from fpga import FPGA
-from filepaths import configs_path, configstmp_path, generic_server_script, CONTROL_SERVER_PORT
+from filepaths import configs, configs_path, configstmp_path, generic_server_script, CONTROL_SERVER_PORT
 
 
 class TCPHandler(protocol.Protocol):
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     )
 
     # Read the config file
-    config_filepath = configs_path / 'system.json'
+    config_filepath = configs / 'system.json'
     with open(config_filepath, 'r') as f:
         system_config = json.load(f)
 
