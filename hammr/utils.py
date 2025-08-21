@@ -6,7 +6,7 @@ import csv
 import logging
 from datetime import datetime
 
-from filepaths import logs_path, configs_path
+from filepaths import ACQ_LOGS, PATH_TO_CONFIGS
 
 
 def create_log(filename="Log", title="ACQSystem", timestamp=True) -> logging.Logger:
@@ -22,7 +22,7 @@ def create_log(filename="Log", title="ACQSystem", timestamp=True) -> logging.Log
     logging.basicConfig(
         level = logging.DEBUG,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = logs_path / filename,
+        filename = ACQ_LOGS / filename,
         filemode = 'a',
     )
     log = logging.getLogger(title)
@@ -38,7 +38,7 @@ def get_thermistor_map(filename='thermistors.csv') -> str:
     Config/thermistors.csv as reference.
     """
     s = ''
-    with open(configs_path/filename, 'r') as f:
+    with open(PATH_TO_CONFIGS/filename, 'r') as f:
         reader = csv.reader(f, delimiter='\t')
         for index, row in enumerate(reader):
             # Skip header, and avoid leading/trailing newlines.

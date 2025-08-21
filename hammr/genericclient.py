@@ -13,7 +13,7 @@ from twisted.protocols import basic
 from time import time
 
 from utils import create_log
-from filepaths import data_path
+from filepaths import ACQ_DATA
 
 
 class TCPClient(basic.Int32StringReceiver):
