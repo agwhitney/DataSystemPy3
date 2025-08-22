@@ -1,6 +1,6 @@
 {
     "radiometer": {
-        "active": true,
+        "active": false,
         "byte_order": "big-endian",
         "name": "Radiometer",
         "letterid": "R",
@@ -226,13 +226,13 @@
             "data_bits": 8,
             "type": "Serial",
             "portWindows": "COM2",
-            "portLinux": "/dev/ttyUSB2"
+            "portLinux": "/dev/ttyUSB0"
         },
         "tcp_connection": {"port": 8055}
     },
 
     "gpsimu": {
-        "active": true,
+        "active": false,
         "byte_order": "big-endian",
         "name": "GPS-IMU",
         "letterid": "G",
