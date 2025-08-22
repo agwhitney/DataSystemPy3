@@ -215,7 +215,7 @@
                 "4":"Not defined yet",
                 "5":"Not defined yet"
             },
-            "addresses": [1,2,3,4,5],
+            "addresses": ["#01", "#02", "#03", "#04", "#05"],
             "polling_interval": 1.1,
             "delimiter": ">"
         },

@@ -131,25 +131,29 @@ class SerialTransportThermistors(SerialTransport):
         super().__init__(network)
         self.delimiter        : bytes = self.network.config['characteristics']['delimiter'].encode()
         self.polling_interval : float = self.network.config['characteristics']['polling_interval']
-        self.addresses        : list = self.network.config['characteristics']['addresses']
+        self.addresses        : list[str] = self.network.config['characteristics']['addresses']
 
         self.visited_adcs = 0
-        self.adc_count = len(self.addresses)
-        self.network.log.info(f"Number of ADCs = {self.adc_count}")
+        self.total_adc = len(self.addresses)
+        self.network.log.info(f"Number of ADCs = {self.total_adc}")
+
+
+    @staticmethod
+    def poll_command(address: str):
+        """
+        Polling command to thermistor to read analog input.
+        I assume it is from all channels, and reads in Celsius per the manual?
+        """
+        return struct.pack('>3sB', address.encode(), 13)  # chr(13) == '\r' 
 
 
     def connectionMade(self):
         super().connectionMade()
         self.network.log.info("Starting communcation with ADCs")
-        command = self.command(str(self.addresses[0]).encode())
-        self.sendLine(command)
+        cmd = self.poll_command(self.addresses[0])
+        self.sendLine(cmd)
         self.start_acquisition()
 
-
-    def command(self, byte_three: bytes):
-        # TODO str/bytes confusion. Need to confirm against hardware. Is there a manual?
-        return struct.pack('cccB', '#'.encode(), '0'.encode(), byte_three, 13)
-    
     
     def start_acquisition(self):
         # Calls self.get_data() at the polling interval (seconds)
@@ -159,22 +163,22 @@ class SerialTransportThermistors(SerialTransport):
     
     def get_data(self):
         self.visited_adcs = 0
-        command = self.command(str(self.addresses[self.visited_adcs]).encode())
-        self.sendLine(command)
+        cmd = self.poll_command(self.addresses[self.visited_adcs])
+        self.sendLine(cmd)
         self.iteration += 1
         self.dataline = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode()
 
 
     def lineReceived(self, line: bytes):
         self.visited_adcs += 1
-        if self.visited_adcs < self.adc_count:
+        if self.visited_adcs < self.total_adc:
             self.dataline += line[:-1]
             # "Next command gives some extratime to the SLAVE to release the comm. bus, further reducing this value could end with comm. problems... up to you!"
             time.sleep(0.2)
-            command = self.command(str(self.addresses[self.visited_adcs]).encode())
-            self.sendLine(command)
+            cmd = self.poll_command(self.addresses[self.visited_adcs])
+            self.sendLine(cmd)
 
-        elif self.visited_adcs == self.adc_count:
+        elif self.visited_adcs == self.total_adc:
             self.dataline += line[:-1] + 'ENDS\n'.encode()
             self.write_down(self.dataline)
 
