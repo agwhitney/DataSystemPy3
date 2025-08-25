@@ -132,7 +132,7 @@ class SerialTransportThermistors(SerialTransport):
         self.delimiter        : bytes = self.network.config['characteristics']['delimiter'].encode()
         self.polling_interval : float = self.network.config['characteristics']['polling_interval']
         # self.addresses        : list[str] = self.network.config['characteristics']['addresses']
-        self.addresses = ['#02', '#03', '#04', '#05']
+        self.addresses = ['#01', '#02', '#03', '#04', '#05']
 
         self.visited_adcs = 0
         self.total_adc = len(self.addresses)
