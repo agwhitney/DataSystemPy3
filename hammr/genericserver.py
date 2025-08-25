@@ -4,7 +4,7 @@ import json
 from twisted.internet import reactor
 from twisted.internet.serialport import SerialPort
 
-from create_log import create_log
+from utils import create_log
 from instruments import Instrument
 from filepaths import ACQ_CONFIGS
 

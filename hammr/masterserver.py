@@ -5,7 +5,7 @@ from datetime import datetime
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
-from create_log import create_log
+from utils import create_log
 from fpga import FPGA
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 

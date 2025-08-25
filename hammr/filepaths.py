@@ -35,13 +35,13 @@ PATH_TO_GENCLIENT = code / 'genericclient.py'
 # Output folder structure
 ACQ = project / 'AcqSystem'
 
-ACQ_CONFIGS = ACQ / 'Configs'
+ACQ_CONFIGS = ACQ / 'configs'
 ACQ_CONFIGS_TMP = ACQ_CONFIGS / 'tmp'
 
-ACQ_DATA = ACQ / 'Data'
+ACQ_DATA = ACQ / 'data'
 ACQ_DATA_H5 = ACQ_DATA / 'h5_files'
 
-ACQ_LOGS = ACQ / 'Logs'
+ACQ_LOGS = ACQ / 'logs'
 
 
 # Methods to verify and debug

@@ -224,7 +224,7 @@ class ThermistorParser(BasicParser):
 
 
     def parse_h5(self, timestamp, input_vals, package_number):
-            iterData = iter(str(input_vals).split('+'))
+            iterData = iter(input_vals.decode().split('+')[1:])
             data = [float(e) for e in iterData]
             if self.verbose:
                 print(f"-> {time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp)))} -> {package_number} -> {data}")
