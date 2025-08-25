@@ -131,7 +131,8 @@ class SerialTransportThermistors(SerialTransport):
         super().__init__(network)
         self.delimiter        : bytes = self.network.config['characteristics']['delimiter'].encode()
         self.polling_interval : float = self.network.config['characteristics']['polling_interval']
-        self.addresses        : list[str] = self.network.config['characteristics']['addresses']
+        # self.addresses        : list[str] = self.network.config['characteristics']['addresses']
+        self.addresses = ['#02', '#03', '#04', '#05']
 
         self.visited_adcs = 0
         self.total_adc = len(self.addresses)
@@ -165,6 +166,7 @@ class SerialTransportThermistors(SerialTransport):
         self.visited_adcs = 0
         cmd = self.poll_command(self.addresses[self.visited_adcs])
         self.sendLine(cmd)
+
         self.iteration += 1
         self.dataline = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode()
 
@@ -179,7 +181,7 @@ class SerialTransportThermistors(SerialTransport):
             self.sendLine(cmd)
 
         elif self.visited_adcs == self.total_adc:
-            self.dataline += line[:-1] + 'ENDS\n'.encode()
+            self.dataline += line[:-1] + ':ENDS\n'.encode()
             self.write_down(self.dataline)
 
 

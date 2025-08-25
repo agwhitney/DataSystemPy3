@@ -14,7 +14,7 @@ from subprocess import Popen
 
 from utils import create_log
 from motorcontrol import MotorControl
-from filepaths import ACQ_CONFIGS, ACQ_CONFIGS_TMP, ACQ_DATA, PATH_TO_GENCLIENT, PATH_TO_PYTHON
+from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, ACQ_DATA, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from genericparser import GenericParser
 
 
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     )
 
     # Read the config file
-    config_path = ACQ_CONFIGS / 'client.json'
+    config_path = PATH_TO_CONFIGS / 'client.json'
     with open(config_path, 'r') as f:
         config = json.load(f)
 

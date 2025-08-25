@@ -225,7 +225,7 @@
             "stop_bits": 1,
             "data_bits": 8,
             "type": "Serial",
-            "portWindows": "COM2",
+            "portWindows": "COM3",
             "portLinux": "/dev/ttyUSB0"
         },
         "tcp_connection": {"port": 8055}
