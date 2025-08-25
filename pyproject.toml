@@ -11,3 +11,9 @@ dependencies = [
     "tables>=3.10.2",
     "twisted>=25.5.0",
 ]
+
+[project.optional-dependencies]
+# Usage: python -m vitables [.h5 filepath]
+h5gui = [
+    "vitables[pyqt6]>=3.1.0",
+]
