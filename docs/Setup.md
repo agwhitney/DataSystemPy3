@@ -1,4 +1,0 @@
-# Initial setup with uv
-This project can be cloned from GitHub using the command `git clone https://github.com/agwhitney/DataSystemPy3.git`, which will create a folder `DataSystemPy3` in the current directory. Change directories into that project folder (`cd DataSystemPy3`).
-
-The code should be run within a Python virtual environment. The recommended way to build a virtual environment is to use uv, a command-line tool by Astral. Within the project folder, simply run `uv sync` to create or update your virtual environment per the configuration in `pyproject.toml`. Optionally, a Python-based GUI for .h5 files can be installed using `uv sync --extra h5gui`.
