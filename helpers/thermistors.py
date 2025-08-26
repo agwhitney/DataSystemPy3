@@ -28,7 +28,7 @@ def temp_from_h5volt(filepath: str):
         elif thm_type == '44':
             A = 1.28082086269172 * 10**-3
             B = 2.36865057309759 * 10**-4
-            C = 0.902634799967035 * 10**-7
+            C = 0.902634799967035 * 10**-8
             D = 0
 
         regulated_V = 1.12  # 1.06 in code metadata, 1.12 in L0b word doc

@@ -12,7 +12,7 @@ In a separate shell, running `masterclient.py` will create client subprocesses b
 
 ## Configurations
 ### JSON File Structure
-A JSON file contains an *object* between braces `{}` of `key : value` pairs, and is meant to be a format that is convenient for data interchange. Keys are represented by strings. Values can be many different data types, including other objects. See (json.org)[json.org] for more information. Note that strict JSON does **not** allow for comments, but some parsers will interpret `//` as beginning a comment. Python's standard `json` package does not. The json files in this project do not contain comments, but keys prefixed with an underscore are used to a similar effect. 
+A JSON file contains an *object* between braces `{}` of `key : value` pairs, and is meant to be a format that is convenient for data interchange. Keys are represented by strings. Values can be many different data types, including other objects. See (json.org)[json.org] for more information. Note that strict JSON does **not** allow for comments, but some parsers will interpret `//` as beginning a comment. Python's standard `json` package does not. The json files in this project do not contain comments, but keys prefixed with an underscore are used to a similar effect.
 
 ### System Configuration
 `system.json` contains an object for each of HAMMR's instruments, namely, the radiometer, thermistors, and GPS-IMU unit. Other than the `active` key, this file should generally remain unchanged (the `active` key can likely be removed in the future). The settings are generally used by the servers.
@@ -96,13 +96,13 @@ The `channel.slot//.value` field is an array of five bits, 0 or 1. From left to 
 `client.json` contains the configuration details for a measurement, and should be reviewed and changed prior to running a measurement with `masterclient.py`. This file has thorough metadata describing most variables. A general 
 ```json
 {
-    "master_server"    : object,        // IP (string) and port number (int)
-    "observer"         : object,        // Enables/disables motor control
-    "parsing"          : object,        // Set running parser after acquisition, and settings for the parser
-    "motor_start"      : object,        // Starts motor before acquiring
-    "motor_stop"       : object,        // Stops motor after acquiring
-    "acquisition_time" : object,        // Recording time in seconds for each file, and the number of total files
-    "context"          : string,        // A label for output files in addition to a timestamp
-    "instances"        : array[object]  // Attached instruments, and some info for them.
+    "master_server"    : "object",        // IP (string) and port number (int)
+    "observer"         : "object",        // Enables/disables motor control
+    "parsing"          : "object",        // Set running parser after acquisition, and settings for the parser
+    "motor_start"      : "object",        // Starts motor before acquiring
+    "motor_stop"       : "object",        // Stops motor after acquiring
+    "acquisition_time" : "object",        // Recording time in seconds for each file, and the number of total files
+    "context"          : "string",        // A label for output files in addition to a timestamp
+    "instances"        : "array[object]"  // Attached instruments, and some info for them.
 }
 ```

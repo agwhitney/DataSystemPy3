@@ -1,11 +1,14 @@
+# Hardware details
+This page collects information about the hardware within HAMMR relevant to this software package and some basic data analysis. 
+
 ## GPS-IMU
 The GPS-IMU unit is an SBG Systems IG-500N unit.
 
 
-## Thermistors
-There are 40 platinum resistance thermometers (PRTs) used to monitor HAMMR's hardware, connected in sets of 8 to 5 SuperLogics 8017 ADC units.
+## Thermistors & analog-digital converters
+There are 40 platinum resistance thermometers (PRTs) used to monitor HAMMR's hardware, connected in sets of 8 to 5 SuperLogics 8017 ADC units. [Model KS502J2](https://www.digikey.com/en/products/detail/KS502J2/615-1073-ND/2651614), and [Model SP44906X-15](https://www.mouser.com/ProductDetail/Measurement-Specialties/SP44908X-15?qs=aXGKoampmnlT%2FWgkyUFuAQ%3D%3D)
 
-Temperatures are polled in software and returned as voltages. The conversion to Kelvin uses the following equation:
+Temperatures are polled in software and returned as voltages. The conversion to Kelvin uses the Steinhart-Hart Equation (see [here](https://assets.omega.com/spec/44000_THERMIS_ELEMENTS.pdf)):
 $$
 T^{-1} = A + B\log(R) + C\log(R)^3 + D\log(R)^5
 ,$$

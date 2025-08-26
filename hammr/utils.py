@@ -9,7 +9,7 @@ from datetime import datetime
 from filepaths import ACQ_LOGS, PATH_TO_CONFIGS
 
 
-def create_log(filename="Log", title="ACQSystem", timestamp=True) -> logging.Logger:
+def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logging.Logger:
     """
     Called in various places to make a log with consistent formatting.
     """
@@ -39,7 +39,7 @@ def get_thermistor_map(filename='thermistors.csv') -> str:
     """
     s = ''
     with open(PATH_TO_CONFIGS/filename, 'r') as f:
-        reader = csv.reader(f, delimiter='\t')
+        reader = csv.reader(f, delimiter=',')
         for index, row in enumerate(reader):
             # Skip header, and avoid leading/trailing newlines.
             if index == 0:

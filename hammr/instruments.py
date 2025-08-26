@@ -131,8 +131,7 @@ class SerialTransportThermistors(SerialTransport):
         super().__init__(network)
         self.delimiter        : bytes = self.network.config['characteristics']['delimiter'].encode()
         self.polling_interval : float = self.network.config['characteristics']['polling_interval']
-        # self.addresses        : list[str] = self.network.config['characteristics']['addresses']
-        self.addresses = ['#01', '#02', '#03', '#04', '#05']
+        self.addresses        : list[str] = self.network.config['characteristics']['addresses']
 
         self.visited_adcs = 0
         self.total_adc = len(self.addresses)
@@ -142,10 +141,12 @@ class SerialTransportThermistors(SerialTransport):
     @staticmethod
     def poll_command(address: str):
         """
-        Polling command to thermistor to read analog input.
-        I assume it is from all channels, and reads in Celsius per the manual?
+        Polling command to thermistor to read analog input, formatted as `#AA(cr)`
+        where AA is the address (00 to FF) and (cr) is 0x0D == 13 -> chr(13) == \r.
+        Returns voltage data from all channels on address in format `>(data)(cr)`.
+        Data looks like +1.2345 for each channel.
         """
-        return struct.pack('>3sB', address.encode(), 13)  # chr(13) == '\r' 
+        return struct.pack('>3sB', address.encode(), 13)
 
 
     def connectionMade(self):
