@@ -1,8 +1,7 @@
 """
 py2 GenericParser.py
 Moved to this directory to avoid using sys to import.
-Long term this could be its own module and include additional post-processing.
-This object functions as a script (all of its logic is with __init__())
+Long term this could perhaps be its own module and include additional post-processing.
 """
 import time
 import json
@@ -13,9 +12,10 @@ from instrumentparsers import GPSParser, RadiometerParser, ThermistorParser
 
 
 class GenericParser():
-    def __init__(self, parserfile, verbose, removebinfiles, singlefile: bool):
-        t3 = time.time()
+    def __init__(self, parserfile, verbose: bool, removebinfiles: bool, singlefile: bool):
+        start = time.time()
 
+        # Flags for printing a summary
         rad_found = False
         thm_found = False
         gps_found = False
@@ -87,7 +87,7 @@ class GenericParser():
                 if removebinfiles:
                     instr_filename.unlink()  # method of Path
 
-            t7 = time.time()
+            end = time.time()
             if not singlefile:
                 del df
 
@@ -96,7 +96,7 @@ class GenericParser():
                 "-" * 30, "\n",
                 f"Parsing summary for {rootfilestem}.h5 -----\n",
                 "-" * 30, "\n",
-                f"Total elapsed time: {t7 - t3} seconds\n",
+                f"Total elapsed time: {end - start} seconds\n",
                 summary_string(rad_parser, 'Radiometer', t4a, t4b) if rad_found else "\n",
                 summary_string(thm_parser, 'Thermistors', t5a, t5b) if thm_found else "\n",
                 summary_string(gps_parser, 'GPS-IMU', t6a, t6b) if gps_found else "\n",
@@ -106,6 +106,7 @@ class GenericParser():
             sv_filename.unlink()
             parsing_filename.unlink()
 
+        # Close the datafile. Deleting the object closes the file.
         try:
             del df
         except UnboundLocalError:

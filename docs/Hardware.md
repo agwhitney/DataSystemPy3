@@ -1,6 +1,7 @@
 # Hardware details
 This page collects information about the hardware within HAMMR relevant to this software package and some basic data analysis. 
 
+
 ## GPS-IMU
 The GPS-IMU unit is an SBG Systems IG-500N unit.
 
@@ -24,3 +25,5 @@ and the regulated voltage $V_r$ is either 1.06 or 1.12 (I've seen conflicting in
 | C | 1.09840791237 x 10^-7    | 0.902634799967035 x 10^-7  |
 | D | -6.51108048031 x 10^-11  | 0                          |
 
+
+## Radiometer

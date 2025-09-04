@@ -35,7 +35,7 @@ def main():
         title = f"{config['name']}_ACQSystem SubServer - DAIS 2.0",
     )
 
-    # Create an instrument object, which contains connection details
+    # Create an instrument object, which contains the server protocol and serial configuration.
     # The TCP connection is made, and the SerialPort is instanced to be used as a transport.
     instrument = Instrument(config, log)
     reactor.listenTCP(instrument.tcp_port, instrument.factory)

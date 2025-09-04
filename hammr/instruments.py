@@ -1,4 +1,7 @@
 """
+Server protocol for the instruments, and the serial protocols for their transports. The serial protocols do the heavy lifting.
+Once the connection is made, data is being emitted. This is received and recorded by the respective instrument client in `genericclient.py`.
+
 https://stackoverflow.com/questions/4715340/python-twisted-receive-command-from-tcp-write-to-serial-device-return-response
 I'm making a change - the serial client will have a reference to the TCP network, so it has access to the client list and log
 This is in place of having the client list as a global. Fear is that the follow-up to the solution was used in py2, meaning this doesn't work.
@@ -48,10 +51,6 @@ class TCPInstrument(protocol.Protocol):
         )
         if data == 'STOP':
             reactor.stop()
-
-    # AGW Put this in the factory as notifyAll. See StackOverflow
-    # def notifyClient(self, data):
-    #     self.transport.write(data)
 
 
 class TCPInstrumentFactory(protocol.Factory):
@@ -270,7 +269,7 @@ class Instrument():
     def __init__(self, config: dict, log: logging.Logger):
         # Store connection details from config
         self.connection = config['serial_connection']
-        self.connection['port'] = self.connection[SERIAL_PORT]
+        self.connection['port'] = self.connection[SERIAL_PORT]  # SERIAL_PORT is determined by OS
         self.tcp_port = config['tcp_connection']['port']
 
         # Define the TCP connection

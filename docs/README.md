@@ -17,74 +17,74 @@ A JSON file contains an *object* between braces `{}` of `key : value` pairs, and
 ### System Configuration
 `system.json` contains an object for each of HAMMR's instruments, namely, the radiometer, thermistors, and GPS-IMU unit. Other than the `active` key, this file should generally remain unchanged (the `active` key can likely be removed in the future). The settings are generally used by the servers.
 
-Each object is structured like in the snippets below.
+Each object is structured like in the snippets below. Object types are as strings for cleaner formatting.
 
 ```json
 "radiometer" : {
-    "active"            : boolean,  // Sets instrument on/off in code
-    "byte_order"        : string,   // For serial communication
-    "name"              : string,   // For labeling the instrument (redundant with key)
-    "letterid"          : string,   // First letter of name.
-    "characteristics"   : object,   // Instrument-specific details
-    "serial_connection" : object,   // Serial connection details
-    "tcp_connection"    : object    // TCP connection details
+    "active"            : "boolean",  // Sets instrument on/off in code
+    "byte_order"        : "string",   // For serial communication
+    "name"              : "string",   // For labeling the instrument (redundant with key)
+    "letterid"          : "string",   // First letter of name.
+    "characteristics"   : "object",   // Instrument-specific details
+    "serial_connection" : "object",   // Serial connection details
+    "tcp_connection"    : "object"    // TCP connection details
 }
 ```
 
 `tcp_connection` contains one key-value pair:
 ```json
-"tcp_connection" : {"port" : int  // port number for TCP connection}
+"tcp_connection" : {"port" : "int"  // port number for TCP connection}
 ```
 
 `serial_connection` contains the following:
 ```json
 "tcp_connection" : {
-    "parity"       : string,  // 'N'
-    "baudrate"     : int,
-    "stop_bits"    : int,
-    "data_bits"    : int,
-    "type"         : string,  // Not implemented
-    "portWindows"  : string,  // OS is determined in `filepaths.py` 
-    "portLinux"    : string   // Applied in `instruments.py`
+    "parity"       : "string",  // 'N'
+    "baudrate"     : "int",
+    "stop_bits"    : "int",
+    "data_bits"    : "int",
+    "type"         : "string",  // Not implemented
+    "portWindows"  : "string",  // OS is determined in `filepaths.py` 
+    "portLinux"    : "string"   // Applied in `instruments.py`
 }
 ```
 
 The `characteristics` object is specific to each instrument. For the GPS-IMU:
 ```json
 "characteristics" : {
-    "update_frequency" : int,        // Hz
-    "delimiter"        : array[int]  // See below
+    "update_frequency" : "int",        // Hz
+    "delimiter"        : "array[int]"  // See below
 }
 ```
 The GPS-IMU delimiter is six bytes that bookend a *frame* of data sent by the unit. The code takes the given array and encodes it using `struct.pack`. The thermistors have a similar structure:
 ```json
 "characteristics" : {
-    "_mnemonic"        : object,     // Labels for the addresses below
-    "addresses"        : array[int]  // The digitizers, just 1 - n
-    "polling_interval" : float,      // seconds
-    "delimiter"        : string
+    "_mnemonic"        : "object",      // Labels for the addresses below
+    "addresses"        : "array[int]",  // The digitizers, just 1 - n
+    "polling_interval" : "float",       // seconds
+    "delimiter"        : "string"
 }
 ```
 The radiometer has characteristics for the microwave (MW), millimeter-wave (MMW), and sounding (SND) channels. The structure is the same for each.
 ```json
 "characteristics" : {
     "configuration" : {
-        "ip"            : string,  // IP address
-        "port"          : int,
-        "buffer_length" : int
+        "ip"            : "string",  // IP address
+        "port"          : "int",
+        "buffer_length" : "int"
     }
-    "_sequence_information" : object,  // Describes values in `slot//.value` below
+    "_sequence_information" : "object",  // Describes values in `slot//.value` below
     "mw": {
-        "active"           : bool,  // Sets channel on/off to measure
-        "counter"          : bool,
-        "integration_time" : float  // milliseconds?
+        "active"           : "bool",  // Sets channel on/off to measure
+        "counter"          : "bool",
+        "integration_time" : "float"  // milliseconds?
         "sequence" : {
-            "length" : int,  //
+            "length" : "int",  //
             // Each channel has 10 slots, labeled `slot//` from 0 - 10.
             "slot0" : {
-                "meaning" : string,      // A label
-                "value"   : array[int],  // Five bits 0 or 1. See below.
-                "length"  : int
+                "meaning" : "string",      // A label
+                "value"   : "array[int]",  // Five bits 0 or 1. See below.
+                "length"  : "int"
             }
         }
     }

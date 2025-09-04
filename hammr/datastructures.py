@@ -1,5 +1,6 @@
 """
 py2 h5classes.py
+The *Sample classes define the tables in the .h5 file.
 """
 from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
 import tables as tb
@@ -58,8 +59,9 @@ class Information(IsDescription):
 
 class DataFile:
     """
-    This replaces py2 `CreateFile` and is an object primarily to avoid returning a 15-tuple of the rows, tables, and file.
-    It's really just a data container for an open file.
+    This replaces py2 `ParserAux.CreateFile` method. Creates an .h5 file.
+    Py2 had a method returning a 15-tuple of rows, tables, and the file. This object 
+    contains that info in dicts.
     """
     def __init__(self, filename):
         self.h5file = tb.open_file(filename, 'w', title="Acquisition data")
@@ -68,20 +70,23 @@ class DataFile:
         self.tables = {}
         self.rows = {}
         self.create_tree()
-        self._thermistor_metadata()  # Thermistor metadata copy-pasted from py2
+        self._thermistor_metadata()
 
 
     def __del__(self):
-        self.close()
+        self._close()
 
 
-    def close(self):
+    def _close(self) -> None:
+        """Once the file is closed the groups/tables/rows become inaccessible (I think)"""
         self.h5file.close()
 
     
-    def _thermistor_metadata(self):
-        # This is copy-pasted (and cleaned up a tiny bit) thermistor metadata.
-        # Result is a numpy array. Each append() adds another value.
+    def _thermistor_metadata(self) -> None:
+        """
+        This metadata fills the Thermistors metadata row. Strings with coefficients are copy/pasted and haven't been reviewed (9/4/25)
+        `get_thermistor_map` refers to the file in the Config folder.
+        """
         infoRow = self.rows['IThermistors']
         infoRow['General'] = 'Coefficients from voltage to Temperatures for KS502J2 thermistors: A = 1.29337828808 * 10^-3,	B = 2.34313147501 * 10^-4,	C = 1.09840791237 * 10^-7,	D = -6.51108048031 * 10^-11'
         infoRow.append()
@@ -117,9 +122,9 @@ class DataFile:
         self.tables['IGeneral'] = self.h5file.create_table(self.groups['I'], 'General_Info', Information, "Raw files used for composing this .h5")
         self.tables['IServer'] = self.h5file.create_table(self.groups['I'], 'Server_Info', Information, "JSON-formatted info regarding server")
         self.tables['IThermistors'] = self.h5file.create_table(self.groups['I'], 'Thermistors_Info', Information, "Thermistor information")
-        # Unused in py2
-        # tableINFRadiometer = self.h5file.create_table(self.groups['I'], 'Radiometer_Info', ds.Information, "Radiometer information")
-        # tableINFGPS = self.h5file.create_table(self.groups['I'], 'GPS_Info', ds.Information, "GPS-IMU information")
+        # These appear to be unused
+        self.tables['IRadiometer'] = self.h5file.create_table(self.groups['I'], 'Radiometer_Info', Information, "Radiometer information")
+        self.tables['IGPS'] = self.h5file.create_table(self.groups['I'], 'GPS_Info', Information, "GPS-IMU information")
 
         # Create row pointers which hold data in dict format.
         self.rows['AMR'] = self.tables['AMR'].row

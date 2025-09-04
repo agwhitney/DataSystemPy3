@@ -1,3 +1,6 @@
+"""
+Handy functions for debugging thermistor hardware and output.
+"""
 import serial
 import time
 
@@ -19,6 +22,9 @@ def query_channels(conn) -> None:
 
 
 def temp_from_h5volt(filepath: str):
+    """
+    Check that the .h5 output (in volts) is reasonable (in Kelvin)
+    """
     def convert(thm_type, voltage):
         if thm_type == 'KS':
             A = 1.29337828808 * 10**-3

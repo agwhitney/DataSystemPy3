@@ -34,8 +34,7 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logg
 
 def get_thermistor_map(filename='thermistors.csv') -> str:
     """
-    Called in datastructures.py to provide a large string of metadata using
-    Config/thermistors.csv as reference.
+    Called in datastructures.py to provide a large string of metadata using Config/thermistors.csv as reference.
     """
     s = ''
     with open(PATH_TO_CONFIGS/filename, 'r') as f:

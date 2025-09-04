@@ -1,7 +1,6 @@
 """
 Replaces py2 GeneralPaths.py, primarily by using the pathlib module and object-oriented paths.
-py2 also contained a handful of constants that already exist in places that make more sense,
-so I've omitted them.
+py2 also contained a handful of constants that already exist in places that make more sense, so I've omitted them.
 Note that Path / str is Path
 """
 import platform
@@ -12,29 +11,29 @@ from pathlib import Path
 CONTROL_SERVER_IP ='127.0.0.1'
 CONTROL_SERVER_PORT = 9022
 
-# Project folder
+# Source code and Project folder
 code = Path(__file__).parent
 project = code.parent
 PATH_TO_CONFIGS = project / 'config'
-
-# Handle differences between Linux and Windows systems
-system = platform.system()
-if system == 'Windows':
-    PATH_TO_PYTHON = project / '.venv/Scripts/python'
-    SERIAL_PORT = 'portWindows'
-
-elif system == 'Linux':
-    PATH_TO_PYTHON = project / '.venv/bin/python'
-    SERIAL_PORT = 'portLinux'
 
 # genericserver and genericclient filepaths
 PATH_TO_GENSERVER = code / 'genericserver.py'
 PATH_TO_GENCLIENT = code / 'genericclient.py'
 
+# Handle differences between Linux and Windows systems
+# SERIAL_PORT is used to refer to the correct item in system config.
+system = platform.system()
+if system == 'Windows':
+    PATH_TO_PYTHON = project / '.venv/Scripts/python'
+    SERIAL_PORT = 'portWindows'
+elif system == 'Linux':
+    PATH_TO_PYTHON = project / '.venv/bin/python'
+    SERIAL_PORT = 'portLinux'
 
 # Output folder structure
 ACQ = project / 'AcqSystem'
 
+## One of these two is redundant
 ACQ_CONFIGS = ACQ / 'configs'
 ACQ_CONFIGS_TMP = ACQ_CONFIGS / 'tmp'
 
@@ -44,15 +43,17 @@ ACQ_DATA_H5 = ACQ_DATA / 'h5_files'
 ACQ_LOGS = ACQ / 'logs'
 
 
-# Methods to verify and debug
+# Verifying and Debugging methods
 def check_structure():
+    """Validate that the ACQ folder structure exists (by creating it if it doesn't)"""
     for path in [ACQ, ACQ_CONFIGS, ACQ_DATA, ACQ_LOGS, ACQ_CONFIGS_TMP, ACQ_DATA_H5]:
         path.mkdir(exist_ok=True)
     print("Folder structure is set up")
 
 
-def print_tree(root):
-    print("-"*20, f"\nFolder structure in {root.parent}")
+def print_tree(root=ACQ):
+    """Visualize a file tree (dirs only)"""
+    print("-"*20, f"\nFolder structure in {root}")
     print(root.stem)
     for path in sorted(root.rglob('*')):
         depth = len(path.relative_to(root).parts)

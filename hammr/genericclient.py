@@ -1,4 +1,7 @@
 """
+Data receiver for the serial instruments. The client is basically an open file with a lifetime set at creation,
+and will collect data until that lifetime ends and the file and connection closes.
+
 AGW Here, like in the servers, I've moved some pseudo-globals to the factory.
 Also, like the servers, it would probably be more correct to have one reactor rather than micromanage three.
 I've added a couple of file.close() to the failed-connection cases.
@@ -73,12 +76,14 @@ class TCPClientFactory(protocol.ClientFactory):
 def main():
     """
     Like genericserver.py, this is called as a subprocess in masterclient.py for each instrument.
+    Py2 had this as a class, but it functions more as a script. 
     """
     # Parse commandline arguments
     parser = argparse.ArgumentParser(description="Client for the Data Acquisition and Instrument control System (DAIS Client)")
     parser.add_argument('instance_config', help="Client file (.json) to work with")
     args = parser.parse_args()
 
+    # Open config
     with open(args.instance_config, 'r') as f:
         config = json.load(f)
     name = config['name']
@@ -101,7 +106,7 @@ def main():
     filepath = ACQ_DATA / f"{context}_{name}.bin"
     file = open(filepath, 'wb')
 
-    # Create client
+    # Connect client
     factory = TCPClientFactory(file, num_items, name, log)
     reactor.connectTCP(ip, port, factory)
     reactor.run()
