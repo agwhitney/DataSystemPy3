@@ -1,12 +1,12 @@
 {
     "radiometer": {
-        "active": false,
+        "active": true,
         "byte_order": "big-endian",
         "name": "Radiometer",
         "letterid": "R",
         "characteristics": {
             "configuration": {
-                "ip": "1.1.1.1",
+                "ip": "10.10.10.2",
                 "port": 30,
                 "buffer_length": 7
             },
@@ -197,13 +197,13 @@
             "data_bits": 8,
             "type": "Serial",
             "portWindows": "COM1",
-            "portLinux": "/dev/ttyUSB1"
+            "portLinux": "/dev/ttyUSB2"
         },
         "tcp_connection": {"port": 7555}
     },
 
     "thermistors": {
-        "active": true,
+        "active": false,
         "byte_order": "big-endian",
         "name": "Thermistors",
         "letterid": "T",
@@ -226,7 +226,7 @@
             "data_bits": 8,
             "type": "Serial",
             "portWindows": "COM3",
-            "portLinux": "/dev/ttyUSB0"
+            "portLinux": "/dev/ttyUSB3"
         },
         "tcp_connection": {"port": 8055}
     },
@@ -247,7 +247,7 @@
             "data_bits": 8,
             "type": "Serial",
             "portWindows": "COM3",
-            "portLinux": "/dev/ttyUSB3"
+            "portLinux": "/dev/ttyUSB2"
         },
         "tcp_connection": {"port": 9055}
     }

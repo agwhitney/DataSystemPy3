@@ -105,6 +105,7 @@ class SerialTransport(basic.LineReceiver):
         """
         Writes via transport to clients in network.
         """
+        # print(data)  # Use for debugging, to check that data is streaming.
         self.network.notifyAll(data)
 
 
@@ -115,12 +116,12 @@ class SerialTransportRadiometer(SerialTransport):
         fpga = FPGA(self.network.config, self.network.log)
         fpga.estimated_data_throughput()
         fpga.configure()
-        fpga.hardware_reset()
+        fpga.reset_hardware()
         fpga.disconnect_tcp()
 
 
     def dataReceived(self, data: bytes):
-        dataline = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode + data + ":ENDS\n".encode()
+        dataline = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode() + data + ":ENDS\n".encode()
         self.iteration += 1
         self.write_down(dataline)
 

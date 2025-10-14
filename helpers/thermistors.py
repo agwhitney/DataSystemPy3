@@ -8,11 +8,11 @@ import tables as tb
 import numpy as np
 
 
-def query_channels(conn) -> None:
+def query_channels() -> None:
     """
     Get a response (or timeout) from each connected device.
     """
-    conn = serial.Serial('COM3', timeout=2)
+    conn = serial.Serial('/dev/ttyUSB1', timeout=2)
     for i in range(8):
         time.sleep(0.5)  # I think this is necessary but can be shorter.
         cmd = f'#0{i}\r'
@@ -52,4 +52,4 @@ def temp_from_h5volt(filepath: str):
 
 
 if __name__ == '__main__':
-    temp_from_h5volt(r"AcqSystem\data\h5_files\25_08_25__15_07_50__2of2_Py3 test.h5")
+    query_channels()

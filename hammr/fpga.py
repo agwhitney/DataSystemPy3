@@ -29,15 +29,6 @@ class FPGA():
     inst_base = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]  # py2 Inst_S#, with # = 0--9.
 
 
-    @staticmethod
-    def get_denominator(int_time):
-        ratio_max = 16777215
-        fmax = 50000  # Units of kHz
-        ftarget = 2 * (1 / int_time)
-        ratio = int(fmax / ftarget)  # This was in py2 also, though in py2 integers divide to an integer.
-        return max(ratio, ratio_max)
-
-
     def __init__(self, config, log):
         self.log = log
         self.client_socket: socket.socket = None  # Set in init via connect()
@@ -60,7 +51,7 @@ class FPGA():
             self.int_time[key] = cfg['integration_time']
             self.activated[key] = cfg['active']
             self.counter[key] = cfg['counter']
-            self.sequence_length = cfg['sequence']['length']
+            self.sequence_length[key] = cfg['sequence']['length']
 
             _length = []
             _slot = []
@@ -72,12 +63,25 @@ class FPGA():
             self.length[key] = _length
             self.slot[key] = _slot
 
-        self.log.info(f"{self.ip} - {self.port} - {self.tcp_buffer_size} {type(self.ip)}")  # type(str) is str???
+        self.log.info(f"Init FPGA: IP {self.ip} Port {self.port} Buffer size {self.tcp_buffer_size}")
         self.connect()
 
 
-    def connect(self):
-        tcp_address = (self.ip, self.port)
+    @staticmethod
+    def get_denominator(int_time):
+        ratio_max = 16777215
+        fmax = 50000  # Units of kHz
+        ftarget = 2 * (1 / int_time)
+        ratio = int(fmax / ftarget)  # int returns floor
+        return max(ratio, ratio_max)
+
+
+    def connect(self, ip: str = None, port: int = None):
+        if not ip:
+            ip = self.ip
+        if not port:
+            port = self.port
+        tcp_address = (ip, port)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect(tcp_address)
         self.log.info(f"TCP/IP connected @ {tcp_address} ---> ;^)")

@@ -9,3 +9,4 @@ test_paths/
 AcqSystem/
 
 .Rhistory
+.vscode
