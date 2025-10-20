@@ -12,10 +12,10 @@ import time
 from datetime import datetime
 from subprocess import Popen
 
-from utils import create_log
-from motorcontrol import MotorControl
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, ACQ_DATA, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from genericparser import GenericParser
+from motorcontrol import MotorControl
+from utils import create_log
 
 
 class MasterClient():

@@ -1,0 +1,4 @@
+1) Fix ttyUSB mounting location for instruments.
+    https://stackoverflow.com/questions/24714241/ttyusb-numbers-are-changing-after-reboot
+
+2) 

@@ -41,7 +41,7 @@
         "total_files": 2
     },
     "_context": "This string will be included in all saved files.", 
-    "context": "radiometerTEST",
+    "context": "radTEST",
     "instances": [
         {"name": "Thermistors", "active": false, "ip": "127.0.0.1", "port": 8055, "num_items": 0},
         {"name": "Radiometer", "active": true, "ip": "127.0.0.1", "port": 7555, "num_items": 0},

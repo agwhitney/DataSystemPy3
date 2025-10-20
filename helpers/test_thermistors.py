@@ -12,9 +12,9 @@ def query_channels() -> None:
     """
     Get a response (or timeout) from each connected device.
     """
-    conn = serial.Serial('/dev/ttyUSB1', timeout=2)
+    conn = serial.Serial('/dev/ttyUSB-thm', timeout=2)
     for i in range(8):
-        time.sleep(0.5)  # I think this is necessary but can be shorter.
+        time.sleep(0.25)  # I think this is necessary but can be shorter.
         cmd = f'#0{i}\r'
         conn.write(cmd.encode())
         r = conn.readline()

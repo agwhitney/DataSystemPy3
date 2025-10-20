@@ -70,24 +70,24 @@ class TCPHandler(protocol.Protocol):
                 self.transport.write(msg.encode())
 
             case 'SYST':
-                print("Sending configuration file to client.")
+                print("[MasterServer] Sending configuration file to client.")
                 self.transport.write(json.dumps(self.factory.system_config).encode())
             
             case 'MSTART':
                 print("Starting motor")
                 fpga = FPGA(self.factory.motor_instr, self.factory.log)
-                print("Sending START to motor")
-                fpga.MotorControl(fpga.StartMotor)
+                print("[MasterServer] Sending START to motor")
+                fpga.motor_control(fpga.START_VALUE)
                 fpga.DisconnectTCP()
                 self.transport.write("Starting motor".encode())
             
             case 'MSTOP':
                 print("Stopping motor")
                 fpga = FPGA(self.factory.motor_instr, self.factory.log)
-                fpga.MotorControl(fpga.StopMotor)
-                print("Sending STOP to motor")
+                fpga.motor_control(fpga.STOP_VALUE)
+                print("[MasterServer] Sending STOP to motor")
                 fpga.DisconnectTCP()
-                self.transport.write("Stopping motor".encode())
+                self.transport.write("[MasterServer] Stopping motor".encode())
 
 
 

@@ -1,6 +1,6 @@
 {
     "radiometer": {
-        "active": true,
+        "active": false,
         "byte_order": "big-endian",
         "name": "Radiometer",
         "letterid": "R",
@@ -74,7 +74,7 @@
                 }
             },
             "mmw": {
-                "active": true,
+                "active": false,
                 "counter": false,
                 "integration_time": 0.2,
                 "sequence": {
@@ -132,7 +132,7 @@
                 }
             },
             "snd": {
-                "active": true,
+                "active": false,
                 "counter": false,
                 "integration_time": 1.0,
                 "sequence": {
@@ -197,7 +197,7 @@
             "data_bits": 8,
             "type": "Serial",
             "portWindows": "COM1",
-            "portLinux": "/dev/ttyUSB2"
+            "portLinux": "/dev/ttyUSB-rad"
         },
         "tcp_connection": {"port": 7555}
     },
@@ -226,13 +226,13 @@
             "data_bits": 8,
             "type": "Serial",
             "portWindows": "COM3",
-            "portLinux": "/dev/ttyUSB3"
+            "portLinux": "/dev/ttyUSB-thm"
         },
         "tcp_connection": {"port": 8055}
     },
 
     "gpsimu": {
-        "active": false,
+        "active": true,
         "byte_order": "big-endian",
         "name": "GPS-IMU",
         "letterid": "G",
@@ -247,7 +247,7 @@
             "data_bits": 8,
             "type": "Serial",
             "portWindows": "COM3",
-            "portLinux": "/dev/ttyUSB2"
+            "portLinux": "/dev/ttyUSB1"
         },
         "tcp_connection": {"port": 9055}
     }

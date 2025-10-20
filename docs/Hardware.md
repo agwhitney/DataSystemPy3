@@ -1,5 +1,10 @@
 # Hardware details
-This page collects information about the hardware within HAMMR relevant to this software package and some basic data analysis. 
+This page collects information about the hardware within HAMMR relevant to this software package and some basic data analysis.
+
+
+## Connection in OS
+See this link https://stackoverflow.com/questions/24714241/ttyusb-numbers-are-changing-after-reboot.
+I followed this to fix the connection names as "ttyUSB-xxx" for rad, thm, and gps. Having trouble getting it to work for GPS while it's connected through a hub, but it won't be after debugging. Useful command to see connections: `dmesg | grep tty`.
 
 
 ## GPS-IMU

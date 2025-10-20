@@ -13,7 +13,7 @@ import struct
 class FPGA():
     # Defined parameters
     mapkey = ('mw', 'mmw', 'snd')
-    header = {'mw': 85, 'mmw': 87, 'snd': 93}  # 'U' #85; 'W' #87 ']' #93  # Unused
+    header = {'mw': 85, 'mmw': 87, 'snd': 93}  # 'U' #85; 'W' #87 ']' #93  # Unused?
     offmap = {'mw': 0, 'mmw': 16, 'snd': 32}
     bytesPerDatagram = {'arm': 22, 'act': 14, 'snd': 38}  # py2 this is ordered ARM, SND, ACT. bytes_remap = {'mw': 22, 'mmw': 14, 'snd': 38}
 
@@ -22,8 +22,9 @@ class FPGA():
     counter_val = 240
     nocounter_val = 0
 
-    start_motor = 170  # Unused
-    stop_motor = 85  # Unused
+    # These constants are called in masterserver.py to FPGA.motor_control
+    START_VALUE = 170
+    STOP_VALUE = 85
     
     inst = {'ac': 0, 'fr': 1, 'lt': 12}
     inst_base = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]  # py2 Inst_S#, with # = 0--9.
@@ -33,7 +34,7 @@ class FPGA():
         self.log = log
         self.client_socket: socket.socket = None  # Set in init via connect()
 
-        # load a bunch from the config
+        # load a bunch from the config (which is just the radiometer config, and really just a subset of that)
         self.tcp_buffer_size = config['characteristics']['configuration']['buffer_length']
         self.ip = config['characteristics']['configuration']['ip']
         self.port = config['characteristics']['configuration']['port']
@@ -83,14 +84,15 @@ class FPGA():
             port = self.port
         tcp_address = (ip, port)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.settimeout(3)  # AGW hoping this avoids lockout on interrupts if the ip is wrong for some reason
         self.client_socket.connect(tcp_address)
-        self.log.info(f"TCP/IP connected @ {tcp_address} ---> ;^)")
+        self.log.info(f"TCP/IP connected @ {tcp_address}")
 
 
     def estimated_data_throughput(self):
         estimate = 0
         for key in self.mapkey:
-            bytes_remap = {'mw': 22, 'mmw':14, 'snd':38}  # this is `self.bytesPerDatagram` adjusted for explicit keying
+            bytes_remap = {'mw': 22, 'mmw':14, 'snd':38}  # this is `self.bytesPerDatagram` adjusted for explicit keying. See top.
 
             if self.activated[key]:
                 estimate += bytes_remap[key] / self.int_time[key]
@@ -132,58 +134,63 @@ class FPGA():
 
 
     def configure_channel(self, activated, int_time, inst_seq, inst_ac, inst_fr, inst_lt, sequence, length, sequence_length):
-        data2send = self.send_instruction(activated, inst_ac, 0)
-        self.recv_instruction(data2send)
+        self.send_instruction(activated, inst_ac, 0)
+        self.recv_instruction()
         
         int_val = self.get_denominator(int_time)
-        data2send = self.send_instruction(int_val, inst_fr, 0)
-        self.recv_instruction(data2send)
+        self.send_instruction(int_val, inst_fr, 0)
+        self.recv_instruction()
 
         self.configure_sequence(inst_seq, sequence, length)
-        data2send = self.send_instruction(sequence_length, inst_lt, 0)
-        self.recv_instruction(data2send)
+        self.send_instruction(sequence_length, inst_lt, 0)
+        self.recv_instruction()
 
 
     def configure_sequence(self, inst_seq, sequence, length):
         for i in range(10):
-            data2send = self.send_instruction(sequence[i] + 256*length[i], inst_seq[i], 0)
-            self.recv_instruction(data2send)
+            self.send_instruction(sequence[i] + 256*length[i], inst_seq[i], 0)
+            self.recv_instruction()
 
 
-    def send_instruction(self, container, inst, processor_order):
-        # AGW I think `inst` is instruction, which means maybe it is throughout
-        porder = struct.pack('<b', processor_order)
-        value = struct.pack('>I', container)
-        instruction = struct.pack('<b', inst)
-        flusher = struct.pack('<b', 10)
-        data2send = flusher + porder + instruction + value
-
-        self.client_socket.send(data2send)
-        self.log.info(f"Sending instruction: {instruction} Slot value: {container}")
-        return data2send  # Only seems to be used in configure_sequence
+    def send_instruction(self, container, inst, processor_order) -> None:
+        data = struct.pack('>bbbI', 10, processor_order, inst, container)  # 10 -> \n delimiter
+        self.client_socket.send(data)
+        self.log.info(f"Sent data {data}. Instruction: {inst} Slot value: {container}")
 
 
-    def recv_instruction(self, data):
-        # py2 has some print-checks on this received data
+    def recv_instruction(self) -> None:
         self.client_socket.recv(self.tcp_buffer_size)
 
-    
+
     def reset_hardware(self):
         self.send_instruction(16777216, 0, 1)
-        self.recv_instruction(self.tcp_buffer_size)
+        self.recv_instruction()
 
 
     def disconnect_tcp(self):
         self.log.info("Sending TCP/IP disconnect sequence")
         self.send_instruction(33554432, 0, 1)
-        self.recv_instruction(self.tcp_buffer_size)
+        self.recv_instruction()
         self.client_socket.close()
+        self.log.info("FPGA socket closed.")
 
 
     def motor_control(self, control):
-        self.send_instruction(50331648)
-        self.recv_instruction(self.tcp_buffer_size)
+        self.send_instruction(50331648 + control, 0, 1)
+        self.recv_instruction()
 
 
     def start_acquisition(self):
         self.send_instruction(0, 0, 1)
+
+
+if __name__ == '__main__':
+    import json
+    from utils import create_log
+    from filepaths import PATH_TO_CONFIGS
+    with open(PATH_TO_CONFIGS / 'system.json') as f:
+        data = json.load(f)['radiometer']
+    log = create_log('dummy.log', "Dummy")
+
+    f = FPGA(data, log)
+    print()

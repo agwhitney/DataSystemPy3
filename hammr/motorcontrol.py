@@ -10,6 +10,7 @@ class MotorControl():
     def __init__(self, ip, port):
         self.tcp_address = (ip, port)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.settimeout(3)  # AGW hoping this avoids lockout on interrupts.
         self.client_socket.connect(self.tcp_address)
 
 

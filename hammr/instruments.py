@@ -105,7 +105,7 @@ class SerialTransport(basic.LineReceiver):
         """
         Writes via transport to clients in network.
         """
-        # print(data)  # Use for debugging, to check that data is streaming.
+        print(data)  # Use for debugging, to check that data is streaming.
         self.network.notifyAll(data)
 
 
