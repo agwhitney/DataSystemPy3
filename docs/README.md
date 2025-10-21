@@ -77,7 +77,7 @@ The radiometer has characteristics for the microwave (MW), millimeter-wave (MMW)
     "mw": {
         "active"           : "bool",  // Sets channel on/off to measure
         "counter"          : "bool",
-        "integration_time" : "float"  // milliseconds?
+        "integration_time" : "float"  // Milliseconds
         "sequence" : {
             "length" : "int",  //
             // Each channel has 10 slots, labeled `slot//` from 0 - 10.

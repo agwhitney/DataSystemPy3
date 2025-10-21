@@ -13,14 +13,15 @@ import struct
 class FPGA():
     # Defined parameters
     mapkey = ('mw', 'mmw', 'snd')
-    header = {'mw': 85, 'mmw': 87, 'snd': 93}  # 'U' #85; 'W' #87 ']' #93  # Unused?
+    header = {'mw': 85, 'mmw': 87, 'snd': 93}  # 'U' #85; 'W' #87 ']' #93  Used in .h5 structure?
     offmap = {'mw': 0, 'mmw': 16, 'snd': 32}
-    bytesPerDatagram = {'arm': 22, 'act': 14, 'snd': 38}  # py2 this is ordered ARM, SND, ACT. bytes_remap = {'mw': 22, 'mmw': 14, 'snd': 38}
+    bpd = {'arm': 22, 'act': 14, 'snd': 38}  # "Bytes per Datagram" py2 this is ordered ARM, SND, ACT
+    bpd_remap = {'mw': bpd['arm'], 'mmw': bpd['act'], 'snd': bpd['snd']}
 
-    activate_val = 15
-    deactivate_val = 0
-    counter_val = 240
-    nocounter_val = 0
+    ACTIVATE_VALUE = 15
+    DEACTIVATE_VALUE = 0
+    COUNTER_VALUE = 240
+    NOCOUNTER_VALUE  = 0
 
     # These constants are called in masterserver.py to FPGA.motor_control
     START_VALUE = 170
@@ -32,7 +33,7 @@ class FPGA():
 
     def __init__(self, config, log):
         self.log = log
-        self.client_socket: socket.socket = None  # Set in init via connect()
+        self.client_socket: socket.socket  # Set in init via connect()
 
         # load a bunch from the config (which is just the radiometer config, and really just a subset of that)
         self.tcp_buffer_size = config['characteristics']['configuration']['buffer_length']
@@ -40,9 +41,9 @@ class FPGA():
         self.port = config['characteristics']['configuration']['port']
         
         # py2 these were lists. `length` and `slot` were one-dimensional and accessed using multiples of 10
-        self.int_time = {}
         self.activated = {}
         self.counter = {}
+        self.int_time = {}
         self.sequence_length = {}
         self.length = {}
         self.slot = {}
@@ -65,23 +66,19 @@ class FPGA():
             self.slot[key] = _slot
 
         self.log.info(f"Init FPGA: IP {self.ip} Port {self.port} Buffer size {self.tcp_buffer_size}")
-        self.connect()
+        self.connect(self.ip, self.port)
 
 
     @staticmethod
     def get_denominator(int_time):
         ratio_max = 16777215
-        fmax = 50000  # Units of kHz
-        ftarget = 2 * (1 / int_time)
+        fmax = 50000  # kHz
+        ftarget = 2 / int_time  # range 25 kHz - 2.9 Hz
         ratio = int(fmax / ftarget)  # int returns floor
-        return max(ratio, ratio_max)
+        return min(ratio, ratio_max)  # Intersects at about int_time = 671 ms
 
 
-    def connect(self, ip: str = None, port: int = None):
-        if not ip:
-            ip = self.ip
-        if not port:
-            port = self.port
+    def connect(self, ip: str, port: int):
         tcp_address = (ip, port)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.settimeout(3)  # AGW hoping this avoids lockout on interrupts if the ip is wrong for some reason
@@ -92,16 +89,14 @@ class FPGA():
     def estimated_data_throughput(self):
         estimate = 0
         for key in self.mapkey:
-            bytes_remap = {'mw': 22, 'mmw':14, 'snd':38}  # this is `self.bytesPerDatagram` adjusted for explicit keying. See top.
-
             if self.activated[key]:
-                estimate += bytes_remap[key] / self.int_time[key]
+                estimate += self.bpd_remap[key] / self.int_time[key]
                 self.log.info(f"{key} channels activated -> int_time = {self.int_time[key]} ms")
         
         self.log.info(f"Estimated data throughput: {estimate} kB")
         if estimate > 400:
-            self.log.info("Warning --> Data throughput should be <400 kBps. This acquistiion could crash.")
-            self.log.info("Warning --> DO NOT EXCEED 420 kBps, or you will need to reboot the acquisition system!")
+            self.log.warning("Data throughput should be <400 kBps. This acquistiion could crash.")
+            self.log.warning("DO NOT EXCEED 420 kBps, or you will need to reboot the acquisition system!")
 
 
     def configure(self):
@@ -109,8 +104,8 @@ class FPGA():
         for key in self.mapkey:
             self.log.info(f"Sending configuration for {key}. OFF value = {self.offmap[key]}")
 
-            active_ch = self.activate_val if self.activated[key] else self.deactivate_val
-            active_ch += self.counter_val if self.counter[key] else 0  # Reads a little funny, but the False case is active += 0
+            active_ch = self.ACTIVATE_VALUE if self.activated[key] else self.DEACTIVATE_VALUE
+            active_ch += self.COUNTER_VALUE if self.counter[key] else 0  # Reads a little funny, but the False case is active += 0
 
             int_time_ch = self.int_time[key]
             inst_seq = [i + self.offmap[key] for i in self.inst_base]
@@ -168,7 +163,7 @@ class FPGA():
 
 
     def disconnect_tcp(self):
-        self.log.info("Sending TCP/IP disconnect sequence")
+        self.log.info("Sending TCP/IP disconnect sequence to FPGA.")
         self.send_instruction(33554432, 0, 1)
         self.recv_instruction()
         self.client_socket.close()
