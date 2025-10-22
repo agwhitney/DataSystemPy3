@@ -78,7 +78,7 @@ class TCPHandler(protocol.Protocol):
                 fpga = FPGA(self.factory.motor_instr, self.factory.log)
                 print("[MasterServer] Sending START to motor")
                 fpga.motor_control(fpga.START_VALUE)
-                fpga.DisconnectTCP()
+                fpga.disconnect_tcp()
                 self.transport.write("Starting motor".encode())
             
             case 'MSTOP':
@@ -86,7 +86,7 @@ class TCPHandler(protocol.Protocol):
                 fpga = FPGA(self.factory.motor_instr, self.factory.log)
                 fpga.motor_control(fpga.STOP_VALUE)
                 print("[MasterServer] Sending STOP to motor")
-                fpga.DisconnectTCP()
+                fpga.disconnect_tcp()
                 self.transport.write("[MasterServer] Stopping motor".encode())
 
 
@@ -143,7 +143,7 @@ class MasterServer():
         reactor.run()        
 
     
-    def start_servers(self) -> list:
+    def start_servers(self) -> list[Popen]:
         processes = []
         server_count = 0
         

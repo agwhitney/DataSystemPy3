@@ -87,10 +87,6 @@ class MasterClient():
         
 
     def get_serverconfig(self):
-        """
-        This gets server config info from motorcontrol.py, which I believe actually does connect
-        to the FGPA via TCP/IP. Why pass the data? Why not just call it again?
-        """
         # Get the running system config from the motor-FPGA connection
         self.motor = MotorControl(self.server_ip, self.server_port)
         system_config = self.motor.send_getsysconfig()
@@ -142,7 +138,7 @@ class MasterClient():
             GenericParser(filename, verbose, remove_bin, single_file)
             # AGW removed an unlabeled try-except.
         else:
-            print("Not running L0a -> L0b(?) parser per config setting.")
+            print("Not running L0a -> L0b parser per config setting.")
         
 
     def start_clients(self) -> list:
@@ -158,7 +154,7 @@ class MasterClient():
 
     def acquire(self):
         """
-        Performs data acquisition by creating subprocess clients for each instrument. These connect to the servers
+        Performs data acquisition by creating subprocess clients for each instrument. These connect to the subservers
         created in masterserver.py and handle data according to the protocols in genericclient.py
         """
         self.log.info(f"For configuration using {self.server_ip} @ port {self.server_port}")

@@ -138,9 +138,8 @@ class RadiometerParser(BasicParser):
 
         while left_vals > self.bytes_per_datagram['SND']:
             if header == self.MW_HEADERARRAY:
-                print('reading MW package', self.x_AMR, 'header: ', struct.unpack('>1B', self.c), struct.unpack('>1B', self.b), struct.unpack('>1B', self.a))
                 indexstart = index
-                indexend = index + self.bytes_per_datagram['ARM']
+                indexend = index + self.bytes_per_datagram['AMR']
                 value = struct.unpack('>9H4B', input_vals[indexstart:indexend])
                 index = indexend
 

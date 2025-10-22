@@ -129,54 +129,58 @@ class FPGA():
 
 
     def configure_channel(self, activated, int_time, inst_seq, inst_ac, inst_fr, inst_lt, sequence, length, sequence_length):
-        self.send_instruction(activated, inst_ac, 0)
-        self.recv_instruction()
+        self.send_and_recv(activated, inst_ac, 0)
         
         int_val = self.get_denominator(int_time)
-        self.send_instruction(int_val, inst_fr, 0)
-        self.recv_instruction()
+        self.send_and_recv(int_val, inst_fr, 0)
 
         self.configure_sequence(inst_seq, sequence, length)
-        self.send_instruction(sequence_length, inst_lt, 0)
-        self.recv_instruction()
+        self.send_and_recv(sequence_length, inst_lt, 0)
 
 
     def configure_sequence(self, inst_seq, sequence, length):
         for i in range(10):
-            self.send_instruction(sequence[i] + 256*length[i], inst_seq[i], 0)
-            self.recv_instruction()
+            self.send_and_recv(sequence[i] + 256*length[i], inst_seq[i], 0)
 
 
-    def send_instruction(self, container, inst, processor_order) -> None:
-        data = struct.pack('>bbbI', 10, processor_order, inst, container)  # 10 -> \n delimiter
+    def send_instruction(self, container, inst, processor_order) -> bytes:
+        """Sends a command. Returns it for debugging."""
+        data = struct.pack('>bbbI', 10, processor_order, inst, container)  # 10 -> \n
         self.client_socket.send(data)
-        self.log.info(f"Sent data {data}. Instruction: {inst} Slot value: {container}")
+        return data
 
 
-    def recv_instruction(self) -> None:
-        self.client_socket.recv(self.tcp_buffer_size)
+    def recv_instruction(self) -> bytes:
+        """Receives data. Returns it for debugging."""
+        data = self.client_socket.recv(self.tcp_buffer_size)
+        return data
+
+
+    def send_and_recv(self, container, inst, processor_order) -> None:
+        """Combined send and receive. Prints returns for debugging."""
+        send = self.send_instruction(container, inst, processor_order)
+        recv = self.recv_instruction()
+        self.log.info(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
+
 
 
     def reset_hardware(self):
-        self.send_instruction(16777216, 0, 1)
-        self.recv_instruction()
+        self.send_and_recv(16777216, 0, 1)
 
 
     def disconnect_tcp(self):
         self.log.info("Sending TCP/IP disconnect sequence to FPGA.")
-        self.send_instruction(33554432, 0, 1)
-        self.recv_instruction()
+        self.send_and_recv(33554432, 0, 1)
         self.client_socket.close()
         self.log.info("FPGA socket closed.")
 
 
     def motor_control(self, control):
-        self.send_instruction(50331648 + control, 0, 1)
-        self.recv_instruction()
+        self.send_and_recv(50331648 + control, 0, 1)
 
 
     def start_acquisition(self):
-        self.send_instruction(0, 0, 1)
+        self.send_and_recv(0, 0, 1)
 
 
 if __name__ == '__main__':
@@ -188,4 +192,5 @@ if __name__ == '__main__':
     log = create_log('dummy.log', "Dummy")
 
     f = FPGA(data, log)
+    f.reset_hardware()
     print()

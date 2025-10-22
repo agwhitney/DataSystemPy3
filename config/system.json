@@ -1,6 +1,6 @@
 {
     "radiometer": {
-        "active": false,
+        "active": true,
         "byte_order": "big-endian",
         "name": "Radiometer",
         "letterid": "R",
@@ -203,7 +203,7 @@
     },
 
     "thermistors": {
-        "active": false,
+        "active": true,
         "byte_order": "big-endian",
         "name": "Thermistors",
         "letterid": "T",
@@ -247,7 +247,7 @@
             "data_bits": 8,
             "type": "Serial",
             "portWindows": "COM3",
-            "portLinux": "/dev/ttyUSB1"
+            "portLinux": "/dev/ttyUSB-gps"
         },
         "tcp_connection": {"port": 9055}
     }

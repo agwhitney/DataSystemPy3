@@ -4,8 +4,8 @@ import socket
 
 class MotorControl():
     """
-    Connects the FPGA via the running master server. Called in the master client to start and stop the motor, and
-    receive the system config from the server.
+    Called in MasterClient. Makes connection to running MasterServer,
+    which handles the actual connection to the FPGA.
     """
     def __init__(self, ip, port):
         self.tcp_address = (ip, port)
@@ -17,13 +17,13 @@ class MotorControl():
     def send_stop(self):
         print('Sending STOP to motor')
         self.client_socket.send("MSTOP".encode())
-        print(self.client_socket.recv(50))
+        print(self.client_socket.recv(50).decode())
 
 
     def send_start(self):
         print('Sending START to motor')
         self.client_socket.send("MSTART".encode())
-        print(self.client_socket.recv(50))
+        print(self.client_socket.recv(50).decode())
 
     
     def send_getsysconfig(self):

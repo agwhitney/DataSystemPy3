@@ -12,7 +12,7 @@ class AMRSample(IsDescription):
     Counts		  = UInt16Col(8)     # Unsigned short integer         
     Packagenumber = UInt16Col(1)
     Id            = UInt8Col(1)      # unsigned byte      
-    SytemStatus   = UInt8Col(1)      # unsigned byte
+    SystemStatus   = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
     Timestamp     = Float64Col(1)     # Signed 64-bit integer
@@ -22,7 +22,7 @@ class ACTSample(IsDescription):
     Counts		  = UInt16Col(4)     # Unsigned short integer        
     Packagenumber = UInt16Col(1)
     Id            = UInt8Col(1)      # unsigned byte      
-    SytemStatus   = UInt8Col(1)      # unsigned byte
+    SystemStatus   = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
     Timestamp     = Float64Col(1)    # Signed 64-bit integer
@@ -32,7 +32,7 @@ class SNDSample(IsDescription):
     Counts	      = UInt16Col(16)    # Unsigned short integer      
     Packagenumber = UInt16Col(1)
     Id            = UInt8Col(1)      # unsigned byte        
-    SytemStatus   = UInt8Col(1)      # unsigned byte
+    SystemStatus   = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
     Timestamp     = Float64Col(1)    # Signed 64-bit integer
