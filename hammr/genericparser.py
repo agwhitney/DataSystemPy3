@@ -12,7 +12,7 @@ from instrumentparsers import GPSParser, RadiometerParser, ThermistorParser
 
 
 class GenericParser():
-    def __init__(self, parserfile, verbose: bool, removebinfiles: bool, singlefile: bool):
+    def __init__(self, filename: str, verbose: bool, removebinfiles: bool, singlefile: bool):
         start = time.time()
 
         # Flags for printing a summary
@@ -21,7 +21,7 @@ class GenericParser():
         gps_found = False
 
         # Read parser file created by masterclient.py
-        parsing_filename = ACQ_DATA_H5 / parserfile
+        parsing_filename = ACQ_DATA / filename
         with open(parsing_filename, 'r') as f:
             toparse = json.load(f)
         
@@ -115,3 +115,10 @@ class GenericParser():
 
 def summary_string(parser, label, t1, t2) -> str:
     return f"--{label} parse results: {parser.package} packages out of {parser.read_lines} read lines -- Elapsed time: {int(t2 - t1)} seconds\n"
+
+
+
+if __name__ == '__main__':
+    from pathlib import Path
+    p = "25_10_22__14_18_37__allTest.bin"
+    GenericParser(p, True, False, True)

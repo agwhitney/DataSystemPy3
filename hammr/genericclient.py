@@ -103,6 +103,7 @@ def main():
     log.info(f"Name: {name}\nIP: {ip}\nPort: {port}\nNumber of Items: {num_items}")
 
     # Open a file object that will be written to. Passed to and closed by protocol.
+    # TODO The protocol should probably handle this itself?
     filepath = ACQ_DATA / f"{context}_{name}.bin"
     file = open(filepath, 'wb')
 
