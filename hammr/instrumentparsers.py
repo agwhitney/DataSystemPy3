@@ -269,3 +269,4 @@ class GPSParser(BasicParser):
         
         else:
             print(f"Frame is {len(data)} bytes. Skipping this line (instrumentparsers.py).")
+            
