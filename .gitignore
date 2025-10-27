@@ -10,3 +10,6 @@ AcqSystem/
 
 .Rhistory
 .vscode
+
+config/client.json
+config/system.json
