@@ -105,10 +105,10 @@ def main():
     # Open a file object that will be written to. Passed to and closed by protocol.
     # TODO The protocol should probably handle this itself?
     filepath = ACQ_DATA / f"{context}_{name}.bin"
-    file = open(filepath, 'wb')
+    binfile = open(filepath, 'wb')
 
     # Connect client
-    factory = TCPClientFactory(file, num_items, name, log)
+    factory = TCPClientFactory(binfile, num_items, name, log)
     reactor.connectTCP(ip, port, factory)
     reactor.run()
 

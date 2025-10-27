@@ -1,99 +1,106 @@
-"""
-py2 ParserAux.py
-Parsing methods associated with each instrument. Each instrument runs iterative_parsing() defined in the BasicParser class,
-which runs with the relevant parse_h5() method.
-"""
-import numpy as np
-import struct
-import time
 from datetime import datetime
+import numpy as np
+import time
+import struct
 
 
-class BasicParser:
-    package_header : bytes
-    time_header = b'TIME'
-    data_header = b'DATA:'
-    end_header = b':ENDS'
-    verbose = True
-    package = 0
-    toplot = []
-    datalength = [] 
-    sampleAMR = ''
-    sampleACT = ''
-    sampleSND = ''
-    read_lines = 0
+class Parser:
+    """
+    Reads the raw data (L0a) and, in the instrument subclasses, populates .h5 tables (L0b).
+    """
+    line_count = 0
 
 
+    def __init__(self):
+        self.package_flag : bytes  # Initialized per instrument
+        self.time_flag = b'TIME:'
+        self.data_flag = b'DATA:'
+        self.stop_flag = b':ENDS\n'
+
+        self.package_count = 0
+        self.runtime = 0
+
+        # Unused?
+        self.to_plot = np.array([])
+        self.data_len = np.array([])
+
+    
     def parse_h5(self, timestamp, input_vals, package_number):
-        # This method is here just for illustration, it should be overriden by each instance of the class
-        print("Warning: This method has not been overriden properly!")
+        raise NotImplementedError("Implement in subclass!")
+    
 
+    def summary(self) -> str:
+        return f"--{self} parse results: {self.package_count} packages out of {self.line_count} read lines. Elapsed time: {self.runtime} seconds."
+    
 
-    def iterative_parsing(self, fileDescription):
-        self.toplot = np.array([])
-        self.datalength = np.array([])
-        to5hparser = np.array([])
-        left_vals = ''
-        iterData = []
-        isCompleteLine = True
-
-        welcome = fileDescription.readline()
+    def iterative_parsing(self, binfile):
+        """
+        Goes line by line through data files and passes data to Parser.parse_h5().
+        This method is timed, and set to `self.runtime`.
+        Data lines after the first (an IDing welcome message) are formatted as:
+            PAC{char}:{int}TIME:{float}DATA:{bytes}:ENDS
+        """
+        start = time.time()
+        welcome = binfile.readline()
         print(welcome.decode())
-        
-        # Reads lines from a structured data file and detects if a line is complete or not
-        for line in fileDescription.readlines():
-            BasicParser.read_lines += 1
-            
-            if isCompleteLine:
-                iterData = ''
-                a = line.index(self.package_header)
-                b = line.index(self.time_header)
-                c = line.index(self.data_header)
-                
-                package_number = int(line[a+5:b])
-                timestamp = float(line[b+5:c])
-        
-                # The line is not complete
-                if line[-6:-1] != self.end_header:
-                    isCompleteLine = False
-                    # print(f"TRUE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
-                    iterData = line[c+5:]
-        
-                else:
-                    isCompleteLine = True
-                    # print (f"TRUE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER-> {line[:5]}")
-                    iterData = line[c+5:-6]
-                    # print(self.package,'->', time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp))), '->', package_number, 'DATA LENGTH:', len(iterData))
-                    self.toplot = np.append(self.toplot, package_number)
-                    self.datalength = np.append(self.datalength, len(iterData))
-                    to5hparser = iterData
-                    left_vals = self.parse_h5(timestamp, to5hparser, package_number)
-                    self.package += 1
-        
-            elif not isCompleteLine:
-                # Line not complete yet
-                if line[-6:-1] != self.end_header:
-                    isCompleteLine = False
-                    # print(f"FALSE -> {isCompleteLine} {line[-6:-1]} -> {self.end_header} HEADER -> {line[:5]}")
-                    iterData += line
-        
-                # Line complete
-                else:
-                    isCompleteLine = True
-                    iterData += line[:-6]
-                    # print (self.package,'->', time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp))), '->', package_number, 'DATA LENGTH:', len(iterData))
-                    self.toplot = np.append(self.toplot, package_number)
-                    self.datalength = np.append(self.datalength, len(iterData))
-                    to5hparser = iterData
-                    left_vals = self.parse_h5(timestamp, to5hparser, package_number)
-                    self.package += 1
-     
-        fileDescription.close()
 
- 
-class RadiometerParser(BasicParser):
+        # Loop line by line
+        while True:
+            line = binfile.readline()
+            if not line:
+                break
+            Parser.line_count += 1
+
+            if line.startswith(self.package_flag):
+                package_number = int(line[
+                    line.index(self.package_flag) + len(self.package_flag) : line.index(self.time_flag)
+                ])
+                timestamp = float(line[
+                    line.index(self.time_flag) + len(self.time_flag) : line.index(self.data_flag)
+                ])
+
+                # Complete line
+                if line.endswith(self.stop_flag):
+                    data = line[
+                        line.index(self.data_flag) + len(self.data_flag) : -len(self.stop_flag)
+                    ]
+
+                # Start of split line
+                elif not line.endswith(self.stop_flag):
+                    data = b''
+                    data += line[line.index(self.data_flag) + len(self.data_flag) : ]
+                    continue
+            
+            elif not line.startswith(self.package_flag):
+                # Middle of split line
+                if not line.endswith(self.stop_flag):
+                    data += line
+                    continue
+                
+                # End of split line
+                elif line.endswith(self.stop_flag):
+                    data += line[ : -len(self.stop_flag)]
+
+            # Send complete data line to parsing method
+            self.to_plot = np.append(self.to_plot, package_number)
+            self.data_len = np.append(self.data_len, len(data))
+            self.parse_h5(timestamp, data, package_number)
+            self.package_count += 1
+        
+        binfile.close()
+        end = time.time()
+        self.runtime = int(end - start)
+        return
+
+
+class RadiometerParser(Parser):
+    def __str__(self):
+        return "Radiometer Parser"
+
+
     def __init__(self, filedescription, sampleACT, sampleAMR, sampleSND, verbose):
-        self.package_header = b'PACR:'
+        super().__init__()
+        self.package_flag = b'PACR:'
         self.sampleAMR = sampleAMR
         self.sampleACT = sampleACT
         self.sampleSND = sampleSND
@@ -212,9 +219,13 @@ class RadiometerParser(BasicParser):
         return vals
     
 
-class ThermistorParser(BasicParser):
+class ThermistorParser(Parser):
+    def __str__(self):
+        return "Thermistor Parser"
+    
     def __init__(self, fileDescription, sampleTHM, verbose):
-            self.package_header = b'PACT:'
+            super().__init__()
+            self.package_flag = b'PACT:'
             self.sampleTHM = sampleTHM
             self.verbose = verbose
 
@@ -236,9 +247,13 @@ class ThermistorParser(BasicParser):
             return vals  # No remaining data to return
 
 
-class GPSParser(BasicParser):
+class GPSParser(Parser):
+    def __str__(self):
+        return "GPS-IMU Parser"
+    
     def __init__(self, fileDescription, sampleIMU, verbose):
-        self.package_header = b'PACG:'
+        super().__init__()
+        self.package_flag = b'PACG:'
         self.sampleIMU = sampleIMU
         self.verbose = verbose
 
