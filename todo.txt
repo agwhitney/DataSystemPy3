@@ -1,4 +1,8 @@
 1) Fix ttyUSB mounting location for instruments.
     https://stackoverflow.com/questions/24714241/ttyusb-numbers-are-changing-after-reboot
 
-2) 
+
+2) Script to get external master timestamp to sync system time with offset.
+
+
+3) Should data org be changed a little? Think of a downlink rsync via Starlink, and think of the hammr-hd data as well.

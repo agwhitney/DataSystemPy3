@@ -22,8 +22,8 @@ class MasterClient():
     def __init__(self, config: dict, log: logging.Logger):
         self.log = log
         
-        # Parse the config
-        self.parsing_cfg     : dict = config['parsing']  # Sub-config for parsing method
+        # Read the client configuration
+        self.parse_cfg       : dict = config['parsing']  # Sub-config for parsing method
         self.server_ip       : str = config['master_server']['ip']
         self.server_port     : int = config['master_server']['port']
         self.observer_client : bool = config['observer']['active']
@@ -38,7 +38,7 @@ class MasterClient():
         # Additional variables
         self.delay = 3  # used for sleep timer
         self.wait_time = 2  # Used for progress lines during acquisition
-        self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')  # This will be slightly behind the log
+        self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
         self.active_instruments = []
         self.active_filenames = []
         self.active_instances = []
@@ -130,10 +130,10 @@ class MasterClient():
 
 
     def sendto_parser(self, filename: str):
-        if self.parsing_cfg['active']:
-            verbose     : bool = self.parsing_cfg['verbose']
-            remove_bin  : bool = self.parsing_cfg['delete_raw_files']
-            single_file : bool = self.parsing_cfg['single_file']
+        if self.parse_cfg['active']:
+            verbose     : bool = self.parse_cfg['verbose']
+            remove_bin  : bool = self.parse_cfg['delete_raw_files']
+            single_file : bool = self.parse_cfg['single_file']
             print(f"Starting parser. Verbose: {verbose}. Remove .bin: {remove_bin}. Single file: {single_file}")
             GenericParser(filename, verbose, remove_bin, single_file)
             # AGW removed an unlabeled try-except.
@@ -193,15 +193,17 @@ class MasterClient():
                 case 'GPS-IMU':
                     instance['num_items'] = self.items['gps']
 
+                case _:
+                    raise NotImplementedError("Typo in instrument name, or instrument not implemented.")
+
             self.active_instances.append(instance)
             self.active_instruments.append(instance['name'])
             self.active_filenames.append(ACQ_CONFIGS_TMP / f"{self.timestamp}{instance['name']}.json")
 
-        parserfile_name = ACQ_DATA / f"{self.timestamp}{self.context}.bin"
-        parserfile_obj = open(parserfile_name, 'w')
-        file_merger = {
+        parse_filename = ACQ_DATA / f"{self.timestamp}{self.context}.bin"
+        parse_metadata = {
             'instruments': self.active_instruments,
-            'filesID': parserfile_name.stem,
+            'filesID': parse_filename.stem,
             'filename': [],
             'description': [],
         }
@@ -217,11 +219,8 @@ class MasterClient():
                     f.write(json.dumps(instance))
                 
             # Keep raw file name for parsing
-            file_merger['filename'].append(new_context)
-            file_merger['description'].append(self.active_instances)
-            parserfile_obj.seek(0)
-            parserfile_obj.write(json.dumps(file_merger))
-            print(f"----------\n{file_merger}\n----------")
+            parse_metadata['filename'].append(new_context)
+            parse_metadata['description'].append(self.active_instances)
 
             # Start client subprocesses
             processes = self.start_clients()
@@ -240,15 +239,19 @@ class MasterClient():
                 if active_proc == 0:
                     break
     
-            print(f"Total elapsed time: {time.time() - t1:.1f} seconds")
             # update timestring for next file
+            print(f"Total elapsed time: {time.time() - t1:.1f} seconds")
             self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
-        parserfile_obj.close()
+
+        # Write metadata for parser to file 
+        with open(parse_filename, 'w') as f:
+            f.write(json.dumps(parse_metadata))
+            print(f"----------\n{parse_metadata}\n----------")
 
         # Stop the motor if needed
         if not self.observer_client:
             if not self.stop_motor:
-                self.log.info("Motor is configured to NOT stop.")
+                self.log.info("Motor is set in client configuration to NOT stop.")
 
             else:
                 for instance in self.active_instances:
@@ -258,8 +261,8 @@ class MasterClient():
                         self.motor.send_stop()
                         self.motor.disconnect()
 
-        # Launch the parser
-        self.sendto_parser(parserfile_name)
+        # Launch the parser, if configured to do so
+        self.sendto_parser(parse_filename)
 
 
 if __name__ == '__main__':
