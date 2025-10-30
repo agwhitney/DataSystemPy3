@@ -9,6 +9,15 @@ from datetime import datetime
 from filepaths import ACQ_LOGS, PATH_TO_CONFIGS
 
 
+def create_timestamp(date=True, time=True) -> str:
+    f = ''
+    if date:
+        f += '%y_%m_%d__'
+    if time:
+        f += '%H_%M_%S__'
+    return datetime.now().strftime(f)
+
+
 def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logging.Logger:
     """
     Called in various places to make a log with consistent formatting.

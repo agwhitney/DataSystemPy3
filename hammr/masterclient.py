@@ -9,13 +9,12 @@ import json
 import logging  # type hinting
 import time
 
-from datetime import datetime
 from subprocess import Popen
 
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, ACQ_DATA, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from genericparser import GenericParser
 from motorcontrol import MotorControl
-from utils import create_log
+from utils import create_log, create_timestamp
 
 
 class MasterClient():
@@ -38,7 +37,7 @@ class MasterClient():
         # Additional variables
         self.delay = 3  # used for sleep timer
         self.wait_time = 2  # Used for progress lines during acquisition
-        self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+        self.timestamp = create_timestamp()
         self.active_instruments = []
         self.active_filenames = []
         self.active_instances = []
@@ -234,14 +233,14 @@ class MasterClient():
                 for p in processes:
                     if p.poll() is None:  # Process is still running
                         active_proc += 1
-                        msg += f"({n+1} / {self.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {p.pid} -> STOPPED: {p.poll()})"
+                        msg += f"({n+1} / {self.num_files}) -- {create_timestamp()} - Process # {p.pid} -> STOPPED: {p.poll()})"
                 print(msg)
                 if active_proc == 0:
                     break
     
             # update timestring for next file
             print(f"Total elapsed time: {time.time() - t1:.1f} seconds")
-            self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+            self.timestamp = create_timestamp()
 
         # Write metadata for parser to file 
         with open(parse_filename, 'w') as f:

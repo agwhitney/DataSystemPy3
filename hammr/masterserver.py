@@ -1,11 +1,10 @@
 import json
 import logging  # type checking
 
-from datetime import datetime
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
-from utils import create_log
+from utils import create_log, create_timestamp
 from fpga import FPGA
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 
@@ -124,7 +123,7 @@ class MasterServer():
 
         # Instrument configs are extracted from the system config
         print("---------------------------------")
-        timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+        timestamp = create_timestamp()
         for cfg in self.config.values():
             print("---------------------------------")
             filepath = ACQ_CONFIGS_TMP / f"{timestamp}{cfg['name']}.json"
@@ -171,5 +170,8 @@ if __name__ == '__main__':
     config_filepath = PATH_TO_CONFIGS / 'system.json'
     with open(config_filepath, 'r') as f:
         system_config = json.load(f)
+
+
+    # Make a 
 
     MasterServer(system_config, log)
