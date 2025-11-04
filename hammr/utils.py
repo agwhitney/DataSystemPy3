@@ -24,9 +24,8 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logg
     """
     if not filename.endswith('.log'):
         filename += '.log'
-
     if timestamp:
-        filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + filename
+        filename = create_timestamp() + filename
     
     logging.basicConfig(
         level = logging.DEBUG,

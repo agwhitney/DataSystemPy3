@@ -91,7 +91,7 @@ class MasterClient():
         system_config = self.motor.send_getsysconfig()
         filename = self.timestamp + self.context + "_ServerInformation.bin"
         with open(ACQ_DATA / filename, 'w') as f:
-            f.write(json.dumps(system_config))
+            f.write(json.dumps(system_config, indent=2))
 
         for instrument in system_config.values():
             self.log.info(f"## SERVER: {instrument['name']} -- Active: {instrument['active']}")
@@ -197,7 +197,7 @@ class MasterClient():
 
             self.active_instances.append(instance)
             self.active_instruments.append(instance['name'])
-            self.active_filenames.append(ACQ_CONFIGS_TMP / f"{self.timestamp}{instance['name']}.json")
+            self.active_filenames.append(ACQ_CONFIGS_TMP / f"Client_{self.timestamp}{instance['name']}.json")
 
         parse_filename = ACQ_DATA / f"{self.timestamp}{self.context}.bin"
         parse_metadata = {
@@ -215,7 +215,7 @@ class MasterClient():
             for instance, filename in zip(self.active_instances, self.active_filenames):
                 instance['context'] = new_context
                 with open(filename, 'w') as f:
-                    f.write(json.dumps(instance))
+                    f.write(json.dumps(instance, indent=2))
                 
             # Keep raw file name for parsing
             parse_metadata['filename'].append(new_context)
@@ -244,7 +244,7 @@ class MasterClient():
 
         # Write metadata for parser to file 
         with open(parse_filename, 'w') as f:
-            f.write(json.dumps(parse_metadata))
+            f.write(json.dumps(parse_metadata, indent=2))
             print(f"----------\n{parse_metadata}\n----------")
 
         # Stop the motor if needed

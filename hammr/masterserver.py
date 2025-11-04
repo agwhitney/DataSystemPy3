@@ -129,7 +129,7 @@ class MasterServer():
             filepath = ACQ_CONFIGS_TMP / f"{timestamp}{cfg['name']}.json"
             cfg['filepath'] = str(filepath)
             with open(filepath, 'w') as f:
-                f.write(json.dumps(cfg))  # Sub-config is saved with one change (filepath added)
+                f.write(json.dumps(cfg, indent=2))  # Sub-config is saved with one change (filepath added)
         print("---------------------------------")
 
         # Start instrument subservers
