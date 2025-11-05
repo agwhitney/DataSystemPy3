@@ -30,7 +30,7 @@ def main(filename: str, verbose: bool, removebinfiles: bool, singlefile: bool):
     
     file_context = toparse['filesID']
     # Read server config
-    sv_filename = ACQ_DATA / f"{file_context}.bin"
+    sv_filename = ACQ_DATA / f"{file_context}_ServerInformation.bin"
     with open(sv_filename, 'r') as f:
         sv_config = json.load(f)
 
