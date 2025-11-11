@@ -108,23 +108,23 @@ class DataFile:
         """
         # Create structure (groups and tables)
         self.groups['R'] = self.h5file.create_group('/', 'Radiometric_Data', "Data from microwave (6 channels), millimeter-wave (3 channels), and sounders (16 channels), and motor position and computer time")
-        self.tables['AMR'] = self.h5file.create_table(self.groups['R'], 'MW_Data', AMRSample, "Radiometric data from AMR")
-        self.tables['ACT'] = self.h5file.create_table(self.groups['R'], 'MMW_Data', ACTSample, "Radiometric data from ACT")
-        self.tables['SND'] = self.h5file.create_table(self.groups['R'], 'SND_Data', SNDSample, "Radiometric data from SND")
+        self.tables['AMR'] = self.h5file.create_table(self.groups['R'], 'MW_DATA', AMRSample, "Radiometric data from AMR")
+        self.tables['ACT'] = self.h5file.create_table(self.groups['R'], 'MMW_DATA', ACTSample, "Radiometric data from ACT")
+        self.tables['SND'] = self.h5file.create_table(self.groups['R'], 'SND_DATA', SNDSample, "Radiometric data from SND")
 
         self.groups['T'] = self.h5file.create_group('/', 'Temperature_Data', "Thermistor readout and computer time")
-        self.tables['THM'] = self.h5file.create_table(self.groups['T'], 'Thermistor_Data', ThermistorSample, "System temperature in volts (5 kOhm thermistors)")
+        self.tables['THM'] = self.h5file.create_table(self.groups['T'], 'Thermistor_DATA', ThermistorSample, "System temperature in volts (5 kOhm thermistors)")
 
-        self.groups['G'] = self.h5file.create_group('/', 'GPSIMU_Data', "Euler angles (roll, pitch, yaw) and position (lat, long, alt), and GPS time and computer time")
-        self.tables['IMU'] = self.h5file.create_table(self.groups['G'], 'GPSIMU_Data', IMUSample, "System position (lat, long), altitude, and GPS time")
+        self.groups['G'] = self.h5file.create_group('/', 'GPS_IMUData', "Euler angles (roll, pitch, yaw) and position (lat, long, alt), and GPS time and computer time")
+        self.tables['IMU'] = self.h5file.create_table(self.groups['G'], 'GPSIMU_DATA', IMUSample, "System position (lat, long), altitude, and GPS time")
         
         self.groups['I'] = self.h5file.create_group('/', 'Information', "README before reading file")
-        self.tables['IGeneral'] = self.h5file.create_table(self.groups['I'], 'General_Info', Information, "Raw files used for composing this .h5")
-        self.tables['IServer'] = self.h5file.create_table(self.groups['I'], 'Server_Info', Information, "JSON-formatted info regarding server")
-        self.tables['IThermistors'] = self.h5file.create_table(self.groups['I'], 'Thermistors_Info', Information, "Thermistor information")
+        self.tables['IGeneral'] = self.h5file.create_table(self.groups['I'], 'General_INFO', Information, "Raw files used for composing this .h5")
+        self.tables['IServer'] = self.h5file.create_table(self.groups['I'], 'Server_INFO', Information, "JSON-formatted info regarding server")
+        self.tables['IThermistors'] = self.h5file.create_table(self.groups['I'], 'Thermistors_INFO', Information, "Thermistor information")
         # These appear to be unused
-        self.tables['IRadiometer'] = self.h5file.create_table(self.groups['I'], 'Radiometer_Info', Information, "Radiometer information")
-        self.tables['IGPS'] = self.h5file.create_table(self.groups['I'], 'GPS_Info', Information, "GPS-IMU information")
+        self.tables['IRadiometer'] = self.h5file.create_table(self.groups['I'], 'Radiometer_INFO', Information, "Radiometer information")
+        self.tables['IGPS'] = self.h5file.create_table(self.groups['I'], 'GPS_INFO', Information, "GPS-IMU information")
 
         # Create row pointers which hold data in dict format.
         self.rows['AMR'] = self.tables['AMR'].row
