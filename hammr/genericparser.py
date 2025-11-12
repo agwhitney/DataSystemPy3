@@ -44,7 +44,7 @@ def main(filename: str, verbose: bool, removebinfiles: bool, singlefile: bool):
         print(f"Working in file {ACQ_DATA_H5/rootfilestem}.h5")
         
         if not singlefile:
-            df = DataFile(ACQ_DATA_H5 / f"{rootfilestem}.h5")
+            df = DataFile(f"{ACQ_DATA_H5/rootfilestem}.h5")
             df.rows['IServer']['General'] = json.dumps(sv_config)
             df.rows['IServer'].append()
             df.tables['IServer'].flush()
@@ -57,27 +57,26 @@ def main(filename: str, verbose: bool, removebinfiles: bool, singlefile: bool):
             df.tables['IServer'].flush()
 
         for j in range(num_clients):
-            instrument = toparse['instruments'][j]
-            instr_filename = ACQ_DATA / f"{rootfilestem}_{instrument}.bin"
             df.rows['IGeneral']['General'] = toparse['description'][i][j]
             df.rows['IGeneral'].append()
             df.tables['IGeneral'].flush()
 
+            instrument = toparse['instruments'][j]
+            instr_filename = ACQ_DATA / f"{rootfilestem}_{instrument}.bin"
             print(f"Parsing {instrument} -> {instr_filename}")
-            instr_datafile = open(instr_filename, 'rb')  # Closed by InstrumentParser
             match instrument:
                 case 'Radiometer':
-                    rad_parser = RadiometerParser(instr_datafile, df.rows['ACT'], df.rows['AMR'], df.rows['SND'], verbose)
+                    rad_parser = RadiometerParser(instr_filename, df.rows['ACT'], df.rows['AMR'], df.rows['SND'], verbose)
                     df.tables['ACT'].flush()
                     df.tables['AMR'].flush()
                     df.tables['SND'].flush()
                     rad_found = True
                 case 'Thermistors':
-                    thm_parser = ThermistorParser(instr_datafile, df.rows['THM'], verbose)
+                    thm_parser = ThermistorParser(instr_filename, df.rows['THM'], verbose)
                     df.tables['THM'].flush()
                     thm_found = True
                 case 'GPS-IMU':
-                    gps_parser = GPSParser(instr_datafile, df.rows['IMU'], verbose)
+                    gps_parser = GPSParser(instr_filename, df.rows['IMU'], verbose)
                     df.tables['IMU'].flush()
                     gps_found = True
 
@@ -112,5 +111,5 @@ def main(filename: str, verbose: bool, removebinfiles: bool, singlefile: bool):
 
 if __name__ == '__main__':
     import time
-    p = "25_10_22__14_18_37__allTest.bin"
+    p = "25_10_29__11_38_58__Context.bin"
     main(p, verbose=False, removebinfiles=False, singlefile=False)
