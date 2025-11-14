@@ -11,7 +11,7 @@ from datastructures import DataFile
 from parsers import GPSParser, RadiometerParser, ThermistorParser
 
 
-def main(filename: str, verbose: bool, removebinfiles: bool, singlefile: bool):
+def processL0b(filename: str, verbose: bool, removebinfiles: bool, singlefile: bool):
     """
     Called by masterclient.py if enabled in client config.
     `filename` is like `{timestamp}{context}.bin`

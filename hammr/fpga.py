@@ -160,7 +160,7 @@ class FPGA():
         """Combined send and receive. Prints returns for debugging."""
         send = self.send_instruction(container, inst, processor_order)
         recv = self.recv_instruction()
-        self.log.info(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
+        # self.log.info(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
 
 
 
