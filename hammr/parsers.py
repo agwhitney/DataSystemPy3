@@ -5,7 +5,6 @@ Data after the first line (a welcome message) is recorded in binary with the fol
 PAC{char}:{int}TIME:{float}DATA:{bytes}:ENDS
 """
 from datetime import datetime
-import numpy as np
 import time
 import struct
 

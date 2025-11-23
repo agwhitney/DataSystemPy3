@@ -111,5 +111,5 @@ def processL0b(filename: str, verbose: bool, removebinfiles: bool, singlefile: b
 
 if __name__ == '__main__':
     import time
-    p = "25_10_29__11_38_58__Context.bin"
-    main(p, verbose=False, removebinfiles=False, singlefile=False)
+    p = "25_11_14__10_18_50__New5min.bin"
+    processL0b(p, verbose=False, removebinfiles=False, singlefile=False)
