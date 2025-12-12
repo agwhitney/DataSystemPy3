@@ -9,4 +9,9 @@
 3) Should data org be changed a little? Think of a downlink rsync via Starlink, and think of the hammr-hd data as well.
 
 
-4) Thermistors.csv should be copied for decoupled access in L0b processing.
+4) Thermistors.csv should be copied to data output for decoupled access in L0b processing.
+
+
+5) Need a script that starts this software and hyperspectral software together.
+    Data org, per point 3.
+    User-facing configuration (as opposed to client.json)?
