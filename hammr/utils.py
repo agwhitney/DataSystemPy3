@@ -1,10 +1,10 @@
 """
-Moved this here just to say I did something.
-Other util functionscould also make sense here.
+Useful generics.
 """
 import csv
 import logging
 from datetime import datetime
+from pathlib import Path
 
 from filepaths import ACQ_LOGS, PATH_TO_CONFIGS
 
@@ -18,19 +18,22 @@ def create_timestamp(date=True, time=True) -> str:
     return datetime.now().strftime(f)
 
 
-def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logging.Logger:
+def create_log(filename="newlog.log", dirpath=ACQ_LOGS, title="ACQSystem", timestamp=True) -> logging.Logger:
     """
-    Called in various places to make a log with consistent formatting.
+    Called in various places to return a log with consistent formatting.
     """
     if not filename.endswith('.log'):
         filename += '.log'
+    
     if timestamp:
         filename = create_timestamp() + filename
+
+    Path(dirpath).mkdir(exist_ok=True)
     
     logging.basicConfig(
         level = logging.DEBUG,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = ACQ_LOGS / filename,
+        filename = Path(dirpath) / Path(filename),
         filemode = 'a',
     )
     log = logging.getLogger(title)

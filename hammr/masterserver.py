@@ -1,12 +1,13 @@
 import json
 import logging  # type checking
+import pathlib  # type checking
 
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
 from utils import create_log, create_timestamp
 from fpga import FPGA
-from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
+from filepaths import PATH_TO_CONFIGS, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 
 
 class TCPHandler(protocol.Protocol):
@@ -114,22 +115,24 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
-    def __init__(self, system_config: dict, log: logging.Logger):
+    def __init__(self, system_config: dict, log: logging.Logger, dirpath: pathlib.Path):
         """
         This loads the config and starts servers for each instrument as subprocesses.
         """
         self.log = log
         self.config = system_config
+        self.dirpath = dirpath
 
         # Instrument configs are extracted from the system config
         print("---------------------------------")
         timestamp = create_timestamp()
         for cfg in self.config.values():
             print("---------------------------------")
-            filepath = ACQ_CONFIGS_TMP / f"{timestamp}{cfg['name']}.json"
+            filepath = dirpath / f"Config_{cfg['name']}.json"
             cfg['filepath'] = str(filepath)
+            cfg['timestamp'] = timestamp
             with open(filepath, 'w') as f:
-                f.write(json.dumps(cfg, indent=2))  # Sub-config is saved with one change (filepath added)
+                f.write(json.dumps(cfg, indent=2))  # Sub-config is saved with two changes (filepath to self and timestamp)
         print("---------------------------------")
 
         # Start instrument subservers
@@ -150,7 +153,7 @@ class MasterServer():
         for instrument in self.config.values():
             print(instrument['filepath'], instrument['active'])
             if instrument['active']:
-                p = Popen([PATH_TO_PYTHON, PATH_TO_GENSERVER, instrument['filepath']], shell=False)
+                p = Popen([PATH_TO_PYTHON, PATH_TO_GENSERVER, instrument['filepath'], self.dirpath], shell=False)
                 self.log.info(f"Instrument in the configuration file: {instrument['name']} Active instrument: {server_count} {instrument['filepath']} started, Pid: {p.pid}")
                 processes.append(p)
                 server_count += 1
@@ -159,19 +162,22 @@ class MasterServer():
 
 
 if __name__ == '__main__':
-    # Create a log
-    log = create_log(
-        timestamp = True,
-        filename = "Server_ACQSystem.log",
-        title = "ACQSystem Server - DAIS 2.0",
-    )
-
+    # Create a contextual location to save data.
+    from filepaths import ACQ
+    dirpath = ACQ / (create_timestamp() + "Context")
+    
     # Read the config file
     config_filepath = PATH_TO_CONFIGS / 'system.json'
     with open(config_filepath, 'r') as f:
         system_config = json.load(f)
 
+    # Create a log
+    log = create_log(
+        timestamp = False,
+        filename = "Server_ACQSystem.log",
+        title = "ACQSystem Server - DAIS 2.0",
+        dirpath = dirpath
+    )
 
-    # Make a 
-
-    MasterServer(system_config, log)
+    # Run servers
+    MasterServer(system_config, log, dirpath)

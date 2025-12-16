@@ -13,14 +13,16 @@ def main():
     """
     Called as a subprocess in masterserver.py. Makes an instrument-specific server using the protocols in instruments.py.
     """
-    # Of these args, only the config_file is called in masterserver.py
+    # Of these args, only the config_file is called by masterserver.py
     parser = argparse.ArgumentParser(description="Server for the Data Acquisition and Instrument control System (DAIS)")
     parser.add_argument('instr_config', help="Equipment file (.json) to work with")
+    parser.add_argument('directory', help="Server directory location.")
     parser.add_argument('-d', '--background', action='store_true', default=False, help="Run in background")
     parser.add_argument('--http-logging', action='store_true', default=False, help="Log messages to GDAIS-control HTTP server")
     args = parser.parse_args()
 
-    instr_config_file = ACQ_CONFIGS / args.instr_config
+    instr_config_file = args.instr_config
+    dirpath = args.directory
     in_background = args.background
     http_logging = args.http_logging
 
@@ -28,11 +30,12 @@ def main():
     with open(instr_config_file, 'r') as f:
         config = json.load(f)
 
-    # Create another log. I think each instrument will get its own per the timestamp.
+    # Create another log. Each instrument will get their own. TODO could they be combined?
     log = create_log(
-        timestamp = True,
+        timestamp = False,
         filename = f"{config['name']}_Server_ACQSystem.log",
         title = f"{config['name']}_ACQSystem SubServer - DAIS 2.0",
+        dirpath = dirpath
     )
 
     # Create an instrument object, which contains the server protocol and serial configuration.

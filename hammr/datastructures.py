@@ -1,6 +1,7 @@
 """
 py2 h5classes.py
 The *Sample classes define the tables in the .h5 file.
+
 """
 import csv
 import tables as tb
@@ -11,6 +12,11 @@ from filepaths import PATH_TO_CONFIGS
 
 
 class AMRSample(IsDescription):
+    """Describes columns in a table for making rows.
+    AGW I hate this. Setting 1 means that column has a shape of 1,
+    meaning that you can't do tables.where() queries and all the indexing has
+    to be nested because any cell returned is actually a numpy array. Gross.
+    """
     Counts		  = UInt16Col(8)     # Unsigned short integer         
     Packagenumber = UInt16Col(1)
     Id            = UInt8Col(1)      # unsigned byte      

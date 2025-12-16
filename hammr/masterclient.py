@@ -35,7 +35,7 @@ class MasterClient():
         self.instances       : list = config['instances']  # Not in py2 but trims a lot of typing
 
         # Additional variables
-        self.delay = 3  # used for sleep timer
+        self.delay = 3  # used for a(n arbitrary?) sleep timer
         self.wait_time = 2  # Used for progress lines during acquisition
         self.timestamp = create_timestamp()
         self.active_instruments = []
@@ -265,11 +265,17 @@ class MasterClient():
 
 
 if __name__ == '__main__':
+    # Find the most recent server data folder. Assumes most recent by modification time.
+    from filepaths import ACQ
+    serverdir = max(ACQ.iterdir(), key = lambda p: p.stat().st_mtime)
+    clientdir = serverdir / (create_timestamp() + "Client")
+
     # Create a log
     log = create_log(
         filename = "Client_ACQSystem.log",
         title = "ACQSystem Client - DAIS 2.0",
         timestamp = True,
+        dirpath = clientdir
     )
 
     # Read the config file

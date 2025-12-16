@@ -34,8 +34,8 @@ elif system == 'Linux':
 
 # Data output structure
 # Specify the directory path as Path("directory")
-# ACQ = project / 'AcqSystem'
-ACQ = Path.home() / "AcquiredData"
+ACQ = project / 'AcqSystem'
+# ACQ = Path.home() / "AcquiredData"
 
 ## One of these two is redundant
 ACQ_CONFIGS = ACQ / 'configs'
