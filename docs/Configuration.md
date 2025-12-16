@@ -1,4 +1,6 @@
 # Configurations
+There are three configuration files to consider: `system.json`, `client.json`, and `thermistors.csv`. The JSON files are stored in the repository as examples, and should copied and/or renamed.
+
 ## JSON File Structure
 A JSON file contains an *object* between braces `{}` of `key : value` pairs, and is meant to be a format that is convenient for data interchange. Keys are represented by strings. Values can be many different data types, including other objects. See (json.org)[json.org] for more information. Note that strict JSON does **not** allow for comments, but some parsers will interpret `//` as beginning a comment. Python's standard `json` package does not. The json files in this project do not contain comments, but keys prefixed with an underscore are used to a similar effect.
 
@@ -7,7 +9,7 @@ A JSON file contains an *object* between braces `{}` of `key : value` pairs, and
 
 Each object is structured like in the snippets below. Object types are as strings for cleaner formatting.
 
-```json
+```jsonc
 "radiometer" : {
     "active"            : "boolean",  // Sets instrument on/off in code
     "byte_order"        : "string",   // For serial communication
@@ -20,12 +22,12 @@ Each object is structured like in the snippets below. Object types are as string
 ```
 
 `tcp_connection` contains one key-value pair:
-```json
+```jsonc
 "tcp_connection" : {"port" : "int"  // port number for TCP connection}
 ```
 
 `serial_connection` contains the following:
-```json
+```jsonc
 "tcp_connection" : {
     "parity"       : "string",  // 'N'
     "baudrate"     : "int",
@@ -38,14 +40,14 @@ Each object is structured like in the snippets below. Object types are as string
 ```
 
 The `characteristics` object is specific to each instrument. For the GPS-IMU:
-```json
+```jsonc
 "characteristics" : {
     "update_frequency" : "int",        // Hz
     "delimiter"        : "array[int]"  // See below
 }
 ```
 The GPS-IMU delimiter is six bytes that bookend a *frame* of data sent by the unit. The code takes the given array and encodes it using `struct.pack`. The thermistors have a similar structure:
-```json
+```jsonc
 "characteristics" : {
     "_mnemonic"        : "object",      // Labels for the addresses below
     "addresses"        : "array[int]",  // The digitizers, just 1 - n
@@ -54,7 +56,7 @@ The GPS-IMU delimiter is six bytes that bookend a *frame* of data sent by the un
 }
 ```
 The radiometer has characteristics for the microwave (MW), millimeter-wave (MMW), and sounding (SND) channels. The structure is the same for each.
-```json
+```jsonc
 "characteristics" : {
     "configuration" : {
         "ip"            : "string",  // IP address
@@ -82,7 +84,7 @@ The `channel.slot//.value` field is an array of five bits, 0 or 1. From left to 
 
 ## Client Configuration
 `client.json` contains the configuration details for a measurement, and should be reviewed and changed prior to running a measurement with `masterclient.py`. This file has thorough metadata describing most variables. A general 
-```json
+```jsonc
 {
     "master_server"    : "object",        // IP (string) and port number (int)
     "observer"         : "object",        // Enables/disables motor control
@@ -94,3 +96,11 @@ The `channel.slot//.value` field is an array of five bits, 0 or 1. From left to 
     "instances"        : "array[object]"  // Attached instruments, and some info for them.
 }
 ```
+
+## Thermistors Map
+`thermistors.csv` is a table that is read in `hammr/datastructures.py` to populate the L0b HDF5 table during parsing. The data contained are a map of the physical temperature sensors within HAMMR-HD. __These data should not be changed__ except if there are relevant hardware changes. The table has four columns:
+
+1) __Digitizer__ - (integer 1 - 5) Address of the analog-to-digital converter that the thermistor is connected to.
+2) __Thermistor__ - (integer 1 - 8) Address of the thermistor within the digitizer.
+3) __Location__ - (string) Approximate physical location of the thermistor.
+4) __Model__ - (string) Model number of the thermistor.

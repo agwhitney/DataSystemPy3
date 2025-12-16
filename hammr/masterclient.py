@@ -12,7 +12,7 @@ import time
 from subprocess import Popen
 
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, ACQ_DATA, PATH_TO_GENCLIENT, PATH_TO_PYTHON
-from genericparser import GenericParser
+from genericparser import processL0b
 from motorcontrol import MotorControl
 from utils import create_log, create_timestamp
 
@@ -134,7 +134,7 @@ class MasterClient():
             remove_bin  : bool = self.parse_cfg['delete_raw_files']
             single_file : bool = self.parse_cfg['single_file']
             print(f"Starting parser. Verbose: {verbose}. Remove .bin: {remove_bin}. Single file: {single_file}")
-            GenericParser(filename, verbose, remove_bin, single_file)
+            processL0b(filename, verbose, remove_bin, single_file)
             # AGW removed an unlabeled try-except.
         else:
             print("Not running L0a -> L0b parser per config setting.")

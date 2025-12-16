@@ -31,8 +31,11 @@ elif system == 'Linux':
     PATH_TO_PYTHON = project / '.venv/bin/python'
     SERIAL_PORT = 'portLinux'
 
-# Output folder structure
-ACQ = project / 'AcqSystem'
+
+# Data output structure
+# Specify the directory path as Path("directory")
+# ACQ = project / 'AcqSystem'
+ACQ = Path.home() / "AcquiredData"
 
 ## One of these two is redundant
 ACQ_CONFIGS = ACQ / 'configs'

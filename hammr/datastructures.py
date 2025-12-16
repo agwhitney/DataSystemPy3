@@ -2,10 +2,12 @@
 py2 h5classes.py
 The *Sample classes define the tables in the .h5 file.
 """
-from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
+import csv
 import tables as tb
+from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
 
 from utils import get_thermistor_map
+from filepaths import PATH_TO_CONFIGS
 
 
 class AMRSample(IsDescription):
@@ -56,6 +58,13 @@ class Information(IsDescription):
     General       = StringCol(8192)
 
 
+class ThermistorMap(IsDescription):
+    Digitizer     = UInt8Col()
+    Thermistor    = UInt8Col()
+    Location      = StringCol(50)  # Description of thermistor's physical placement
+    Model         = StringCol(20)  # Model number
+
+
 
 class DataFile:
     """
@@ -71,6 +80,7 @@ class DataFile:
         self.rows = {}
         self.create_tree()
         self._thermistor_metadata()
+        self.store_thermistor_map()
 
 
     def __del__(self):
@@ -85,7 +95,7 @@ class DataFile:
     def _thermistor_metadata(self) -> None:
         """
         This metadata fills the Thermistors metadata row. Strings with coefficients are copy/pasted and haven't been reviewed (9/4/25)
-        `get_thermistor_map` refers to the file in the Config folder.
+        `get_thermistor_map` refers to the file in the Config folder. TODO probably it shouldn't
         """
         infoRow = self.rows['IThermistors']
         infoRow['General'] = 'Coefficients from voltage to Temperatures for KS502J2 thermistors: A = 1.29337828808 * 10^-3,	B = 2.34313147501 * 10^-4,	C = 1.09840791237 * 10^-7,	D = -6.51108048031 * 10^-11'
@@ -101,32 +111,56 @@ class DataFile:
         self.tables['IThermistors'].flush()
 
 
+    def store_thermistor_map(self) -> None:
+        """Fills the /Information/Thermistors_CSV table with values from thermistors.csv in the config.
+        TODO the config should be copied when the measurement runs so that L0a -> L0b can run separately.
+        """
+        path = PATH_TO_CONFIGS / 'thermistors.csv'
+        if not path.exists:
+            return  # TODO Handles above todo by doing nothing
+
+        row = self.tables['IThermistorsCSV'].row
+        with open(path, 'r', newline='') as file:
+            reader = csv.reader(file, delimiter=',')
+            for line in reader:
+                if reader.line_num == 1:
+                    continue
+                row['Digitizer'] = int(line[0])
+                row['Thermistor'] = int(line[1])
+                row['Location'] = line[2]
+                row['Model'] = line[3]
+                row.append()
+        self.tables['IThermistorsCSV'].flush()
+
+
     def create_tree(self) -> None:
         """
         Creates the structure (groups, tables, row pointers) of the .h5 file.
-        This structure is saved in reference to dicts in self.
+        Tables package lets you access these with dot notation, but I've stored them in dicts.
         """
         # Create structure (groups and tables)
         self.groups['R'] = self.h5file.create_group('/', 'Radiometric_Data', "Data from microwave (6 channels), millimeter-wave (3 channels), and sounders (16 channels), and motor position and computer time")
-        self.tables['AMR'] = self.h5file.create_table(self.groups['R'], 'MW_Data', AMRSample, "Radiometric data from AMR")
-        self.tables['ACT'] = self.h5file.create_table(self.groups['R'], 'MMW_Data', ACTSample, "Radiometric data from ACT")
-        self.tables['SND'] = self.h5file.create_table(self.groups['R'], 'SND_Data', SNDSample, "Radiometric data from SND")
+        self.tables['AMR'] = self.h5file.create_table(self.groups['R'], 'MW_DATA', AMRSample, "Radiometric data from AMR")
+        self.tables['ACT'] = self.h5file.create_table(self.groups['R'], 'MMW_DATA', ACTSample, "Radiometric data from ACT")
+        self.tables['SND'] = self.h5file.create_table(self.groups['R'], 'SND_DATA', SNDSample, "Radiometric data from SND")
 
         self.groups['T'] = self.h5file.create_group('/', 'Temperature_Data', "Thermistor readout and computer time")
-        self.tables['THM'] = self.h5file.create_table(self.groups['T'], 'Thermistor_Data', ThermistorSample, "System temperature in volts (5 kOhm thermistors)")
+        self.tables['THM'] = self.h5file.create_table(self.groups['T'], 'Thermistor_DATA', ThermistorSample, "System temperature in volts (5 kOhm thermistors)")
 
-        self.groups['G'] = self.h5file.create_group('/', 'GPSIMU_Data', "Euler angles (roll, pitch, yaw) and position (lat, long, alt), and GPS time and computer time")
-        self.tables['IMU'] = self.h5file.create_table(self.groups['G'], 'GPSIMU_Data', IMUSample, "System position (lat, long), altitude, and GPS time")
+        self.groups['G'] = self.h5file.create_group('/', 'GPS_IMUData', "Euler angles (roll, pitch, yaw) and position (lat, long, alt), and GPS time and computer time")
+        self.tables['IMU'] = self.h5file.create_table(self.groups['G'], 'GPSIMU_DATA', IMUSample, "System position (lat, long), altitude, and GPS time")
         
         self.groups['I'] = self.h5file.create_group('/', 'Information', "README before reading file")
-        self.tables['IGeneral'] = self.h5file.create_table(self.groups['I'], 'General_Info', Information, "Raw files used for composing this .h5")
-        self.tables['IServer'] = self.h5file.create_table(self.groups['I'], 'Server_Info', Information, "JSON-formatted info regarding server")
-        self.tables['IThermistors'] = self.h5file.create_table(self.groups['I'], 'Thermistors_Info', Information, "Thermistor information")
+        self.tables['IGeneral'] = self.h5file.create_table(self.groups['I'], 'General_INFO', Information, "Raw files used for composing this .h5")
+        self.tables['IServer'] = self.h5file.create_table(self.groups['I'], 'Server_INFO', Information, "JSON-formatted info regarding server")
+        self.tables['IThermistors'] = self.h5file.create_table(self.groups['I'], 'Thermistors_INFO', Information, "Thermistor information")
+        self.tables['IThermistorsCSV'] = self.h5file.create_table(self.groups['I'], 'Thermistors_CSV', ThermistorMap, "Map of thermistor connection and location.")  # AGW new
         # These appear to be unused
-        self.tables['IRadiometer'] = self.h5file.create_table(self.groups['I'], 'Radiometer_Info', Information, "Radiometer information")
-        self.tables['IGPS'] = self.h5file.create_table(self.groups['I'], 'GPS_Info', Information, "GPS-IMU information")
+        self.tables['IRadiometer'] = self.h5file.create_table(self.groups['I'], 'Radiometer_INFO', Information, "Radiometer information")
+        self.tables['IGPS'] = self.h5file.create_table(self.groups['I'], 'GPS_INFO', Information, "GPS-IMU information")
 
         # Create row pointers which hold data in dict format.
+        # This isn't strictly necessary, but it keeps the strict access within this file.
         self.rows['AMR'] = self.tables['AMR'].row
         self.rows['ACT'] = self.tables['ACT'].row
         self.rows['SND'] = self.tables['SND'].row
@@ -135,7 +169,7 @@ class DataFile:
 
         self.rows['IServer'] = self.tables['IServer'].row
         self.rows['IGeneral'] = self.tables['IGeneral'].row
-        self.rows['IThermistors'] = self.tables['IThermistors'].row
+        self.rows['IThermistors'] = self.tables['IThermistors'].row  # Only used locally
 
 
 if __name__ == '__main__':
@@ -143,4 +177,4 @@ if __name__ == '__main__':
     print("debug breakpoint")
 
 
-    f.close()
+    f._close()

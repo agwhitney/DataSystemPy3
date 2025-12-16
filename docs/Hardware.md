@@ -6,7 +6,9 @@ This page collects information about the hardware within HAMMR relevant to this 
 Currently a work in progress to create consistent connections within the OS. All of the data streams are serial via USB adapters. Ubuntu assigns the USB connections to `dev/ttyUSB#`. I think the number at the end based on the order in which they connect, which means it may change on reboot. You can use the command `dmesg | grep tty` to get an idea of which connection is which. The Thermistor and Radiometer adapters are FTDI, and the motor and GPS-IMU adapters are cp210x. 
 
 See this link https://stackoverflow.com/questions/24714241/ttyusb-numbers-are-changing-after-reboot.
-I followed this to fix the connection names as "ttyUSB-xxx" for rad, thm, and gps. This seems to work provided that the USB hardware remains in the same port, and the custom names won't show up if they don't connect.
+I followed this to fix the connection names as "ttyUSB-xxx" for rad (motor), thm, and gps. This seems to work provided that the USB hardware remains in the same port, and the custom names won't show up if they don't connect to the specified port.
+
+Thermistors can be tested with the `query_channels()` method in helpers/test_thermistors.py.
 
 
 ## FPGA / Buffer Board

@@ -8,11 +8,11 @@ import tables as tb
 import numpy as np
 
 
-def query_channels() -> None:
+def query_channels(connpath='/dev/ttyUSB1') -> None:
     """
     Get a response (or timeout) from each connected device.
     """
-    conn = serial.Serial('/dev/ttyUSB-thm', timeout=2)
+    conn = serial.Serial(connpath, timeout=2)
     for i in range(8):
         time.sleep(0.25)  # I think this is necessary but can be shorter.
         cmd = f'#0{i}\r'
