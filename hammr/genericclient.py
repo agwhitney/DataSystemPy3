@@ -10,6 +10,7 @@ import argparse
 import json
 import io, logging  # Type checking (ruff override for oneliner ->) # noqa: E401
 
+from pathlib import Path
 from twisted.internet import protocol, reactor
 from twisted.internet.error import ReactorNotRunning
 from twisted.protocols import basic
@@ -81,6 +82,7 @@ def main():
     # Parse commandline arguments
     parser = argparse.ArgumentParser(description="Client for the Data Acquisition and Instrument control System (DAIS Client)")
     parser.add_argument('instance_config', help="Client file (.json) to work with")
+    parser.add_argument('directory', help="Data directory location within Client directory.")
     args = parser.parse_args()
 
     # Open config
@@ -92,11 +94,15 @@ def main():
     num_items = config['num_items']
     context = config['context']
 
+    # Saved data location
+    datadir = Path(args.directory)
+
     # Create another log analogous to the one in genericserver.py
     log = create_log(
         timestamp = True,
         filename = f"{name}_Client_ACQSystem.log",
         title = f"{name}_ACQSystem SubClient - DAIS 2.0",
+        dirpath = datadir.parent
     )
 
     # Print some metadata
@@ -104,7 +110,8 @@ def main():
 
     # Open a file object that will be written to. Passed to and closed by protocol.
     # TODO The protocol should probably handle this itself?
-    filepath = ACQ_DATA / f"{context}_{name}.bin"
+    # filepath = ACQ_DATA / f"{context}_{name}.bin"
+    filepath = datadir / f"{context}_{name}.bin"
     binfile = open(filepath, 'wb')
 
     # Connect client

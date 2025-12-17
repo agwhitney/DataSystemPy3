@@ -6,7 +6,6 @@ from twisted.internet.serialport import SerialPort
 
 from utils import create_log
 from instruments import Instrument
-from filepaths import ACQ_CONFIGS
 
 
 def main():

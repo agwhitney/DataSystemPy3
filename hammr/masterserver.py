@@ -164,7 +164,7 @@ class MasterServer():
 if __name__ == '__main__':
     # Create a contextual location to save data.
     from filepaths import ACQ
-    dirpath = ACQ / (create_timestamp() + "Context")
+    serverdir = ACQ / (create_timestamp() + "Context")
     
     # Read the config file
     config_filepath = PATH_TO_CONFIGS / 'system.json'
@@ -176,8 +176,8 @@ if __name__ == '__main__':
         timestamp = False,
         filename = "Server_ACQSystem.log",
         title = "ACQSystem Server - DAIS 2.0",
-        dirpath = dirpath
+        dirpath = serverdir
     )
 
     # Run servers
-    MasterServer(system_config, log, dirpath)
+    MasterServer(system_config, log, serverdir)

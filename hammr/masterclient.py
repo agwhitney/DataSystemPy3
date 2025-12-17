@@ -9,17 +9,21 @@ import json
 import logging  # type hinting
 import time
 
+from pathlib import Path
 from subprocess import Popen
 
-from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, ACQ_DATA, PATH_TO_GENCLIENT, PATH_TO_PYTHON
+from filepaths import PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from genericparser import processL0b
 from motorcontrol import MotorControl
 from utils import create_log, create_timestamp
 
 
 class MasterClient():
-    def __init__(self, config: dict, log: logging.Logger):
+    def __init__(self, config: dict, log: logging.Logger, dirpath: Path):
         self.log = log
+        self.dirpath = dirpath
+        self.datapath = self.dirpath / Path("MW_DATA")
+        Path.mkdir(self.datapath)
         
         # Read the client configuration
         self.parse_cfg       : dict = config['parsing']  # Sub-config for parsing method
@@ -43,11 +47,7 @@ class MasterClient():
         self.active_instances = []
 
         self.motor : MotorControl
-        self.items = {
-            'rad': 0,
-            'thm': 0,
-            'gps': 0,
-        }
+        self.items = {'rad': 0, 'thm': 0, 'gps': 0}
         self.get_serverconfig()
 
 
@@ -90,7 +90,7 @@ class MasterClient():
         self.motor = MotorControl(self.server_ip, self.server_port)
         system_config = self.motor.send_getsysconfig()
         filename = self.timestamp + self.context + "_ServerInformation.bin"
-        with open(ACQ_DATA / filename, 'w') as f:
+        with open(self.dirpath / filename, 'w') as f:
             f.write(json.dumps(system_config, indent=2))
 
         for instrument in system_config.values():
@@ -129,6 +129,11 @@ class MasterClient():
 
 
     def sendto_parser(self, filename: str):
+        """
+        This runs the L0a -> L0b processor. In practice there isn't really a reason to do this,
+        because that time could be used measuring. Also, as is, it couples the acquisition
+        to a tool that should be independent.
+        """
         if self.parse_cfg['active']:
             verbose     : bool = self.parse_cfg['verbose']
             remove_bin  : bool = self.parse_cfg['delete_raw_files']
@@ -140,14 +145,13 @@ class MasterClient():
             print("Not running L0a -> L0b parser per config setting.")
         
 
-    def start_clients(self) -> list:
+    def start_clients(self) -> list[Popen]:
         processes = []
         for i in range(len(self.active_instances)):
-            p = Popen([PATH_TO_PYTHON, PATH_TO_GENCLIENT, self.active_filenames[i]], shell=False)
+            p = Popen([PATH_TO_PYTHON, PATH_TO_GENCLIENT, self.active_filenames[i], self.datapath], shell=False)
             processes.append(p)
             self.log.info(f"{self.active_filenames[i]} communication started, Pid: {p.pid}")
             print('--------------------')
-        
         return processes
 
 
@@ -197,9 +201,9 @@ class MasterClient():
 
             self.active_instances.append(instance)
             self.active_instruments.append(instance['name'])
-            self.active_filenames.append(ACQ_CONFIGS_TMP / f"Client_{self.timestamp}{instance['name']}.json")
+            self.active_filenames.append(self.dirpath / f"Client_{self.timestamp}{instance['name']}.json")  # from ACQ_CONFIGS_TMP
 
-        parse_filename = ACQ_DATA / f"{self.timestamp}{self.context}.bin"
+        parse_filename = self.dirpath / f"{self.timestamp}{self.context}.bin"
         parse_metadata = {
             'instruments': self.active_instruments,
             'filesID': parse_filename.stem,
@@ -260,12 +264,12 @@ class MasterClient():
                         self.motor.send_stop()
                         self.motor.disconnect()
 
-        # Launch the parser, if configured to do so
+        # Launch the parser, if configured to do so (don't)
         self.sendto_parser(parse_filename)
 
 
 if __name__ == '__main__':
-    # Find the most recent server data folder. Assumes most recent by modification time.
+    # Find the most recent server data folder. Determines most recent by modification time.
     from filepaths import ACQ
     serverdir = max(ACQ.iterdir(), key = lambda p: p.stat().st_mtime)
     clientdir = serverdir / (create_timestamp() + "Client")
@@ -274,7 +278,7 @@ if __name__ == '__main__':
     log = create_log(
         filename = "Client_ACQSystem.log",
         title = "ACQSystem Client - DAIS 2.0",
-        timestamp = True,
+        timestamp = False,
         dirpath = clientdir
     )
 
@@ -283,5 +287,5 @@ if __name__ == '__main__':
     with open(config_path, 'r') as f:
         config = json.load(f)
 
-    client = MasterClient(config, log)
+    client = MasterClient(config, log, clientdir)
     client.acquire()
