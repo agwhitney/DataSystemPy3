@@ -140,7 +140,7 @@ class MasterServer():
         self.log.info("Starting online control server -- FYI: the script won't come back while it's running!")
         factory = TCPHandlerFactory(self.log, processes, self.config['radiometer'], self.config)
         reactor.listenTCP(CONTROL_SERVER_PORT, factory)
-        reactor.run()        
+        reactor.run()
 
     
     def start_servers(self) -> list[Popen]:
