@@ -5,18 +5,31 @@ Long term this could perhaps be its own module and include additional post-proce
 """
 import time
 import json
+from pathlib import Path
 
-from filepaths import ACQ_DATA, ACQ_DATA_H5
+from filepaths import l0adir, l0bdir
 from datastructures import DataFile
 from parsers import GPSParser, RadiometerParser, ThermistorParser
 
 
-def processL0b(filename: str, verbose: bool, removebinfiles: bool, singlefile: bool):
+def processL0b(
+        filename: Path | str,
+        verbose: bool,
+        removebinfiles: bool,
+        singlefile: bool,
+        l0adir: Path | str = l0adir,
+        l0bdir: Path | str = l0bdir,
+) -> None:
     """
     Called by masterclient.py if enabled in client config.
     `filename` is like `{timestamp}{context}.bin`
     """
     start = time.time()
+    l0adir = Path(l0adir)
+    l0bdir = Path(l0bdir)
+    filename = Path(filename)
+    if filename.is_absolute():
+        l0adir = filename.parent
 
     # Flags for printing a summary
     rad_found = False
@@ -24,13 +37,13 @@ def processL0b(filename: str, verbose: bool, removebinfiles: bool, singlefile: b
     gps_found = False
 
     # Read parser file created by masterclient.py 
-    parse_filepath = ACQ_DATA / filename
+    parse_filepath = l0adir / filename
     with open(parse_filepath, 'r') as f:
         toparse = json.load(f)
     
     file_context = toparse['filesID']
     # Read server config
-    sv_filename = ACQ_DATA / f"{file_context}_ServerInformation.bin"
+    sv_filename = l0adir / f"{file_context}_ServerInformation.bin"
     with open(sv_filename, 'r') as f:
         sv_config = json.load(f)
 
@@ -41,17 +54,17 @@ def processL0b(filename: str, verbose: bool, removebinfiles: bool, singlefile: b
 
     for i in range(num_files):
         rootfilestem = filenames[i]
-        print(f"Working in file {ACQ_DATA_H5/rootfilestem}.h5")
+        print(f"Working in file {l0bdir/rootfilestem}.h5")
         
         if not singlefile:
-            df = DataFile(f"{ACQ_DATA_H5/rootfilestem}.h5")
+            df = DataFile(f"{l0bdir/rootfilestem}.h5")
             df.rows['IServer']['General'] = json.dumps(sv_config)
             df.rows['IServer'].append()
             df.tables['IServer'].flush()
 
         elif i == 0:
             # Same deal but to a different file name (seems unnecessary?)
-            df = DataFile(ACQ_DATA_H5 / f"{file_context}.h5")
+            df = DataFile(l0bdir / f"{file_context}.h5")
             df.rows['IServer']['General'] = json.dumps(sv_config)
             df.rows['IServer'].append()
             df.tables['IServer'].flush()
@@ -62,7 +75,7 @@ def processL0b(filename: str, verbose: bool, removebinfiles: bool, singlefile: b
             df.tables['IGeneral'].flush()
 
             instrument = toparse['instruments'][j]
-            instr_filename = ACQ_DATA / f"{rootfilestem}_{instrument}.bin"
+            instr_filename = l0adir / f"{rootfilestem}_{instrument}.bin"
             print(f"Parsing {instrument} -> {instr_filename}")
             match instrument:
                 case 'Radiometer':
@@ -111,5 +124,7 @@ def processL0b(filename: str, verbose: bool, removebinfiles: bool, singlefile: b
 
 if __name__ == '__main__':
     import time
-    p = "25_11_14__10_18_50__New5min.bin"
-    processL0b(p, verbose=False, removebinfiles=False, singlefile=False)
+    l0adir = Path(r"C:\Users\adamgw\Desktop\New folder\15minute_test_mw")
+    l0bdir = Path(r"C:\Users\adamgw\Desktop\New folder\15minute_test_mw\h5_files")
+    p = Path(r"c:\Users\adamgw\Desktop\New folder\15minute_test_mw\25_12_18__17_01_56__15MinTest.bin")
+    processL0b(p, verbose=False, removebinfiles=False, singlefile=False, l0adir=l0adir, l0bdir=l0bdir)
