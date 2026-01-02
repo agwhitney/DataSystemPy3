@@ -8,7 +8,7 @@ import tables as tb
 import numpy as np
 
 
-def query_channels(connpath='/dev/ttyUSB1') -> None:
+def query_channels(connpath='/dev/ttyUSB-thm') -> None:
     """
     Get a response (or timeout) from each connected device.
     """
