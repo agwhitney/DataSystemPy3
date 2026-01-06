@@ -158,7 +158,7 @@ class SerialTransportThermistors(SerialTransport):
 
     
     def start_acquisition(self):
-        # Calls self.get_data() at the polling interval (seconds)
+        """Sets a loop to call self.get_data() at the polling interval (seconds)"""
         self.lc = task.LoopingCall(self.get_data)
         self.lc.start(self.polling_interval)
 
@@ -182,7 +182,7 @@ class SerialTransportThermistors(SerialTransport):
             self.sendLine(cmd)
 
         elif self.visited_adcs == self.total_adc:
-            self.dataline += line[:-1] + ':ENDS\n'.encode()
+            self.dataline += line[:-1] + ':ENDS\n'.encode()  # strip default (cr)
             self.write_down(self.dataline)
 
 

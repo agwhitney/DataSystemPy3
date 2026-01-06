@@ -20,13 +20,13 @@ class Parser:
         self.filename = filename
         self.verbose = verbose
 
-        self.package_flag : bytes  # Initialized per instrument
+        self.package_flag : bytes  # Per instrument 'PACX:' 
         self.time_flag = b'TIME:'
         self.data_flag = b'DATA:'
         self.stop_flag = b':ENDS\n'  # Suggested to not rely on `\n`, but it seems fine
 
-        self.package_count = 0
-        self.runtime = 0
+        self.package_count: int = 0
+        self.runtime: int = 0
         
         # Unused?
         # self.to_plot = np.array([])
@@ -60,23 +60,18 @@ class Parser:
 
                 # Extract data from line or lines, between DATA and END flags.
                 if line.startswith(self.package_flag):
-                    package_number = int(line[
-                        line.index(self.package_flag) + len(self.package_flag) : line.index(self.time_flag)
-                    ])
-                    timestamp = float(line[
-                        line.index(self.time_flag) + len(self.time_flag) : line.index(self.data_flag)
-                    ])
+                    # Start of line
+                    package_number = int(line[ line.index(self.package_flag) + len(self.package_flag) : line.index(self.time_flag) ])
+                    timestamp = float(line[ line.index(self.time_flag) + len(self.time_flag) : line.index(self.data_flag) ])
 
                     # Complete line
                     if line.endswith(self.stop_flag):
-                        data = line[
-                            line.index(self.data_flag) + len(self.data_flag) : -len(self.stop_flag)
-                        ]
+                        data = line[ line.index(self.data_flag) + len(self.data_flag) : -len(self.stop_flag) ]
 
                     # Start of split line
                     elif not line.endswith(self.stop_flag):
                         data = b''
-                        data += line[line.index(self.data_flag) + len(self.data_flag) : ]
+                        data += line[ line.index(self.data_flag) + len(self.data_flag) : ]
                         continue
                 
                 elif not line.startswith(self.package_flag):
@@ -87,7 +82,7 @@ class Parser:
                     
                     # End of split line
                     elif line.endswith(self.stop_flag):
-                        data += line[ : -len(self.stop_flag)]
+                        data += line[ : -len(self.stop_flag) ]
 
                 # Send complete data line to parsing method
                 # self.to_plot = np.append(self.to_plot, package_number)
@@ -113,9 +108,9 @@ class RadiometerParser(Parser):
         self.row_pointer_SND = sampleSND
 
         # counters - x is just the number of processed rows
-        self.x_AMR = 0
-        self.x_ACT = 0
-        self.x_SND = 0
+        self.n_AMR = 0
+        self.n_ACT = 0
+        self.n_SND = 0
         self.errorR = 0
 
         # Channel data is prefixed by a three-peat of the same header value
@@ -131,16 +126,29 @@ class RadiometerParser(Parser):
 
     @staticmethod
     def fill_row(row, timestamp, values, package_number, i) -> None:
-        motor_firstPart = values[i] % 64
+        motor_firstpart = values[i] % 64
         
         row['Timestamp'] = timestamp
         row['Counts'] = values[:i]
         row['SystemStatus'] = int((values[i] // 64) % 32)
         row['NewSequence'] = int((values[i] // 2048) % 4)
         row['Id'] = int(values[i] // 16384)
-        row['MotorPosition'] = motor_firstPart * 256 + values[i+1]
+        row['MotorPosition'] = motor_firstpart * 256 + values[i+1]
         # row['Packagenumber'] = package_number  # TODO this fails for long files if package_number > 65536 (check type in datastructures.py). # Was not included in py2
 
+
+    def parse_data_amr_only(self, timestamp, data, package_number):
+        """
+        Parsing microwave data is simplified when only one header is expected.
+        Result also avoids confusion from long headers, i.e., b'UUUU'.
+        """
+        header = b'UUU'
+        datagrams = [x for x in data.split(header) if len(x) == 19]
+        for dg in datagrams:
+            values = struct.unpack('>9HB', dg)
+            self.fill_row(self.row_pointer_AMR, timestamp, values, package_number, i=8)
+            self.row_pointer_AMR.append()
+            self.n_AMR += 1
 
 
     def parse_data(self, timestamp, data, package_number):
@@ -148,6 +156,8 @@ class RadiometerParser(Parser):
         Crawls through `data` to find the header for the respective channel, then processes the datagram accordingly.
         Once it finds a datagram, the next header is found from the last 3 bytes (i.e., it overlaps).
         """
+        self.parse_data_amr_only(timestamp, data, package_number)
+        return
         header = [0, 0, 0]
         index = 0
         bytes_remaining = len(data)
@@ -161,11 +171,11 @@ class RadiometerParser(Parser):
 
                 self.fill_row(self.row_pointer_AMR, timestamp, values, package_number, i=8)
                 self.row_pointer_AMR.append()
-                header = list(values[-3:])
-                self.x_AMR += 1
+                header = list(values[-3:])  # values is a tuple
+                self.n_AMR += 1
 
                 if self.verbose is True:
-                    print(f"AMR: Line {self.x_AMR} -- {values}")
+                    print(f"AMR: Line {self.n_AMR} -- {values}")
 
             elif header == self.MMW_HEADER:
                 indexstart = index
@@ -176,10 +186,10 @@ class RadiometerParser(Parser):
                 self.fill_row(self.row_pointer_ACT, timestamp, values, package_number, i=4)
                 self.row_pointer_ACT.append()
                 header = list(values[-3:])
-                self.x_ACT += 1
+                self.n_ACT += 1
 
                 if self.verbose:
-                    print(f"ACT: Line {self.x_ACT} -- {values}")
+                    print(f"ACT: Line {self.n_ACT} -- {values}")
 
             elif header == self.SND_HEADER:
                 indexstart = index
@@ -190,17 +200,17 @@ class RadiometerParser(Parser):
                 self.fill_row(self.row_pointer_SND, timestamp, values, package_number, i=16)
                 self.row_pointer_SND.append()
                 header = list(values[-3:])
-                self.x_SND += 1
+                self.n_SND += 1
 
                 if self.verbose:
-                    print(f"SND: Line {self.x_SND} -- {values}")
+                    print(f"SND: Line {self.n_SND} -- {values}")
 
             else:
                 if index > max(self.bytes_per_datagram.values()):  # Crawl exceeded what should have been the longest datagram without finding one
                     self.errorR += 1
                     print("-------------------------------------------------")
                     print("Parsing ERROR -> INDEX:", index, "Header:", header,
-                          "Counts - SND:", self.x_SND, "AMR:", self.x_AMR, "ACT:", self.x_ACT,
+                          "Counts - SND:", self.n_SND, "AMR:", self.n_AMR, "ACT:", self.n_ACT,
                           "- ERROR #", self.errorR)
                     print("-------------------------------------------------")
                     
@@ -208,7 +218,7 @@ class RadiometerParser(Parser):
                     if self.verbose:
                         print("-------------------------------------------------")
                         print("Synchronizing a new line -> INDEX:", index, "Header:", header,
-                              "SND:", self.x_SND, "AMR:", self.x_AMR, "ACT:", self.x_ACT)
+                              "SND:", self.n_SND, "AMR:", self.n_AMR, "ACT:", self.n_ACT)
                         print("-------------------------------------------------")
 
                 # Update header by incrementing
@@ -248,7 +258,7 @@ class ThermistorParser(Parser):
 
 
     def parse_data(self, timestamp, data, package_number):
-            voltages = [float(i) for i in data.decode().split('+')[1:]]  # Starts with '+' creating empty entry
+            voltages = [float(i) for i in data.decode().split('+')[1:]]  # Data starts with '+' creating empty entry
             if self.verbose:
                 print(f"-> {time.strftime("%b-%d-%Y -- %H:%M:%S", time.localtime(int(timestamp)))} -> {package_number} -> {voltages}")
             connected = len(voltages)

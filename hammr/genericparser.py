@@ -105,7 +105,7 @@ def processL0b(
             "-" * 30, "\n",
             f"Parsing summary for {rootfilestem}.h5 -----\n",
             "-" * 30, "\n",
-            f"Total elapsed time: {end - start} seconds\n",
+            f"Total elapsed time: {int(end - start)} seconds\n",
             rad_parser.summary() + '\n' if rad_found else "\n",
             thm_parser.summary() + '\n' if thm_found else "\n",
             gps_parser.summary() + '\n' if gps_found else "\n",
@@ -124,7 +124,7 @@ def processL0b(
 
 if __name__ == '__main__':
     import time
-    l0adir = Path(r"C:\Users\adamgw\Desktop\New folder\15minute_test_mw")
-    l0bdir = Path(r"C:\Users\adamgw\Desktop\New folder\15minute_test_mw\h5_files")
-    p = Path(r"c:\Users\adamgw\Desktop\New folder\15minute_test_mw\25_12_18__17_01_56__15MinTest.bin")
+    l0adir = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw")
+    l0bdir = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw\h5_files\testing")
+    p = Path(r"c:\Users\adamgw\Desktop\New folder\15minLN2_mw\25_12_19__15_25_54__LN2_15min.bin")
     processL0b(p, verbose=False, removebinfiles=False, singlefile=False, l0adir=l0adir, l0bdir=l0bdir)
