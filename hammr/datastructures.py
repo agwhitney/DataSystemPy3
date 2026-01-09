@@ -113,7 +113,7 @@ class DataFile:
         Fills /Temperature_Data/Thermistor_MAP table with values from config csv.
         Config csv is copied from project config to data folder by masterclient.
         """
-        if csv_path is None  # or not csv_path.is_file():  #  comes as a string from json
+        if csv_path is None:  # or not csv_path.is_file():  #  comes as a string from json
             # None case is legacy data, which wouldn't expect this table.
             # You could fallback with _thermistor_metadata if you felt the need.
             return
