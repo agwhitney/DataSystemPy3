@@ -41,8 +41,8 @@ ACQ = Path.home() / "AcquiredData"
 ACQ_CONFIGS = ACQ / 'configs'
 ACQ_CONFIGS_TMP = ACQ_CONFIGS / 'tmp'
 
-l0adir = ACQ / 'data'
-l0bdir = l0adir / 'h5_files'
+L0A_SAVEDIR = ACQ / 'data'
+L0B_SAVEDIR = L0A_SAVEDIR / 'h5_files'
 
 ACQ_LOGS = ACQ / 'logs'
 
@@ -50,7 +50,7 @@ ACQ_LOGS = ACQ / 'logs'
 # Verifying and Debugging methods
 def check_structure():
     """Validate that the ACQ folder structure exists (by creating it if it doesn't)"""
-    for path in [ACQ, ACQ_CONFIGS, l0adir, ACQ_LOGS, ACQ_CONFIGS_TMP, l0bdir]:
+    for path in [ACQ, ACQ_CONFIGS, L0A_SAVEDIR, ACQ_LOGS, ACQ_CONFIGS_TMP, L0B_SAVEDIR]:
         path.mkdir(exist_ok=True)
     print("Folder structure is set up")
 

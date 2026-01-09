@@ -16,7 +16,7 @@ from twisted.protocols import basic
 from time import time
 
 from utils import create_log
-from filepaths import l0adir
+from filepaths import L0A_SAVEDIR
 
 
 class TCPClient(basic.Int32StringReceiver):
@@ -104,7 +104,7 @@ def main():
 
     # Open a file object that will be written to. Passed to and closed by protocol.
     # TODO The protocol should probably handle this itself?
-    filepath = l0adir / f"{context}_{name}.bin"
+    filepath = L0A_SAVEDIR / f"{context}_{name}.bin"
     binfile = open(filepath, 'wb')
 
     # Connect client

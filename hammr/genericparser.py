@@ -7,7 +7,7 @@ import time
 import json
 from pathlib import Path
 
-from filepaths import l0adir, l0bdir
+from filepaths import L0A_SAVEDIR, L0B_SAVEDIR
 from datastructures import DataFile
 from parsers import GPSParser, RadiometerParser, ThermistorParser
 
@@ -17,8 +17,8 @@ def processL0b(
         verbose: bool,
         removebinfiles: bool,
         singlefile: bool,
-        l0adir: Path | str = l0adir,
-        l0bdir: Path | str = l0bdir,
+        l0adir: Path | str = L0A_SAVEDIR,
+        l0bdir: Path | str = L0B_SAVEDIR,
 ) -> None:
     """
     Called by masterclient.py if enabled in client config.
@@ -124,7 +124,7 @@ def processL0b(
 
 if __name__ == '__main__':
     import time
-    l0adir = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw")
-    l0bdir = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw\h5_files\testing")
+    L0A_SAVEDIR = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw")
+    L0B_SAVEDIR = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw\h5_files\testing")
     p = Path(r"c:\Users\adamgw\Desktop\New folder\15minLN2_mw\25_12_19__15_25_54__LN2_15min.bin")
-    processL0b(p, verbose=False, removebinfiles=False, singlefile=False, l0adir=l0adir, l0bdir=l0bdir)
+    processL0b(p, verbose=False, removebinfiles=False, singlefile=False, l0adir=L0A_SAVEDIR, l0bdir=L0B_SAVEDIR)

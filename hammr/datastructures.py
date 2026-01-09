@@ -6,7 +6,7 @@ import csv
 import tables as tb
 from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
 
-from utils import get_thermistor_map
+from utils import get_thermistor_str
 from filepaths import PATH_TO_CONFIGS
 
 
@@ -106,7 +106,7 @@ class DataFile:
         infoRow.append()
         infoRow['General'] = 'tempInv = (A + B * log(resist) + C * log(resist)^3 + D * log(resist)^5), temp = 1 / tempInv'
         infoRow.append()
-        infoRow['General'] = get_thermistor_map()
+        infoRow['General'] = get_thermistor_str()
         infoRow.append()
         self.tables['IThermistors'].flush()
 

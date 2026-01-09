@@ -1,41 +1,42 @@
-Digitizer,Thermistor,Location,Model
-1,1,Cal. target (upper left),KS502J2
-1,2,Cal. target (lower left),KS502J2
-1,3,Cal. target (center),KS502J2
-1,4,Cal. target (bottom left),KS502J2
-1,5,Cal. target (bottom right),KS502J2
-1,6,Cal. target (upper right),KS502J2
-1,7,Cal. target (lower right),KS502J2
-1,8,Cal. target (top middle),KS502J2
-2,1,AMR-(ch18/ch24)-internal QV,44906
-2,2,AMR-(ch34)-internal QV,44906
-2,3,AMR-(ch18/ch24)-external QH,44906
-2,4,AMR-(ch34)-external QH,44906
-2,5,AMR-NS-18/24 H,44906
-2,6,AMR-NS-34 H,44906
-2,7,AMR-NS-18/24 V,44906
-2,8,AMR-NS-34 V,44906
-3,1,5V PSU,KS502J2
-3,2,On-board computer,KS502J2
-3,3,Paraboloid (backside bottom),KS502J2
-3,4,Paraboloid (backside middle),KS502J2
-3,5,Paraboloid (backside top),KS502J2
-3,6,Motor controller,KS502J2
-3,7,Motor,KS502J2
-3,8,HyMS IF back-end,KS502J2
-4,1,HyMS IF front-end (location 1),KS502J2
-4,2,HyMS IF front-end (location 2),KS502J2
-4,3,HyMS IF front-end (location 3),KS502J2
-4,4,HyMS IF front-end (location 4),KS502J2
-4,5,HyMS IF front-end (location 5),KS502J2
-4,6,HyMS IF front-end (location 6),KS502J2
-4,7,HyMS IF front-end (location 7),KS502J2
-4,8,ABEB (external),KS502J2
-5,1,Optical bench MW-horn,KS502J2
-5,2,HyMS RF front-end (location 8),KS502J2
-5,3,HyMS RF front-end (location 9),KS502J2
-5,4,HyMS RF front-end (location 10),KS502J2
-5,5,IF down-conversion plate (left),KS502J2
-5,6,IF down-conversion plate (right),KS502J2
-5,7,Digital back-end (left),KS502J2
-5,8,Digital back-end (right),KS502J2
+# Map of HAMMR-HD thermistors updated 18 December 2025
+Digitizer,Thermistor,DataSerial,Location,Model
+1,1,9,Cal. target (upper left),KS502J2
+1,2,10,Cal. target (lower left),KS502J2
+1,3,11,Cal. target (center),KS502J2
+1,4,12,Cal. target (bottom left),KS502J2
+1,5,13,Cal. target (bottom right),KS502J2
+1,6,14,Cal. target (upper right),KS502J2
+1,7,15,Cal. target (lower right),KS502J2
+1,8,16,Cal. target (top middle),KS502J2
+2,1,17,AMR-(ch18/ch24)-internal QV,44906
+2,2,18,AMR-(ch34)-internal QV,44906
+2,3,19,AMR-(ch18/ch24)-external QH,44906
+2,4,20,AMR-(ch34)-external QH,44906
+2,5,21,AMR-NS-18/24 H,44906
+2,6,22,AMR-NS-34 H,44906
+2,7,23,AMR-NS-18/24 V,44906
+2,8,24,AMR-NS-34 V,44906
+3,1,25,5 V DC-to-DC converter,KS502J2
+3,2,26,On-board computer,KS502J2
+3,3,27,Paraboloid (backside bottom),KS502J2
+3,4,28,Paraboloid (backside middle),KS502J2
+3,5,29,Paraboloid (backside top),KS502J2
+3,6,30,Motor controller,KS502J2
+3,7,31,Motor,KS502J2
+3,8,32,12 V DC-to-DC converter,KS502J2
+4,1,33,118 GHz (multiplier),KS502J2
+4,2,34,118 GHz (DRO),KS502J2
+4,3,35,118 GHz plate,KS502J2
+4,4,36,60 GHz plate,KS502J2
+4,5,37,60 GHz plate (beside heater),KS502J2
+4,6,38,60 GHz plate (LNA),KS502J2
+4,7,39,61 GHz plate (level shifter),KS502J2
+4,8,40,ABEB (external),KS502J2
+5,1,1,Optical bench MW-horn,KS502J2
+5,2,2,183 GHz (multiplier),KS502J2
+5,3,3,IF back-end (left),KS502J2
+5,4,4,IF back-end (right),KS502J2
+5,5,5,Down-conversion (DRO),KS502J2
+5,6,6,Down-conversion (power amplifier),KS502J2
+5,7,7,Digital back-end (Valon),KS502J2
+5,8,8,Digital back-end plate,KS502J2
