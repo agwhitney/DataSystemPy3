@@ -50,7 +50,8 @@ class MasterClient():
 
         # Copy thermistor map to data folder for use in post-processing.
         # Having this here makes sense, I think?, but is a bit irrelevant to the rest.
-        shutil.copy(PATH_TO_CONFIGS/'thermistors.csv', L0A_SAVEDIR/f'{self.timestamp}thermistors.csv')
+        self.thermistor_map_path = L0A_SAVEDIR/f'{self.timestamp}thermistors.csv'
+        shutil.copy(PATH_TO_CONFIGS/'thermistors.csv', self.thermistor_map_path)
 
 
     def radiometer_metadata(self, config: dict) -> float:
@@ -205,7 +206,7 @@ class MasterClient():
         parse_metadata = {
             'instruments': self.active_instruments,
             'filesID': parse_filename.stem,
-            'thermistorMap': ,
+            'thermistorMap': self.thermistor_map_path.name,
             'filename': [],
             'description': [],
         }
@@ -247,7 +248,7 @@ class MasterClient():
 
         # Write metadata for parser to file 
         with open(parse_filename, 'w') as f:
-            f.write(json.dumps(parse_metadata))
+            f.write(json.dumps(parse_metadata, indent=4))
             print(f"----------\n{parse_metadata}\n----------")
 
         # Stop the motor if needed
