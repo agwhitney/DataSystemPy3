@@ -58,6 +58,7 @@ def processL0b(
         
         if not singlefile:
             df = DataFile(f"{l0bdir/rootfilestem}.h5")
+            df.store_thermistor_csv(toparse.get('thermistorMap', None))
             df.rows['IServer']['General'] = json.dumps(sv_config)
             df.rows['IServer'].append()
             df.tables['IServer'].flush()
@@ -65,6 +66,7 @@ def processL0b(
         elif i == 0:
             # Same deal but to a different file name (seems unnecessary?)
             df = DataFile(l0bdir / f"{file_context}.h5")
+            df.store_thermistor_csv(toparse.get('thermistorMap', None))
             df.rows['IServer']['General'] = json.dumps(sv_config)
             df.rows['IServer'].append()
             df.tables['IServer'].flush()
