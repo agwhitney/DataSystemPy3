@@ -13,9 +13,9 @@ from pathlib import Path
 
 
 class AMRSample(IsDescription):
-    Counts		  = UInt16Col(8)     # Unsigned short integer         
+    Counts        = UInt16Col(8)     # Unsigned short integer
     Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte      
+    Id            = UInt8Col(1)      # unsigned byte
     SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
@@ -23,9 +23,9 @@ class AMRSample(IsDescription):
 
 
 class ACTSample(IsDescription):
-    Counts		  = UInt16Col(4)     # Unsigned short integer        
+    Counts        = UInt16Col(4)     # Unsigned short integer
     Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte      
+    Id            = UInt8Col(1)      # unsigned byte
     SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
@@ -33,9 +33,9 @@ class ACTSample(IsDescription):
 
 
 class SNDSample(IsDescription):
-    Counts	      = UInt16Col(16)    # Unsigned short integer      
+    Counts        = UInt16Col(16)    # Unsigned short integer
     Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte        
+    Id            = UInt8Col(1)      # unsigned byte
     SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
@@ -50,10 +50,10 @@ class ThermistorSample(IsDescription):
 
 class IMUSample(IsDescription):
     Packagenumber = UInt16Col(1)
-    EulerAngles   = Float64Col(3)    
-    Position      = Float64Col(3) 
+    EulerAngles   = Float64Col(3)
+    Position      = Float64Col(3)
     GPSTime       = Float64Col(1)
-    Timestamp     = Float64Col(1)    
+    Timestamp     = Float64Col(1)
 
 
 class Information(IsDescription):
@@ -63,7 +63,7 @@ class Information(IsDescription):
 class ThermistorMap(IsDescription):
     Digitizer     = UInt8Col()
     Thermistor    = UInt8Col()
-    DataSerial    = UInt8Col() 
+    DataSerial    = UInt8Col()
     Location      = StringCol(50)  # Description of thermistor's physical placement
     Model         = StringCol(20)  # Model number
 
@@ -88,7 +88,7 @@ class DataFile:
     def __del__(self):
         self.h5file.close()
 
-    
+
     def _thermistor_metadata(self) -> None:
         """
         This metadata fills the Thermistors metadata row. Strings with coefficients are copy/pasted and haven't been reviewed (9/4/25)
@@ -113,7 +113,7 @@ class DataFile:
         Fills /Temperature_Data/Thermistor_MAP table with values from config csv.
         Config csv is copied from project config to data folder by masterclient.
         """
-        if csv_path is None or not csv_path.is_file():
+        if csv_path is None  # or not csv_path.is_file():  #  comes as a string from json
             # None case is legacy data, which wouldn't expect this table.
             # You could fallback with _thermistor_metadata if you felt the need.
             return
@@ -125,7 +125,7 @@ class DataFile:
             for line in reader:
                 if line[0].startswith('#'):
                     continue
-                
+
                 if i == 0:
                     pass
                 else:
@@ -136,7 +136,7 @@ class DataFile:
                     row['Model'] = line[4]
                     row.append()
                 i += 1
-        self.tables['IThermistorsCSV'].flush()
+        self.tables['TMAP'].flush()
 
 
     def create_tree(self) -> None:
@@ -156,7 +156,7 @@ class DataFile:
 
         self.groups['G'] = self.h5file.create_group('/', 'GPS_IMUData', "Euler angles (roll, pitch, yaw) and position (lat, long, alt), and GPS time and computer time")
         self.tables['IMU'] = self.h5file.create_table(self.groups['G'], 'GPSIMU_DATA', IMUSample, "System position (lat, long), altitude, and GPS time")
-        
+
         self.groups['I'] = self.h5file.create_group('/', 'Information', "README before reading file")
         self.tables['IGeneral'] = self.h5file.create_table(self.groups['I'], 'General_INFO', Information, "Raw files used for composing this .h5")
         self.tables['IServer'] = self.h5file.create_table(self.groups['I'], 'Server_INFO', Information, "JSON-formatted info regarding server")

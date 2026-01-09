@@ -22,7 +22,7 @@ from utils import create_log, create_timestamp
 class MasterClient():
     def __init__(self, config: dict, log: logging.Logger):
         self.log = log
-        
+
         # Read the client configuration
         self.parse_cfg       : dict = config['parsing']  # Sub-config for parsing method
         self.server_ip       : str = config['master_server']['ip']
@@ -206,7 +206,7 @@ class MasterClient():
         parse_metadata = {
             'instruments': self.active_instruments,
             'filesID': parse_filename.stem,
-            'thermistorMap': self.thermistor_map_path.name,
+            'thermistorMap': str(self.thermistor_map_path),
             'filename': [],
             'description': [],
         }
