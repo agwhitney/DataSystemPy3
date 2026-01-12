@@ -8,20 +8,21 @@ should happen is things should be moved into more specific methods.
 import json
 import logging  # type hinting
 import time
+import shutil
 
 from datetime import datetime
 from subprocess import Popen
 
-from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, l0adir, PATH_TO_GENCLIENT, PATH_TO_PYTHON
+from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, L0A_SAVEDIR, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from genericparser import processL0b
 from motorcontrol import MotorControl
-from utils import create_log
+from utils import create_log, create_timestamp
 
 
 class MasterClient():
     def __init__(self, config: dict, log: logging.Logger):
         self.log = log
-        
+
         # Read the client configuration
         self.parse_cfg       : dict = config['parsing']  # Sub-config for parsing method
         self.server_ip       : str = config['master_server']['ip']
@@ -36,20 +37,21 @@ class MasterClient():
         self.instances       : list = config['instances']  # Not in py2 but trims a lot of typing
 
         # Additional variables
-        self.delay = 3  # used for sleep timer
+        self.delay = 3  # "System will wait {self.delay} before starting"
         self.wait_time = 2  # Used for progress lines during acquisition
-        self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+        self.timestamp = create_timestamp()
         self.active_instruments = []
         self.active_filenames = []
         self.active_instances = []
 
         self.motor : MotorControl
-        self.items = {
-            'rad': 0,
-            'thm': 0,
-            'gps': 0,
-        }
+        self.items = {'rad': 0, 'thm': 0, 'gps': 0,}
         self.get_serverconfig()
+
+        # Copy thermistor map to data folder for use in post-processing.
+        # Having this here makes sense, I think?, but is a bit irrelevant to the rest.
+        self.thermistor_map_path = L0A_SAVEDIR/f'{self.timestamp}thermistors.csv'
+        shutil.copy(PATH_TO_CONFIGS/'thermistors.csv', self.thermistor_map_path)
 
 
     def radiometer_metadata(self, config: dict) -> float:
@@ -91,7 +93,7 @@ class MasterClient():
         self.motor = MotorControl(self.server_ip, self.server_port)
         system_config = self.motor.send_getsysconfig()
         filename = self.timestamp + self.context + "_ServerInformation.bin"
-        with open(l0adir / filename, 'w') as f:
+        with open(L0A_SAVEDIR / filename, 'w') as f:
             f.write(json.dumps(system_config))
 
         for instrument in system_config.values():
@@ -200,10 +202,11 @@ class MasterClient():
             self.active_instruments.append(instance['name'])
             self.active_filenames.append(ACQ_CONFIGS_TMP / f"{self.timestamp}{instance['name']}.json")
 
-        parse_filename = l0adir / f"{self.timestamp}{self.context}.bin"
+        parse_filename = L0A_SAVEDIR / f"{self.timestamp}{self.context}.bin"
         parse_metadata = {
             'instruments': self.active_instruments,
             'filesID': parse_filename.stem,
+            'thermistorMap': str(self.thermistor_map_path),
             'filename': [],
             'description': [],
         }
@@ -245,7 +248,7 @@ class MasterClient():
 
         # Write metadata for parser to file 
         with open(parse_filename, 'w') as f:
-            f.write(json.dumps(parse_metadata))
+            f.write(json.dumps(parse_metadata, indent=4))
             print(f"----------\n{parse_metadata}\n----------")
 
         # Stop the motor if needed

@@ -156,8 +156,8 @@ class RadiometerParser(Parser):
         Crawls through `data` to find the header for the respective channel, then processes the datagram accordingly.
         Once it finds a datagram, the next header is found from the last 3 bytes (i.e., it overlaps).
         """
-        self.parse_data_amr_only(timestamp, data, package_number)
-        return
+        # self.parse_data_amr_only(timestamp, data, package_number)
+        # return
         header = [0, 0, 0]
         index = 0
         bytes_remaining = len(data)

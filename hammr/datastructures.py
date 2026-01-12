@@ -6,35 +6,37 @@ import csv
 import tables as tb
 from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
 
-from utils import get_thermistor_map
-from filepaths import PATH_TO_CONFIGS
+from utils import get_thermistor_str
+
+# type hinting
+from pathlib import Path
 
 
 class AMRSample(IsDescription):
-    Counts		  = UInt16Col(8)     # Unsigned short integer         
+    Counts        = UInt16Col(8)     # Unsigned short integer
     Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte      
-    SystemStatus   = UInt8Col(1)      # unsigned byte
+    Id            = UInt8Col(1)      # unsigned byte
+    SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
     Timestamp     = Float64Col(1)     # Signed 64-bit integer
 
 
 class ACTSample(IsDescription):
-    Counts		  = UInt16Col(4)     # Unsigned short integer        
+    Counts        = UInt16Col(4)     # Unsigned short integer
     Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte      
-    SystemStatus   = UInt8Col(1)      # unsigned byte
+    Id            = UInt8Col(1)      # unsigned byte
+    SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
     Timestamp     = Float64Col(1)    # Signed 64-bit integer
 
 
 class SNDSample(IsDescription):
-    Counts	      = UInt16Col(16)    # Unsigned short integer      
+    Counts        = UInt16Col(16)    # Unsigned short integer
     Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte        
-    SystemStatus   = UInt8Col(1)      # unsigned byte
+    Id            = UInt8Col(1)      # unsigned byte
+    SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
     Timestamp     = Float64Col(1)    # Signed 64-bit integer
@@ -48,10 +50,10 @@ class ThermistorSample(IsDescription):
 
 class IMUSample(IsDescription):
     Packagenumber = UInt16Col(1)
-    EulerAngles   = Float64Col(3)    
-    Position      = Float64Col(3) 
+    EulerAngles   = Float64Col(3)
+    Position      = Float64Col(3)
     GPSTime       = Float64Col(1)
-    Timestamp     = Float64Col(1)    
+    Timestamp     = Float64Col(1)
 
 
 class Information(IsDescription):
@@ -61,6 +63,7 @@ class Information(IsDescription):
 class ThermistorMap(IsDescription):
     Digitizer     = UInt8Col()
     Thermistor    = UInt8Col()
+    DataSerial    = UInt8Col()
     Location      = StringCol(50)  # Description of thermistor's physical placement
     Model         = StringCol(20)  # Model number
 
@@ -80,18 +83,12 @@ class DataFile:
         self.rows = {}
         self.create_tree()
         self._thermistor_metadata()
-        self.store_thermistor_map()
 
 
     def __del__(self):
-        self._close()
-
-
-    def _close(self) -> None:
-        """Once the file is closed the groups/tables/rows become inaccessible (I think)"""
         self.h5file.close()
 
-    
+
     def _thermistor_metadata(self) -> None:
         """
         This metadata fills the Thermistors metadata row. Strings with coefficients are copy/pasted and haven't been reviewed (9/4/25)
@@ -106,31 +103,40 @@ class DataFile:
         infoRow.append()
         infoRow['General'] = 'tempInv = (A + B * log(resist) + C * log(resist)^3 + D * log(resist)^5), temp = 1 / tempInv'
         infoRow.append()
-        infoRow['General'] = get_thermistor_map()
+        infoRow['General'] = get_thermistor_str()
         infoRow.append()
         self.tables['IThermistors'].flush()
 
 
-    def store_thermistor_map(self) -> None:
-        """Fills the /Information/Thermistors_CSV table with values from thermistors.csv in the config.
-        TODO the config should be copied when the measurement runs so that L0a -> L0b can run separately.
+    def store_thermistor_csv(self, csv_path: Path | None) -> None:
         """
-        path = PATH_TO_CONFIGS / 'thermistors.csv'
-        if not path.exists:
-            return  # TODO Handles above todo by doing nothing
+        Fills /Temperature_Data/Thermistor_MAP table with values from config csv.
+        Config csv is copied from project config to data folder by masterclient.
+        """
+        if csv_path is None:  # or not csv_path.is_file():  #  comes as a string from json
+            # None case is legacy data, which wouldn't expect this table.
+            # You could fallback with _thermistor_metadata if you felt the need.
+            return
 
-        row = self.tables['IThermistorsCSV'].row
-        with open(path, 'r', newline='') as file:
+        row = self.tables['TMAP'].row
+        with open(csv_path, 'r', newline='') as file:
             reader = csv.reader(file, delimiter=',')
+            i = 0
             for line in reader:
-                if reader.line_num == 1:
+                if line[0].startswith('#'):
                     continue
-                row['Digitizer'] = int(line[0])
-                row['Thermistor'] = int(line[1])
-                row['Location'] = line[2]
-                row['Model'] = line[3]
-                row.append()
-        self.tables['IThermistorsCSV'].flush()
+
+                if i == 0:
+                    pass
+                else:
+                    row['Digitizer'] = int(line[0])
+                    row['Thermistor'] = int(line[1])
+                    row['DataSerial'] = int(line[2])
+                    row['Location'] = line[3]
+                    row['Model'] = line[4]
+                    row.append()
+                i += 1
+        self.tables['TMAP'].flush()
 
 
     def create_tree(self) -> None:
@@ -146,15 +152,15 @@ class DataFile:
 
         self.groups['T'] = self.h5file.create_group('/', 'Temperature_Data', "Thermistor readout and computer time")
         self.tables['THM'] = self.h5file.create_table(self.groups['T'], 'Thermistor_DATA', ThermistorSample, "System temperature in volts (5 kOhm thermistors)")
+        self.tables['TMAP'] = self.h5file.create_table(self.groups['T'], 'Thermistor_MAP', ThermistorMap, "Map of thermistor connection and location.")  # AGW new
 
         self.groups['G'] = self.h5file.create_group('/', 'GPS_IMUData', "Euler angles (roll, pitch, yaw) and position (lat, long, alt), and GPS time and computer time")
         self.tables['IMU'] = self.h5file.create_table(self.groups['G'], 'GPSIMU_DATA', IMUSample, "System position (lat, long), altitude, and GPS time")
-        
+
         self.groups['I'] = self.h5file.create_group('/', 'Information', "README before reading file")
         self.tables['IGeneral'] = self.h5file.create_table(self.groups['I'], 'General_INFO', Information, "Raw files used for composing this .h5")
         self.tables['IServer'] = self.h5file.create_table(self.groups['I'], 'Server_INFO', Information, "JSON-formatted info regarding server")
         self.tables['IThermistors'] = self.h5file.create_table(self.groups['I'], 'Thermistors_INFO', Information, "Thermistor information")
-        self.tables['IThermistorsCSV'] = self.h5file.create_table(self.groups['I'], 'Thermistors_CSV', ThermistorMap, "Map of thermistor connection and location.")  # AGW new
         # These appear to be unused
         self.tables['IRadiometer'] = self.h5file.create_table(self.groups['I'], 'Radiometer_INFO', Information, "Radiometer information")
         self.tables['IGPS'] = self.h5file.create_table(self.groups['I'], 'GPS_INFO', Information, "GPS-IMU information")
@@ -175,6 +181,5 @@ class DataFile:
 if __name__ == '__main__':
     f = DataFile("./test.h5")
     print("debug breakpoint")
-
 
     f._close()

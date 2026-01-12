@@ -1,12 +1,18 @@
 """
-Moved this here just to say I did something.
-Other util functionscould also make sense here.
+Generic  methods.
 """
 import csv
 import logging
 from datetime import datetime
 
 from filepaths import ACQ_LOGS, PATH_TO_CONFIGS
+
+
+def create_timestamp() -> str:
+    """
+    Returns a formatted timestamp string.
+    """
+    return datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
 
 
 def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logging.Logger:
@@ -17,7 +23,7 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logg
         filename += '.log'
 
     if timestamp:
-        filename = datetime.now().strftime('%y_%m_%d__%H_%M_%S__') + filename
+        filename = create_timestamp() + filename
     
     logging.basicConfig(
         level = logging.DEBUG,
@@ -32,19 +38,23 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logg
     return log
 
 
-def get_thermistor_map(filename='thermistors.csv') -> str:
+def get_thermistor_str(filename='thermistors.csv') -> str:
     """
-    Called in datastructures.py to provide a large string of metadata using Config/thermistors.csv as reference.
+    Called by L0b processor to create a long metadata string of thermistor labels.
+    Assumes a line of headers followed by lines of data. Ignores lines starting with `#`.
     """
     s = ''
-    with open(PATH_TO_CONFIGS/filename, 'r') as f:
+    with open(PATH_TO_CONFIGS/filename, 'r', newline='') as f:  # newline='' for csv reader
         reader = csv.reader(f, delimiter=',')
-        for index, row in enumerate(reader):
-            # Skip header, and avoid leading/trailing newlines.
-            if index == 0:
+        i = 0
+        for row in reader:
+            if row[0].startswith('#'):
                 continue
-            elif index == 1:
-                s += f'thermistorName[{index}] = "{row[2].strip()}"'
+
+            if i == 0:
+                # Column headers. Excluded to match previous, but could probably be included w/o issue
+                pass
             else:
-                s += f'\nthermistorName[{index}] = "{row[2].strip()}"'
+                s += f'thermistorName[{i}] = "{row[3].strip()}"\n'
+            i += 1
     return s
