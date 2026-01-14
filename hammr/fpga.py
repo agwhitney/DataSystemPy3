@@ -70,11 +70,9 @@ class FPGA():
 
 
     @staticmethod
-    def get_denominator(int_time):
-        ratio_max = 16777215
-        fmax = 50000  # kHz
+    def get_denominator(int_time, fmax=50000, ratio_max=16777215):  # fmax kHz
         ftarget = 2 / int_time  # range 25 kHz - 2.9 Hz
-        ratio = int(fmax / ftarget)  # int returns floor
+        ratio = int(fmax / ftarget)
         return min(ratio, ratio_max)  # Intersects at about int_time = 671 ms
 
 
@@ -105,7 +103,7 @@ class FPGA():
             self.log.info(f"Sending configuration for {key}. OFF value = {self.offmap[key]}")
 
             active_ch = self.ACTIVATE_VALUE if self.activated[key] else self.DEACTIVATE_VALUE
-            active_ch += self.COUNTER_VALUE if self.counter[key] else 0  # Reads a little funny, but the False case is active += 0
+            active_ch += self.COUNTER_VALUE if self.counter[key] else 0  # Reads a little funny, but the False case is active_ch += 0
 
             int_time_ch = self.int_time[key]
             inst_seq = [i + self.offmap[key] for i in self.inst_base]
@@ -160,8 +158,7 @@ class FPGA():
         """Combined send and receive. Prints returns for debugging."""
         send = self.send_instruction(container, inst, processor_order)
         recv = self.recv_instruction()
-        # self.log.info(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
-
+        self.log.info(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
 
 
     def reset_hardware(self):
@@ -192,5 +189,9 @@ if __name__ == '__main__':
     log = create_log('dummy.log', "Dummy")
 
     f = FPGA(data, log)
-    f.reset_hardware()
-    print()
+    print('starting motor')
+    f.motor_control(f.START_VALUE)
+    input("press enter to send STOP")
+    f.motor_control(f.STOP_VALUE)
+
+    f.disconnect_tcp()

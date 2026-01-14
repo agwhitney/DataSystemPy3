@@ -16,7 +16,7 @@ def test_connection():
         print("Closed")
     except TimeoutError as e:
         s.close()
-        print(e)   
+        print(e)
 
 
 if __name__ == '__main__':

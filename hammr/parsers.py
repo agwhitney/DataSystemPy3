@@ -232,9 +232,9 @@ class RadiometerParser(Parser):
             bytes_remaining = len(data) - index
 
         # Return unprocessed bytes (not used - other parsers return None)
-        b = struct.pack('3b', *header)
-        vals = b + data[-bytes_remaining:]
-        return vals
+        # b = struct.pack('3b', *header)
+        # vals = b + data[-bytes_remaining:]
+        # return vals
     
 
 class ThermistorParser(Parser):
