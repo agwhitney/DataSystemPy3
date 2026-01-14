@@ -15,7 +15,8 @@ class FPGA():
     mapkey = ('mw', 'mmw', 'snd')
     header = {'mw': 85, 'mmw': 87, 'snd': 93}  # 'U' #85; 'W' #87 ']' #93  Used in .h5 structure?
     offmap = {'mw': 0, 'mmw': 16, 'snd': 32}
-    bpd = {'arm': 22, 'act': 14, 'snd': 38}  # "Bytes per Datagram" py2 this is ordered ARM, SND, ACT
+    # TODO these are only used in the estimated data throughput, and maybe an FPGA config file would be nice to have.
+    bpd = {'arm': 22, 'act': 14, 'snd': 38}  # "Bytes per Datagram" py2 this is ordered ARM, SND, ACT  # ARM is a typo of AMR
     bpd_remap = {'mw': bpd['arm'], 'mmw': bpd['act'], 'snd': bpd['snd']}
 
     ACTIVATE_VALUE = 15
