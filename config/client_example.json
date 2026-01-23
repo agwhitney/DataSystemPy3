@@ -1,4 +1,5 @@
 // `client.json` contains configuration details for measurement runs of HAMMR-HD.
+// fields with leading underscores are used as reminder comments.
 {
     "master_server": {
         "_ip_info": "Active Client: 127.0.0.1 | Observer Client direct cable: 192.168.1.1 | Observer Client CSUnet: 129.82.224.49",

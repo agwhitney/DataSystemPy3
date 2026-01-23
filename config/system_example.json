@@ -1,16 +1,11 @@
-// `system.json` contains configuration details for individual instruments within HAMMR-HD.
-// This file is a commented template (in general, not allowed by JSON or Python's reader).
-// Each instrument is a labeled object with fields for the serial connection, tcp connection,
-// and specific characteristics.
+// `system.json` contains configuration details for instruments within HAMMR-HD.
+// This file is a template. See docs/Configuration.md for details
 {
     "radiometer": {
-        // General settings
-        "active": true,  // Bool to start instrument server 
-        "byte_order": "big-endian",  // Not used?
-        "name": "Radiometer",  // Label used mostly in logs.
-        "letterid": "R",  // Label for data packaging (though not set by this).
-
-        // Instrument-specific characteristics
+        "active": true,
+        "byte_order": "big-endian",
+        "name": "Radiometer",
+        "letterid": "R",
         "characteristics": {
             "configuration": {
                 "ip": "10.10.10.2",

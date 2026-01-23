@@ -71,7 +71,7 @@ class MasterClient():
         meaning = []
         for key in channel_data:
             channel = channel_data[key]
-            channel['int_time'] = config['characteristics'][key]['integration_time']
+            channel['int_time'] = config['characteristics'][key]['integration_time_ms']
             channel['activated'] = config['characteristics'][key]['active']
             channel['seq_length'] = config['characteristics'][key]['sequence']['length']
             print(f"## {key} -> Active: {channel['activated']} Ts = {channel['int_time']} ms")

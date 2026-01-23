@@ -1,0 +1,29 @@
+{
+    "activate": 15,
+    "deactivate": 0,
+    "counter": 240,
+    "no_counter": 0,
+
+    "motor": {
+        "start": 170,
+        "stop": 85
+    },
+
+    "mw": {
+        "off": 0,
+        "bytes_per_datagram": 22,
+        "datagram_header": [85, 85, 85]
+    },
+
+    "mmw": {
+        "off": 16,
+        "bytes_per_datagram": 14,
+        "datagram_header": [87, 87, 87]
+    },
+
+    "snd": {
+        "off": 32,
+        "bytes_per_datagram": 38,
+        "datagram_header": [93, 93, 93]
+    }
+}

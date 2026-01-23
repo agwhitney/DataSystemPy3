@@ -51,7 +51,7 @@ class FPGA():
         for key in self.mapkey:
             cfg = config['characteristics'][key]
 
-            self.int_time[key] = cfg['integration_time']
+            self.int_time[key] = cfg['integration_time_ms']
             self.activated[key] = cfg['active']
             self.counter[key] = cfg['counter']
             self.sequence_length[key] = cfg['sequence']['length']
@@ -71,9 +71,9 @@ class FPGA():
 
 
     @staticmethod
-    def get_denominator(int_time, fmax=50000, ratio_max=16777215):  # fmax kHz
-        ftarget = 2 / int_time  # range 25 kHz - 2.9 Hz
-        ratio = int(fmax / ftarget)
+    def get_denominator(int_time_ms, fmax_khz=50000, ratio_max=16777215):  # fmax kHz
+        ftarget = 2 / int_time_ms  # range 25 kHz - 2.9 Hz
+        ratio = int(fmax_khz / ftarget)
         return min(ratio, ratio_max)  # Intersects at about int_time = 671 ms
 
 
