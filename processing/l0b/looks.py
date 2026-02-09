@@ -2,7 +2,6 @@ from readers import L0bReader
 import tables as tb
 import matplotlib.pyplot as plt
 
-# r = L0bReader('./test.h5')
 
 def counts2volts(counts, bits=14, adc_vmax=4.096):
     step = 2**bits - 1
@@ -10,7 +9,7 @@ def counts2volts(counts, bits=14, adc_vmax=4.096):
     return volts
 
 
-file = tb.open_file('./test.h5', 'r')
+file = tb.open_file(r"C:\Users\adamgw\Desktop\L0b\26_02_06__11_24_04__260206_kba_ln2.h5", 'r')
 
 gps = file.root.GPS_IMUData.GPSIMU_DATA
 thm = file.root.Temperature_Data.Thermistor_DATA

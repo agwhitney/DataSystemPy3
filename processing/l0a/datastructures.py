@@ -10,11 +10,13 @@ from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
 from pathlib import Path
 
 
-def get_thermistor_str(filename=r"C:\Users\agwhi\Desktop\Code\DataSystemPy3\config\thermistors.csv") -> str:
+def get_thermistor_str(filename='') -> str:
     """
     Called by L0b processor to create a long metadata string of thermistor labels.
     Assumes a line of headers followed by lines of data. Ignores lines starting with `#`.
     """
+    if filename == '':
+        filename = Path('config/thermistors.csv')
     s = ''
     with open(filename, 'r', newline='') as f:  # newline='' for csv reader
         reader = csv.reader(f, delimiter=',')

@@ -69,6 +69,11 @@ class L0aReader:
         for key, val in data.items():
             self.table.row[key] = val
         self.table.row.append()
+
+
+    def summary(self) -> str:
+        return "Summary"
+        # return f"--{self} parse results: {self.package_count} packages out of {self.line_count} read lines. Elapsed time: {self.runtime} seconds."
             
 
 class GPSReader(L0aReader):
@@ -146,7 +151,7 @@ class RadiometerReader(L0aReader):
 
 
     @staticmethod
-    def get_radiometer_row(package_number, timestamp, values, i) -> dict:
+    def get_radiometer_row(package_number: int, timestamp: float, values: bytes, i: int) -> dict:
         row = {}
         row['Timestamp'] = timestamp
         row['Counts'] = values[:i]
@@ -226,27 +231,3 @@ class RadiometerReader(L0aReader):
         # Return unprocessed bytes
         remainder = data[-bytes_remaining:]
         return remainder
-
-
-
-
-
-if __name__ == '__main__':
-    from datastructures import DataFile
-    df = DataFile('./test.h5')
-
-    g = GPSReader(
-        r"C:\Users\agwhi\Desktop\260206_kba\data\26_02_06__14_09_14__1of6_260206_kba_tarmac10ms_GPS-IMU.bin",
-        df.tables['IMU']
-    )
-    r = RadiometerReader(
-        r"C:\Users\agwhi\Desktop\260206_kba\data\26_02_06__14_09_14__1of6_260206_kba_tarmac10ms_Radiometer.bin",
-        df.tables['AMR']
-    )
-    t = ThermistorReader(
-        r"C:\Users\agwhi\Desktop\260206_kba\data\26_02_06__14_09_14__1of6_260206_kba_tarmac10ms_Thermistors.bin",
-        df.tables['THM']
-    )
-    g.parse_file()
-    r.parse_file()
-    t.parse_file()

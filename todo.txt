@@ -10,6 +10,7 @@
 
 
 4) Thermistors.csv should be copied to data output for decoupled access in L0b processing.
+    2/9/26 works but saves absolute path (hard to parse externally)
 
 
 5) Need a script that starts this software and hyperspectral software together.
