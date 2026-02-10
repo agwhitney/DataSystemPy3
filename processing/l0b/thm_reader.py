@@ -3,29 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def make_pickable(fig, ax, leg):
-    pickradius = 5
-    linemap = {}
-
-    for legend_line, ax_line in zip(leg.get_lines(), ax.get_lines()):
-        legend_line.set_picker(pickradius)
-        linemap[legend_line] = ax_line
-
-    def on_pick(event):
-        legend_line = event.artist
-
-        if legend_line not in linemap:
-            return
-        
-        ax_line = linemap[legend_line]
-        visible = not ax_line.get_visible()
-        ax_line.set_visible(visible)
-        legend_line.set_alpha(1.0 if visible else 0.2)
-        fig.canvas.draw()
-    
-    fig.canvas.mpl_connect('pick_event', on_pick)
-
-
 class ThermistorReader:
     def __init__(self, filename):
         file = tb.open_file(filename, 'r')
@@ -78,18 +55,3 @@ class ThermistorReader:
         label = f"d{dig}t{thm} - {loc}"
         ax.plot(x, y, label=label)
         return ax
-
-
-    
-
-if __name__ == '__main__':
-    t = ThermistorReader(r"C:\Users\agwhi\Desktop\260206_kba\data\h5_files\26_02_06__11_24_04__260206_kba_ln2.h5")
-
-    fig, ax = plt.subplots(layout='constrained')
-    ax.set(title="Thermistor data", xlabel='Elapsed time (s)', ylabel='Temperature (K)')
-    
-    for i in range(40):
-        t.plot_sensor(ax, i)
-    leg = fig.legend(loc='outside center right')
-    make_pickable(fig, ax, leg)
-    plt.show()

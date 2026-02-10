@@ -13,22 +13,29 @@ from readers import GPSReader, ThermistorReader, RadiometerReader
 
 def processL0b(
         filename: Path | str,
-        verbose: bool,
-        removebinfiles: bool,
-        singlefile: bool,
-        l0adir: Path | str,
-        l0bdir: Path | str,
+        l0adir: Path | str = '',
+        l0bdir: Path | str = '',
+        verbose: bool = True,
+        removebinfiles: bool = False,
+        singlefile: bool = True,
 ) -> None:
     """
     Called by masterclient.py if enabled in client config.
     `filename` is like `{timestamp}{context}.bin`
     """
-    start = time.time()
-    l0adir = Path(l0adir)
-    l0bdir = Path(l0bdir)
     filename = Path(filename)
     if filename.is_absolute():
         l0adir = filename.parent
+    else:
+        l0adir = Path(l0adir)
+        
+    if l0bdir == '':
+        l0bdir = l0adir / 'l0b'
+    else:
+        l0bdir = Path(l0bdir)
+    Path.mkdir(l0bdir, exist_ok=True)
+
+    start = time.time()
 
     # Flags for printing a summary
     rad_found = False
@@ -129,5 +136,6 @@ def processL0b(
 
 
 if __name__ == '__main__':
-    filename = r"c:\Users\agwhi\Desktop\260206_kba\data\26_02_06__11_24_04__260206_kba_ln2.bin"
-    processL0b(filename, False, False, True,  r"C:\Users\agwhi\Desktop\260206_kba\data", r"C:\Users\agwhi\Desktop\260206_kba\data\h5_files")
+    from tkinter import filedialog
+    filename = filedialog.askopenfilename()
+    processL0b(filename)

@@ -28,7 +28,7 @@ class RadiometerReader:
         self.status = table.col('SystemStatus').flatten()
         self.sequence = table.col('NewSequence').flatten()
         self.motorpos = table.col('MotorPosition').flatten()
-        self.timestamps = table.col('Timestamp').flatten()
+        self.timestamp = table.col('Timestamp').flatten()
 
         self.channels: list
 
@@ -67,14 +67,3 @@ class AMRReader(RadiometerReader):
 
     def plot_channels(self, unit='counts'):
         return super().plot_channels(nrows=2, ncols=4, unit=unit)
-
-
-if __name__ == '__main__':
-    r = AMRReader(r"C:\Users\agwhi\Desktop\260206_kba\data\h5_files\26_02_06__11_24_04__260206_kba_ln2.h5")
-
-    fig, ax = plt.subplots()
-    x = r.timestamps - r.timestamps[0]
-    y = r.status
-    ax.scatter(x*1000, y, marker='.')
-    ax.set(xlim=(0, 40))
-    plt.show()
