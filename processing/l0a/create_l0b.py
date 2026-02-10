@@ -129,5 +129,5 @@ def processL0b(
 
 
 if __name__ == '__main__':
-    filename = r"C:\Users\adamgw\Desktop\260206_kba\data\26_02_06__14_09_14__260206_kba_tarmac10ms.bin"
-    processL0b(filename, False, False, True,  r"C:\Users\adamgw\Desktop\260206_kba", r"C:\Users\adamgw\Desktop\L0b")
+    filename = r"c:\Users\agwhi\Desktop\260206_kba\data\26_02_06__11_24_04__260206_kba_ln2.bin"
+    processL0b(filename, False, False, True,  r"C:\Users\agwhi\Desktop\260206_kba\data", r"C:\Users\agwhi\Desktop\260206_kba\data\h5_files")

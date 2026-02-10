@@ -4,10 +4,8 @@ The *Sample classes define the tables in the .h5 file.
 """
 import csv
 import tables as tb
-from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
-
-# type hinting
 from pathlib import Path
+from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
 
 
 def get_thermistor_str(filename='') -> str:

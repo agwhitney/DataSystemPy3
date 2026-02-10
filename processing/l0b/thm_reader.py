@@ -28,35 +28,21 @@ def make_pickable(fig, ax, leg):
 
 class ThermistorReader:
     def __init__(self, filename):
-        self.file = tb.open_file(filename, 'r')
-        self.table = self.file.root.Temperature_Data.Thermistor_DATA
-        self.meta = self.file.root.Temperature_Data.Thermistor_MAP
+        file = tb.open_file(filename, 'r')
+        table = file.root.Temperature_Data.Thermistor_DATA
+        self.meta = file.root.Temperature_Data.Thermistor_MAP
 
-        self.timestamps = self.table.col('Timestamp').flatten()
-        self.voltages = self.table.col('Voltages')
+        self.package_number = table.col('Packagenumber').flatten()
+        self.timestamps = table.col('Timestamp').flatten()
+        self.voltages = table.col('Voltages')
 
 
-    def sensor_voltages(self, index) -> np.ndarray:
-        return self.voltages[:, index]
+    def __del__(self):
+        self.meta.close()
+
     
-
-    def sensor_metadata(self, index) -> tuple:
-        data = [
-            (x['Digitizer'], x['Thermistor'], x['Location'].decode(), x['Model'].decode())
-            for x in self.meta.where(f"DataSerial == {index+1}")
-        ][0]
-        return data
-    
-
-    def sensor_location(self, index) -> str:
-        return [x['Location'].decode() for x in self.meta.where(f"DataSerial == {index+1}")][0]
-    
-
-    def sensor_model(self, index) -> str:
-        return [x['Model'].decode() for x in self.meta.where(f"DataSerial == {index+1}")][0]
-    
-
-    def voltage2kelvin(self, model, voltage):
+    @staticmethod
+    def voltage2kelvin(model, voltage):
         if model == 'KS502J2':
             A = 1.29337828808 * 10**-3
             B = 2.34313147501 * 10**-4
@@ -73,6 +59,18 @@ class ThermistorReader:
         return temp
 
 
+    def sensor_voltages(self, index) -> np.ndarray:
+        return self.voltages[:, index]
+    
+
+    def sensor_metadata(self, index) -> tuple:
+        data = [
+            (x['Digitizer'], x['Thermistor'], x['Location'].decode(), x['Model'].decode())
+            for x in self.meta.where(f"DataSerial == {index+1}")
+        ][0]
+        return data
+
+
     def plot_sensor(self, ax, index):
         dig, thm, loc, model = self.sensor_metadata(index)
         x = self.timestamps - self.timestamps[0]
@@ -85,7 +83,7 @@ class ThermistorReader:
     
 
 if __name__ == '__main__':
-    t = ThermistorReader(r"C:\Users\adamgw\Desktop\L0b\26_02_06__14_09_14__260206_kba_tarmac10ms.h5")
+    t = ThermistorReader(r"C:\Users\agwhi\Desktop\260206_kba\data\h5_files\26_02_06__11_24_04__260206_kba_ln2.h5")
 
     fig, ax = plt.subplots(layout='constrained')
     ax.set(title="Thermistor data", xlabel='Elapsed time (s)', ylabel='Temperature (K)')
