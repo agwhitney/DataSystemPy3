@@ -45,7 +45,7 @@ pid_hdsv2=$!
 # When microwave client finishes, kill servers
 wait $pid_mwcl
 sleep 3
-# kill $pid_hdsv2
+kill $pid_hdsv2
 killall python
 killall uv
 echo "Done!"

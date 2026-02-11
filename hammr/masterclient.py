@@ -269,17 +269,23 @@ class MasterClient():
 
 
 if __name__ == '__main__':
+    import sys
+
+    # Read the config file from given argument (e.g., 'ln2.json') or 'client.json'
+    try:
+        config = sys.argv[1]
+    except IndexError:  # No args passed
+        config = 'client.json'
+
+    config_path = PATH_TO_CONFIGS / config
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+
     # Create a log
     log = create_log(
         filename = "Client_ACQSystem.log",
         title = "ACQSystem Client - DAIS 2.0",
         timestamp = True,
     )
-
-    # Read the config file
-    config_path = PATH_TO_CONFIGS / 'client.json'
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-
     client = MasterClient(config, log)
     client.acquire()
