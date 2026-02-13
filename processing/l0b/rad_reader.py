@@ -41,7 +41,7 @@ class RadiometerReader:
 
 
     def plot_channels(self, nrows: int, ncols: int, unit: str):
-        x = self.timestamps - self.timestamps[0]
+        x = self.timestamp - self.timestamp[0]
         if unit == 'counts':
             y = self.counts
         elif unit == 'volts':

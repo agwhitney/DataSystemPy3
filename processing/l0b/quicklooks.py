@@ -7,8 +7,8 @@ from tkinter import filedialog
 import matplotlib.pyplot as plt
 
 
-# filename = filedialog.askopenfilename()
-filename = "C:/Users/agwhi/Desktop/260206_kba/data/l0b/26_02_06__14_03_24__260206_kba_tarmac1.h5"
+filename = filedialog.askopenfilename()
+# filename = "C:/Users/agwhi/Desktop/260206_kba/data/l0b/26_02_06__14_03_24__260206_kba_tarmac1.h5"
 print(filename)
 
 reader = Reader(filename, GPSReader, AMRReader, ThermistorReader)
@@ -27,7 +27,7 @@ def plot_thermistors():
 
 def plot_status():
     fig, ax = plt.subplots()
-    x = reader.rad.timestamps - reader.rad.timestamps[0]
+    x = reader.rad.timestamp - reader.rad.timestamp[0]
     y = reader.rad.status
     ax.scatter(x*1000, y, marker='.')
     ax.set(
@@ -66,7 +66,7 @@ def plot_position():
 
 
 plot_timedelta()
-plot_thermistors()
+# plot_thermistors()
 plot_status()
 plot_channels()
 plot_position()
