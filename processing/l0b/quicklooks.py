@@ -7,13 +7,6 @@ from tkinter import filedialog
 import matplotlib.pyplot as plt
 
 
-filename = filedialog.askopenfilename()
-# filename = "C:/Users/agwhi/Desktop/260206_kba/data/l0b/26_02_06__14_03_24__260206_kba_tarmac1.h5"
-print(filename)
-
-reader = Reader(filename, GPSReader, AMRReader, ThermistorReader)
-
-
 def plot_thermistors():
     fig, ax = plt.subplots(layout='constrained')
     ax.set(title=reader, xlabel='Time (s)', ylabel='Temperature (K)')
@@ -31,14 +24,15 @@ def plot_status():
     y = reader.rad.status
     ax.scatter(x*1000, y, marker='.')
     ax.set(
-        title='', xlabel='Time (ms)', ylabel='System Flag',
-        xlim=(0, 40),
+        title=reader, xlabel='Time (ms)', ylabel='System Flag',
+        xlim=(0, 100),
     )
     return fig, ax
 
 
-def plot_channels():
-    return reader.rad.plot_channels()
+def plot_channels(**kwargs):
+    fig, ax = reader.rad.plot_channels(**kwargs)
+    fig.suptitle(reader)
 
 
 def plot_motor():
@@ -65,10 +59,17 @@ def plot_position():
     return fig, ax
 
 
-plot_timedelta()
-# plot_thermistors()
-plot_status()
-plot_channels()
-plot_position()
-plot_motor()
+filenames = filedialog.askopenfilenames()
+# filename = "C:/Users/agwhi/Desktop/260206_kba/data/l0b/26_02_06__14_03_24__260206_kba_tarmac1.h5"
+for filename in filenames:
+    print(filename)
+
+    reader = Reader(filename, GPSReader, AMRReader, ThermistorReader)
+
+    plot_timedelta()
+    # plot_thermistors()
+    plot_status()
+    plot_channels(points=30000)
+    plot_position()
+    plot_motor()
 plt.show()

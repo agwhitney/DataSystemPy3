@@ -25,12 +25,23 @@ AMR_CHANNELS = [
 class RadiometerReader:
     def __init__(self, table):
         self.counts = table.col('Counts')
-        self.status = table.col('SystemStatus').flatten()
+        self.status = self.get_status_col(table)
         self.sequence = table.col('NewSequence').flatten()
         self.motorpos = table.col('MotorPosition').flatten()
         self.timestamp = table.col('Timestamp').flatten()
 
         self.channels: list
+
+
+    @staticmethod
+    def get_status_col(table):
+        try:
+            status = table.col('SystemStatus').flatten()
+        except KeyError as e:
+            print(e)
+            status = table.col('SytemStatus').flatten()
+        return status
+    
 
 
     @staticmethod
@@ -40,15 +51,17 @@ class RadiometerReader:
         return volts
 
 
-    def plot_channels(self, nrows: int, ncols: int, unit: str):
+    def plot_channels(self, nrows: int, ncols: int, unit: str, points=None):
         x = self.timestamp - self.timestamp[0]
         if unit == 'counts':
             y = self.counts
         elif unit == 'volts':
             y = self.counts2volts(self.counts)
-            
+
         fig, axs = plt.subplots(nrows, ncols, layout='constrained')
         for channel, ax in zip(self.channels, axs.flatten()):
+            x = x[:points]
+            y = y[:points]
             ax.scatter(x, y[:, channel.index], marker='.')
             ax.set(title=channel.label, xlabel='Time elapsed (s)', ylabel=unit.title())
         return fig, axs
@@ -65,5 +78,5 @@ class AMRReader(RadiometerReader):
         self.channels = AMR_CHANNELS
 
 
-    def plot_channels(self, unit='counts'):
-        return super().plot_channels(nrows=2, ncols=4, unit=unit)
+    def plot_channels(self, unit='counts', **kwargs):
+        return super().plot_channels(nrows=2, ncols=4, unit=unit, **kwargs)

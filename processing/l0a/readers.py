@@ -4,7 +4,7 @@ import struct
 
 
 class L0aReader:
-    def __init__(self, filename, table):
+    def __init__(self, filename):
         self.line_count = 0
         self.package_flag : bytes
         self.time_flag = b'TIME:'
@@ -12,7 +12,6 @@ class L0aReader:
         self.stop_flag = b':ENDS\n'
 
         self.filename = filename
-        self.table = table
 
 
     def parse_file(self, line_limit=0):
@@ -61,14 +60,14 @@ class L0aReader:
 
 
     def process_data(self, package_number, timestamp, data) -> bytes:
-        print(package_number, timestamp, data)
-        return b''
+        raise NotImplementedError
 
 
-    def store_data(self, data: dict):
+    @staticmethod
+    def store_data(table, data: dict):
         for key, val in data.items():
-            self.table.row[key] = val
-        self.table.row.append()
+            table.row[key] = val
+        table.row.append()
 
 
     def summary(self) -> str:
@@ -77,9 +76,10 @@ class L0aReader:
             
 
 class GPSReader(L0aReader):
-    def __init__(self, filename, table):
-        super().__init__(filename, table)
+    def __init__(self, filename, datafile):
+        super().__init__(filename)
         self.package_flag = b'PACG:'
+        self.table = datafile.tables['IMU']
 
 
     def process_data(self, package_number, timestamp, data) -> bytes:
@@ -101,7 +101,7 @@ class GPSReader(L0aReader):
         gps_timestamp = time.mktime(d.timetuple())
 
         row = {'Packagenumber': package_number, 'Timestamp': timestamp, 'EulerAngles': euler_angles, 'Position': position, 'GPSTime': gps_timestamp}
-        self.store_data(row)
+        self.store_data(self.table, row)
         return b''
 
 
@@ -113,9 +113,10 @@ class ThermistorReader(L0aReader):
     """
     THERMISTOR_TOTAL = 40
 
-    def __init__(self, filename, table):
-        super().__init__(filename, table)
+    def __init__(self, filename, datafile):
+        super().__init__(filename)
         self.package_flag = b'PACT:'
+        self.table = datafile.tables['THM']
 
 
     def process_data(self, package_number, timestamp, data):
@@ -123,14 +124,18 @@ class ThermistorReader(L0aReader):
 
             voltages += [0.001] * (self.THERMISTOR_TOTAL - len(voltages))  # Fills count to 40 if there are fewer connected/reading.
             row = {'Packagenumber': package_number, 'Timestamp': timestamp, 'Voltages': voltages}
-            self.store_data(row)
+            self.store_data(self.table, row)
             return b''
             
 
 class RadiometerReader(L0aReader):
-    def __init__(self, filename, table):
-        super().__init__(filename, table)
+    def __init__(self, filename, datafile):
+        super().__init__(filename)
         self.package_flag = b'PACR:'
+        self.table_amr = datafile.tables['AMR']
+        self.table_act = datafile.tables['ACT']
+        self.table_snd = datafile.tables['SND']
+
 
         # counters - x is just the number of processed rows
         self.n_AMR = 0
@@ -178,40 +183,36 @@ class RadiometerReader(L0aReader):
 
             if header == self.MW_HEADER:
                 indexend = index + self.bytes_per_datagram['AMR'] - 3
-                vals = struct.unpack('>9HB', data[index:indexend])
-                row = self.get_radiometer_row(package_number, timestamp, vals, i=8)
+                values = struct.unpack('>9HB', data[index:indexend])
+                row = self.get_radiometer_row(package_number, timestamp, values, i=8)
                 index = indexend
 
-                self.store_data(row)
+                self.store_data(self.table_amr, row)
                 self.n_AMR += 1
 
-            # elif header == self.MMW_HEADER:
-            #     indexstart = index
-            #     indexend = index + self.bytes_per_datagram['ACT']
-            #     values = struct.unpack('>5H4B', data[indexstart:indexend])
-            #     index = indexend
+            elif header == self.MMW_HEADER:
+                indexend = index + self.bytes_per_datagram['ACT'] - 3
+                values = struct.unpack('>5HB', data[index:indexend])
+                index = indexend
 
-            #     self.fill_row(self.row_pointer_ACT, timestamp, values, package_number, i=4)
-            #     self.row_pointer_ACT.append()
-            #     header = list(values[-3:])
-            #     self.n_ACT += 1
+                row = self.get_radiometer_row(package_number, timestamp, values, i=4)
+                self.store_data(self.table_act, row)
+                self.n_ACT += 1
 
-            #     if self.verbose:
-            #         print(f"ACT: Line {self.n_ACT} -- {values}")
+                # if self.verbose:
+                #     print(f"ACT: Line {self.n_ACT} -- {values}")
 
-            # elif header == self.SND_HEADER:
-            #     indexstart = index
-            #     indexend = index + self.bytes_per_datagram['SND']
-            #     values = struct.unpack('>17H4B', data[indexstart:indexend])
-            #     index = indexend
+            elif header == self.SND_HEADER:
+                indexend = index + self.bytes_per_datagram['SND'] - 3
+                values = struct.unpack('>17HB', data[index:indexend])
+                index = indexend
 
-            #     self.fill_row(self.row_pointer_SND, timestamp, values, package_number, i=16)
-            #     self.row_pointer_SND.append()
-            #     header = list(values[-3:])
-            #     self.n_SND += 1
+                row = self.get_radiometer_row(package_number, timestamp, values, i=16)
+                self.store_data(self.table_snd, row)
+                self.n_SND += 1
 
-            #     if self.verbose:
-            #         print(f"SND: Line {self.n_SND} -- {values}")
+                # if self.verbose:
+                #     print(f"SND: Line {self.n_SND} -- {values}")
 
             else:
                 if index > max(self.bytes_per_datagram.values()):  # Crawl exceeded what should have been the longest datagram without finding one

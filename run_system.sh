@@ -11,9 +11,10 @@ sleep 5
 
 
 # Start hyperspectral stream in background without data acquisition
-./client-remote-stream -i 192.168.137.110 -p 5002 &
-pid_hdsv1=$!
-sleep 5
+# O 2/26 get rid of this
+# ./client-remote-stream -i 192.168.137.110 -p 5002 &
+# pid_hdsv1=$!
+# sleep 5
 
 
 # Send config sequence to hyperspectral
@@ -23,7 +24,8 @@ wait $pid_cfg1
 
 
 # Kill the hyperspectral stream
-kill $pid_hdsv1
+# O 2/26 get rid of this
+# kill $pid_hdsv1
 
 
 # Send switching sequence to hyperspectral

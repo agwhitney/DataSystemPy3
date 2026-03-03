@@ -7,7 +7,7 @@ class ThermistorReader:
     def __init__(self, filename):
         file = tb.open_file(filename, 'r')
         table = file.root.Temperature_Data.Thermistor_DATA
-        self.meta = file.root.Temperature_Data.Thermistor_MAP
+        self.meta = self.get_meta(file)
 
         self.package_number = table.col('Packagenumber').flatten()
         self.timestamps = table.col('Timestamp').flatten()
@@ -16,6 +16,17 @@ class ThermistorReader:
 
     def __del__(self):
         self.meta.close()
+
+    
+    @staticmethod
+    def get_meta(file):
+        try:
+            meta = file.root.Temperature_Data.Thermistor_MAP
+        except tb.NoSuchNodeError as e:
+            print(e)
+            meta = None
+        return meta
+
 
     
     @staticmethod
@@ -41,6 +52,8 @@ class ThermistorReader:
     
 
     def sensor_metadata(self, index) -> tuple:
+        if not self.meta:
+            return (1, 1, 'L', 'M')
         data = [
             (x['Digitizer'], x['Thermistor'], x['Location'].decode(), x['Model'].decode())
             for x in self.meta.where(f"DataSerial == {index+1}")

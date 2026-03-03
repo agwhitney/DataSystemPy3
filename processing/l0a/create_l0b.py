@@ -11,6 +11,29 @@ from datastructures import DataFile
 from readers import GPSReader, ThermistorReader, RadiometerReader
 
 
+def parse_metadata(config: dict):
+    """Handles title vs lowercasing per old and new files
+    New style includes the name of the thermistor map file. Its non-presence is handled by the function that uses it.
+    """
+    # New style
+    try:
+        instruments = config['instruments']
+        filenames = config['filename']
+        description = config['description']
+        filesID = config['filesID']
+
+    # Old style
+    except KeyError as e:
+        print(e)
+        instruments = config['Instruments']
+        filenames = config['Filename']
+        description = config['Description']
+        filesID = config['FilesID']
+
+    return instruments, filenames, description, filesID
+
+
+
 def processL0b(
         filename: Path | str,
         l0adir: Path | str = '',
@@ -46,15 +69,16 @@ def processL0b(
     parse_filepath = l0adir / filename
     with open(parse_filepath, 'r') as f:
         toparse = json.load(f)
+    instruments, filenames, descriptions, filesID = parse_metadata(toparse)
     
-    file_context = toparse['filesID']
+    file_context = filesID
     # Read server config
     sv_filename = l0adir / f"{file_context}_ServerInformation.bin"
     with open(sv_filename, 'r') as f:
         sv_config = json.load(f)
 
-    num_clients = len(toparse['instruments'])
-    filenames = toparse['filename']
+    num_clients = len(instruments)
+    filenames = filenames
     num_files = len(filenames)
     print(f"Parsing {num_clients} clients & {num_files} files from {file_context}")
 
@@ -80,28 +104,28 @@ def processL0b(
             df.tables['IServer'].flush()
 
         for j in range(num_clients):
-            df.rows['IGeneral']['General'] = toparse['description'][i][j]
+            df.rows['IGeneral']['General'] = descriptions[i][j]
             df.rows['IGeneral'].append()
             df.tables['IGeneral'].flush()
 
-            instrument = toparse['instruments'][j]
+            instrument = instruments[j]
             instr_filename = l0adir / f"{rootfilestem}_{instrument}.bin"
             print(f"Parsing {instrument} -> {instr_filename}")
             match instrument:
                 case 'Radiometer':
-                    rad_parser = RadiometerReader(instr_filename, df.tables['AMR'])
+                    rad_parser = RadiometerReader(instr_filename, df)
                     rad_parser.parse_file()
                     df.tables['ACT'].flush()
                     df.tables['AMR'].flush()
                     df.tables['SND'].flush()
                     rad_found = True
                 case 'Thermistors':
-                    thm_parser = ThermistorReader(instr_filename, df.tables['THM'])
+                    thm_parser = ThermistorReader(instr_filename, df)
                     thm_parser.parse_file()
                     df.tables['THM'].flush()
                     thm_found = True
                 case 'GPS-IMU':
-                    gps_parser = GPSReader(instr_filename, df.tables['IMU'])
+                    gps_parser = GPSReader(instr_filename, df)
                     gps_parser.parse_file()
                     df.tables['IMU'].flush()
                     gps_found = True
@@ -137,5 +161,6 @@ def processL0b(
 
 if __name__ == '__main__':
     from tkinter import filedialog
-    filename = filedialog.askopenfilename()
-    processL0b(filename)
+    filenames = filedialog.askopenfilenames()
+    for filename in filenames:
+        processL0b(filename)
