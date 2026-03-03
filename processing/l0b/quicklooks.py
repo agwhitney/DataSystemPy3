@@ -33,6 +33,7 @@ def plot_status():
 def plot_channels(**kwargs):
     fig, ax = reader.rad.plot_channels(**kwargs)
     fig.suptitle(reader)
+    return fig, ax
 
 
 def plot_motor():
@@ -66,10 +67,12 @@ for filename in filenames:
 
     reader = Reader(filename, GPSReader, AMRReader, ThermistorReader)
 
-    plot_timedelta()
+    # plot_timedelta()
     # plot_thermistors()
-    plot_status()
-    plot_channels(points=30000)
-    plot_position()
-    plot_motor()
+    sfig, _ = plot_status()
+    cfig, _ = plot_channels()#points=30000)
+    # plot_position()
+    # plot_motor()
+    sfig.savefig(f"{reader.filename}-status.png", bbox_inches='tight', dpi=200)
+    cfig.savefig(f"{reader.filename}-channels.png", bbox_inches='tight', dpi=200)
 plt.show()
