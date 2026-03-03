@@ -52,6 +52,7 @@ class Parser:
             print(welcome.decode())
 
             # Loop line by line
+            remainder = b''
             while True:
                 line = f.readline()
                 if not line:
@@ -87,7 +88,8 @@ class Parser:
                 # Send complete data line to parsing method
                 # self.to_plot = np.append(self.to_plot, package_number)
                 # self.data_len = np.append(self.data_len, len(data))
-                self.parse_data(timestamp, data, package_number)
+                data = remainder + data  # Remainder set at beginning and reset below.
+                remainder = self.parse_data(timestamp, data, package_number)
                 self.package_count += 1
         
         end = time.time()
@@ -145,16 +147,17 @@ class RadiometerParser(Parser):
         header = b'UUU'
         datagrams = [x for x in data.split(header) if len(x) == 19]
         for dg in datagrams:
-            values = struct.unpack('>9HB', dg)
+            values = struct.unpack('>8H3B', dg)
             self.fill_row(self.row_pointer_AMR, timestamp, values, package_number, i=8)
             self.row_pointer_AMR.append()
             self.n_AMR += 1
 
 
-    def parse_data(self, timestamp, data, package_number):
+    def parse_data(self, timestamp, data, package_number) -> bytes:
         """
         Crawls through `data` to find the header for the respective channel, then processes the datagram accordingly.
         Once it finds a datagram, the next header is found from the last 3 bytes (i.e., it overlaps).
+        Returns a remainder of bytes, which would be continued in the next data package.
         """
         # self.parse_data_amr_only(timestamp, data, package_number)
         # return
@@ -231,10 +234,10 @@ class RadiometerParser(Parser):
 
             bytes_remaining = len(data) - index
 
-        # Return unprocessed bytes (not used - other parsers return None)
-        # b = struct.pack('3b', *header)
-        # vals = b + data[-bytes_remaining:]
-        # return vals
+        # Return unprocessed bytes
+        b = struct.pack('3b', *header)
+        remainder = b + data[-bytes_remaining:]
+        return remainder
     
 
 class ThermistorParser(Parser):
