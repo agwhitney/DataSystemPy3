@@ -1,5 +1,5 @@
 # Configurations
-This document concerns the files within the `config` folder. These files are used to configure the scripts and FPGA. `system_example.json` and `client_example.json` will need to have `_example` removed in order to run.
+This document concerns the files within the `config` folder. These files are used to configure the scripts and FPGA. `example_system.json` and `example_client.json` will need to have `_example` removed in order to run.
 
 
 ## JSON File Structure
@@ -64,20 +64,20 @@ The radiometer has characteristics for the microwave (MW), millimeter-wave (MMW)
         "ip"            : "string",  // IP address
         "port"          : "int",
         "buffer_length" : "int"
-    }
+    },
     "_sequence_information" : "object",  // Describes values in `slot//.value` below
     "mw": {
         "active"           : "bool",  // Sets channel on/off to measure
         "counter"          : "bool",
-        "integration_time" : "float"  // Milliseconds
+        "integration_time_ms" : "float",  // This is a multiplier for the slots below
         "sequence" : {
-            "length" : "int",  //
-            // Each channel has 10 slots, labeled `slot//` from 0 - 10.
+            "length" : "int",  // The number of slots in order from 0 to 9 used to create a sequence
             "slot0" : {
-                "meaning" : "string",      // A label
-                "value"   : "array[int]",  // Five bits 0 or 1. See below.
-                "length"  : "int"
-            }
+                "meaning" : "string",      // Label for "value" below.
+                "value"   : "array[int]",  // Five controlling bits. See below.
+                "length"  : "int"  // The number of times to repeat this slot before moving to the next. The effective integration time of a slot is "integration_time_ms" times this length.
+            },
+            "slot1" : {}  // Goes to slot9 for 10 total
         }
     }
 }
