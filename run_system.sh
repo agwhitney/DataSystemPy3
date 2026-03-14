@@ -1,5 +1,11 @@
 #!/bin/bash
 
+###
+### THIS SCRIPT DOES NOT WORK AS IS -- DO NOT RUN
+### HyMS configuration should NOT be sent multiple times. Will lock the hardware to a not-measuring state.
+### State can be reset by doing a clean software shutdown. Hardware reset will not work.
+###
+
 hd_dir="/home/msl/asic-spectrometer-cdh/software/c/flight/client"
 cd $hd_dir
 
