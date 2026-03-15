@@ -17,6 +17,6 @@ To do this, on the instrument computer in the home directory `~`:
 The project folder now looks to the project.git folder for reference. We will set up the controlling laptop so that we can push changes to project.git.
 
 On the controlling laptop in the existing project folder (presumably cloned from GitHub):
-* `git remote add instrument ssh:msl@169.265.51.248/home/msl/project`
+* `git remote add instrument ssh:msl@169.254.51.248/home/msl/project.git`
 * `git push instrument master`
   * Run this whenever you want to update the master branch on the instrument.

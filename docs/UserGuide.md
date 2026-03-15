@@ -12,7 +12,7 @@
 # Steps
 1) Power on the system.
 2) Connect to the HHD on-board computer
-    * `ssh msl@169.265.51.248 msl-hammrhd1`
+    * `ssh msl@169.254.51.248 msl-hammrhd1`
 
 ## Prepare AMR
 3) Change to project directory: `cd DataSystemPy3`
@@ -30,4 +30,5 @@
 
 # Known Issues
 * (HMS) Save directory is restricted to software directory.
+  * SOLVED using a symlink.
 * (Acquisition) Not confirmed if this can run headless, i.e., running script is possibly coupled to SSH connection.
