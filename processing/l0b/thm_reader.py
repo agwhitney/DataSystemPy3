@@ -23,7 +23,7 @@ class ThermistorReader:
         try:
             meta = file.root.Temperature_Data.Thermistor_MAP
         except tb.NoSuchNodeError as e:
-            print(e)
+            print(e, "No metadata will be available")
             meta = None
         return meta
 
@@ -53,7 +53,8 @@ class ThermistorReader:
 
     def sensor_metadata(self, index) -> tuple:
         if not self.meta:
-            return (1, 1, 'L', 'M')
+            return (1, 1, 'L', 'KS502J2')
+        
         data = [
             (x['Digitizer'], x['Thermistor'], x['Location'].decode(), x['Model'].decode())
             for x in self.meta.where(f"DataSerial == {index+1}")

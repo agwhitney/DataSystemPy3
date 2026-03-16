@@ -6,6 +6,9 @@ import struct
 class L0aReader:
     def __init__(self, filename):
         self.line_count = 0
+        self.package_count = 0
+        self.runtime = 0
+
         self.package_flag : bytes
         self.time_flag = b'TIME:'
         self.data_flag = b'DATA:'
@@ -14,15 +17,16 @@ class L0aReader:
         self.filename = filename
 
 
+
     def parse_file(self, line_limit=0):
+        start = time.time()
         file = open(self.filename, 'rb')
         print(file.readline().decode())  # welcome line
         
         remainder = b''
-        i = 0
         for line in file:
-            i += 1
-            if i == line_limit:
+            self.line_count += 1
+            if self.line_count == line_limit:
                 break
 
             if line.startswith(self.package_flag):
@@ -34,11 +38,13 @@ class L0aReader:
                 timestamp = float(line[
                     line.index(self.time_flag) + len(self.time_flag) : line.index(self.data_flag)
                     ])
+                
                 # Complete line
                 if line.endswith(self.stop_flag):
                     data = line[
                         line.index(self.data_flag) + len(self.data_flag) : -len(self.stop_flag)
                         ]
+                    self.package_count += 1
                 # Start of split line
                 else:
                     data = line[
@@ -53,10 +59,12 @@ class L0aReader:
                 # End of split line
                 else:
                     data += line[ : -len(self.stop_flag) ]
+                    self.package_count += 1
 
             data = remainder + data
             remainder = self.process_data(package_number, timestamp, data)
         file.close()
+        self.runtime = time.time() - start
 
 
     def process_data(self, package_number, timestamp, data) -> bytes:
@@ -71,8 +79,7 @@ class L0aReader:
 
 
     def summary(self) -> str:
-        return "Summary"
-        # return f"--{self} parse results: {self.package_count} packages out of {self.line_count} read lines. Elapsed time: {self.runtime} seconds."
+        return f"--{self} parse results: {self.package_count} packages out of {self.line_count} read lines. Elapsed time: {self.runtime:.1f} seconds."
             
 
 class GPSReader(L0aReader):
@@ -80,6 +87,10 @@ class GPSReader(L0aReader):
         super().__init__(filename)
         self.package_flag = b'PACG:'
         self.table = datafile.tables['IMU']
+
+
+    def __str__(self):
+        return "GPS Parser"
 
 
     def process_data(self, package_number, timestamp, data) -> bytes:
@@ -117,6 +128,10 @@ class ThermistorReader(L0aReader):
         super().__init__(filename)
         self.package_flag = b'PACT:'
         self.table = datafile.tables['THM']
+
+    
+    def __str__(self):
+        return "Thermistors Parser"
 
 
     def process_data(self, package_number, timestamp, data):

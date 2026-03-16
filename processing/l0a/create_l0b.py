@@ -1,7 +1,5 @@
 """
 py2 GenericParser.py
-Moved to this directory to avoid using sys to import.
-Long term this could perhaps be its own module and include additional post-processing.
 """
 import time
 import json
@@ -12,8 +10,9 @@ from readers import GPSReader, ThermistorReader, RadiometerReader
 
 
 def parse_metadata(config: dict):
-    """Handles title vs lowercasing per old and new files
-    New style includes the name of the thermistor map file. Its non-presence is handled by the function that uses it.
+    """
+    Handles title vs lowercasing per old and new files.
+    New style includes the name of the thermistor map file: non-presence is handled by the function that uses it.
     """
     # New style
     try:
@@ -24,7 +23,7 @@ def parse_metadata(config: dict):
 
     # Old style
     except KeyError as e:
-        print(e)
+        print(e, "\nTrying legacy Python2 version config:")
         instruments = config['Instruments']
         filenames = config['Filename']
         description = config['Description']

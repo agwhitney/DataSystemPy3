@@ -57,7 +57,7 @@ class RadiometerReader:
         try:
             status = table.col('SystemStatus').flatten()
         except KeyError as e:
-            print(e)
+            print(e, "trying 'SytemStatus'")
             status = table.col('SytemStatus').flatten()
         return status
     
