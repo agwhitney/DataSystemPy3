@@ -81,9 +81,9 @@ class Information(IsDescription):
 
 
 class ThermistorMap(IsDescription):
+    Index         = UInt8Col()
     Digitizer     = UInt8Col()
     Thermistor    = UInt8Col()
-    DataSerial    = UInt8Col()
     Location      = StringCol(50)  # Description of thermistor's physical placement
     Model         = StringCol(20)  # Model number
 
@@ -149,9 +149,9 @@ class DataFile:
                 if i == 0:
                     pass
                 else:
-                    row['Digitizer'] = int(line[0])
-                    row['Thermistor'] = int(line[1])
-                    row['DataSerial'] = int(line[2])
+                    row['Index'] = int(line[0])
+                    row['Digitizer'] = int(line[1])
+                    row['Thermistor'] = int(line[2])
                     row['Location'] = line[3]
                     row['Model'] = line[4]
                     row.append()

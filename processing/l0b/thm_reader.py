@@ -57,7 +57,7 @@ class ThermistorReader:
         
         data = [
             (x['Digitizer'], x['Thermistor'], x['Location'].decode(), x['Model'].decode())
-            for x in self.meta.where(f"DataSerial == {index+1}")
+            for x in self.meta.where(f"Index == {index+1}")
         ][0]
         return data
 

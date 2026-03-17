@@ -87,7 +87,9 @@ def processL0b(
         
         if not singlefile:
             df = DataFile(f"{l0bdir/rootfilestem}.h5")
-            df.store_thermistor_csv(toparse.get('thermistorMap', None))
+            thermistor_map = toparse.get('thermistorMap', None)
+            if thermistor_map:
+                df.store_thermistor_csv(l0adir / Path(thermistor_map).name)
             df.rows['IServer']['General'] = json.dumps(sv_config)
             df.rows['IServer'].append()
             df.tables['IServer'].flush()
@@ -162,4 +164,4 @@ if __name__ == '__main__':
     from tkinter import filedialog
     filenames = filedialog.askopenfilenames()
     for filename in filenames:
-        processL0b(filename)
+        processL0b(filename, singlefile=True)

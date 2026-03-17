@@ -67,10 +67,10 @@ for filename in filenames:
 
     reader = Reader(filename, GPSReader, AMRReader, ThermistorReader)
 
-    # plot_timedelta()
-    # plot_thermistors()
+    plot_timedelta()
+    plot_thermistors()
     # sfig, _ = plot_status()
-    cfig, _ = plot_channels(points=60000)
-    # plot_position()
+    # cfig, _ = plot_channels(points=60000)
+    plot_position()
     # plot_motor()
 plt.show()
