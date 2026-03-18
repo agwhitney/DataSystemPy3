@@ -125,8 +125,9 @@ def processL0b(
 
 
 if __name__ == '__main__':
-    import time
-    L0A_SAVEDIR = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw")
-    L0B_SAVEDIR = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw\h5_files\testing")
-    p = Path(r"c:\Users\adamgw\Desktop\New folder\15minLN2_mw\25_12_19__15_25_54__LN2_15min.bin")
-    processL0b(p, verbose=False, removebinfiles=False, singlefile=False, l0adir=L0A_SAVEDIR, l0bdir=L0B_SAVEDIR)
+    print("hammr/genericparser.py is out of date.\nUse processing/l0a/create_l0b.py instead.")
+    # import time
+    # L0A_SAVEDIR = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw")
+    # L0B_SAVEDIR = Path(r"C:\Users\adamgw\Desktop\New folder\15minLN2_mw\h5_files\testing")
+    # p = Path(r"c:\Users\adamgw\Desktop\New folder\15minLN2_mw\25_12_19__15_25_54__LN2_15min.bin")
+    # processL0b(p, verbose=False, removebinfiles=False, singlefile=False, l0adir=L0A_SAVEDIR, l0bdir=L0B_SAVEDIR)

@@ -1,4 +1,6 @@
 """
+OUT OF DATE IN FAVOR OF SCRIPTS IN processing/ MODULE
+
 py2 h5classes.py
 The *Sample classes define the tables in the .h5 file.
 """

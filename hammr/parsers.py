@@ -1,4 +1,6 @@
 """
+OUT OF DATE IN FAVOR OF SCRIPTS IN processing/ MODULE
+
 Classes for taking the binary data (Level 0a) recorded by HAMMR-HD and parsing it into an
 organized HDF5 file format (Level 0b).
 Data after the first line (a welcome message) is recorded in binary with the following format:

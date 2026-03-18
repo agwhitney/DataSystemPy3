@@ -14,7 +14,7 @@ Thermistors can be tested with the `query_channels()` method in helpers/test_the
 
 
 ## FPGA / Buffer Board
-The FPGA connection is via ethernet and has a fixed IP of 10.10.10.2. Data is sent via Port 30. Connecting to this IP requires the computer to be configured correctly -- setting the IP to 10.10.10.1 and the Gateway Mask to 255.255.255.255 works for this.
+The FPGA connection is via ethernet and has a fixed IP of 10.10.10.2. Data is sent via Port 30. Connecting to this IP requires the computer to be configured correctly -- setting the IP to 10.10.10.1 and the Gateway Mask to 255.255.255.0 works for this.
 
 
 ## GPS-IMU
@@ -32,7 +32,7 @@ where
 $$
 R = 5000 * (V / (V_r - V))
 $$
-and the regulated voltage $V_r$ is either 1.06 or 1.12 (I've seen conflicting info). The coefficents $A - D$ are determined by calibration and depend on the PRT model. Currently, we use the following values:
+and the regulated voltage $V_r$ is either 1.06 or 1.12 (I've seen conflicting info and use 1.12). The coefficents $A - D$ are determined by calibration and depend on the PRT model. We use the following values:
 |   | Model 44906 GSFC         | Model KS502J2              |
 |---|--------------------------|----------------------------|
 | A | 1.29337828808 x 10^-3    | 1.28082086269172 x 10^-3   |

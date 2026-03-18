@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from datastructures import DataFile
-from readers import GPSReader, ThermistorReader, RadiometerReader
+from l0a_readers import GPSReader, ThermistorReader, RadiometerReader
 
 
 def parse_metadata(config: dict):
