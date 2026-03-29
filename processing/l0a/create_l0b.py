@@ -5,8 +5,8 @@ import time
 import json
 from pathlib import Path
 
-from datastructures import DataFile
-from l0a_readers import GPSReader, ThermistorReader, RadiometerReader
+from .datastructures import DataFile
+from .l0a_readers import GPSReader, ThermistorReader, RadiometerReader
 
 
 def parse_metadata(config: dict):

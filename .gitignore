@@ -13,3 +13,5 @@ AcqSystem/
 
 config/client.json
 config/system.json
+
+.DS_Store

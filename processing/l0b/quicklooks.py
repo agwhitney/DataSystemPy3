@@ -1,7 +1,7 @@
-from utils import Reader, make_pickable
-from gps_reader import GPSReader
-from rad_reader import AMRReader
-from thm_reader import ThermistorReader
+from .utils import Reader, make_pickable
+from .gps_reader import GPSReader
+from .rad_reader import AMRReader
+from .thm_reader import ThermistorReader
 
 from tkinter import filedialog
 import matplotlib.pyplot as plt
@@ -70,7 +70,7 @@ for filename in filenames:
     plot_timedelta()
     plot_thermistors()
     # sfig, _ = plot_status()
-    # cfig, _ = plot_channels(points=60000)
+    cfig, _ = plot_channels(points=60000)
     plot_position()
-    # plot_motor()
+    plot_motor()
 plt.show()
