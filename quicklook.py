@@ -1,9 +1,10 @@
 # Copied readers for now because things there are still coupled to tables
 from datetime import datetime
+from math import log, nan
+from tkinter import filedialog
 import time
 import struct
 import matplotlib.pyplot as plt
-from math import log, nan
 
 
 class L0aReader:
@@ -301,17 +302,19 @@ if __name__ == '__main__':
     import sys
     
     if len(sys.argv) == 1:
-        raise IndexError("Provide binary filename as argument.")
-    
-    filename = sys.argv[1]
-    if filename.find("Radiometer") != -1:
-        reader = RadiometerReader(filename)
-    elif filename.find("GPS-IMU") != -1:
-        reader = GPSReader(filename)
-    elif filename.find("Thermistors") != -1:
-        reader = ThermistorReader(filename)
+        filenames = filedialog.askopenfilenames(initialdir="~/Desktop/")
     else:
-        raise ValueError("Provided file not found or incorrect.")
+        filenames = sys.argv[1:]
+    
+    for filename in filenames:
+        if filename.find("Radiometer") != -1:
+            reader = RadiometerReader(filename)
+        elif filename.find("GPS-IMU") != -1:
+            reader = GPSReader(filename)
+        elif filename.find("Thermistors") != -1:
+            reader = ThermistorReader(filename)
+        else:
+            raise ValueError("Provided file not found or incorrect.")
 
-    reader.parse_file()
-    reader.quicklook()
+        reader.parse_file()
+        reader.quicklook()
