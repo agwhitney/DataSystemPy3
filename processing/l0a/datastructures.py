@@ -5,7 +5,7 @@ The *Sample classes define the tables in the .h5 file.
 import csv
 import tables as tb
 from pathlib import Path
-from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
+from tables import IsDescription, UInt8Col, UInt16Col, UInt32Col, Float64Col, StringCol
 
 
 def get_thermistor_str(filename='') -> str:
@@ -34,17 +34,17 @@ def get_thermistor_str(filename='') -> str:
 
 class AMRSample(IsDescription):
     Counts        = UInt16Col(8)     # Unsigned short integer
-    Packagenumber = UInt16Col(1)
+    Packagenumber = UInt32Col(1)     # AGW Upped from 16 to 32
     Id            = UInt8Col(1)      # unsigned byte
     SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
     MotorPosition = UInt16Col(1)     # Unsigned short integer
-    Timestamp     = Float64Col(1)     # Signed 64-bit integer
+    Timestamp     = Float64Col(1)    # Signed 64-bit integer
 
 
 class ACTSample(IsDescription):
     Counts        = UInt16Col(4)     # Unsigned short integer
-    Packagenumber = UInt16Col(1)
+    Packagenumber = UInt32Col(1)
     Id            = UInt8Col(1)      # unsigned byte
     SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
@@ -54,7 +54,7 @@ class ACTSample(IsDescription):
 
 class SNDSample(IsDescription):
     Counts        = UInt16Col(16)    # Unsigned short integer
-    Packagenumber = UInt16Col(1)
+    Packagenumber = UInt32Col(1)
     Id            = UInt8Col(1)      # unsigned byte
     SystemStatus  = UInt8Col(1)      # unsigned byte
     NewSequence   = UInt8Col(1)      # unsigned byte
@@ -63,13 +63,13 @@ class SNDSample(IsDescription):
 
 
 class ThermistorSample(IsDescription):
-    Packagenumber = UInt16Col(1)
+    Packagenumber = UInt32Col(1)
     Voltages      = Float64Col(40)     # Unsigned short integer
     Timestamp     = Float64Col(1)      # Signed 64-bit integer
 
 
 class IMUSample(IsDescription):
-    Packagenumber = UInt16Col(1)
+    Packagenumber = UInt32Col(1)
     EulerAngles   = Float64Col(3)
     Position      = Float64Col(3)
     GPSTime       = Float64Col(1)
@@ -106,6 +106,9 @@ class DataFile:
 
 
     def __del__(self):
+        self.h5file.close()
+
+    def close(self):
         self.h5file.close()
 
 

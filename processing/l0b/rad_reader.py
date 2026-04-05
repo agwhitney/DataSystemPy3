@@ -1,4 +1,5 @@
 import tables as tb
+import numpy as np
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 
@@ -71,7 +72,7 @@ class RadiometerReader:
 
 
     def plot_channels(self, nrows: int, ncols: int, unit: str, points=None, channels=None):
-        x = self.timestamp - self.timestamp[0]
+        mask = np.ma.masked_where(self.status != 0, self.status)
         if unit == 'counts':
             y = self.counts
         elif unit == 'volts':
@@ -79,9 +80,9 @@ class RadiometerReader:
 
         fig, axs = plt.subplots(nrows, ncols, layout='constrained')
         for channel, ax in zip(channels, axs.flatten()):
-            x = x[:points]
-            y = y[:points]
-            ax.scatter(x, y[:, channel.index], marker='.')
+            x = np.ma.masked_where(np.ma.getmask(mask), self.timestamp - self.timestamp[0])
+            y = np.ma.masked_where(np.ma.getmask(mask), self.counts[:, channel.index])
+            ax.scatter(x[:points], y[:points], marker='.')
             ax.set(title=channel.label, xlabel='Time elapsed (s)', ylabel=unit.title())
         return fig, axs
 

@@ -1,7 +1,7 @@
-from .utils import Reader, make_pickable
-from .gps_reader import GPSReader
-from .rad_reader import AMRReader
-from .thm_reader import ThermistorReader
+from utils import Reader, make_pickable
+from gps_reader import GPSReader
+from rad_reader import AMRReader
+from thm_reader import ThermistorReader
 
 from tkinter import filedialog
 import matplotlib.pyplot as plt

@@ -19,3 +19,6 @@
     
     1/2/26 -- run_system.sh works.
         JPL savedir could be handled by STDIN. CSU is all config'd in this project.
+
+
+6) 4/2/26 - Thermistor list should be saved by server, not client.
