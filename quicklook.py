@@ -6,6 +6,8 @@ import time
 import struct
 import matplotlib.pyplot as plt
 
+from processing.l0b.utils import make_pickable
+
 
 class L0aReader:
     def __init__(self, filename):
@@ -129,11 +131,12 @@ class GPSReader(L0aReader):
         for row in self.data:
             time.append(row[1])
             gpstime.append(row[4])
-            coords.append(row[2])
+            coords.append(row[3])
+        delta = [g - t for g, t in zip(gpstime, time)]
 
         fig, ax = plt.subplots()
-        ax.plot(time, gpstime)
-        ax.set(title="System time vs GPS time", xlabel='System', ylabel='GPS')
+        ax.plot(time, delta)
+        ax.set(title="System time vs GPS delta", xlabel='System', ylabel='GPS - System')
 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
@@ -190,7 +193,6 @@ class ThermistorReader(L0aReader):
         ax.plot(time, temps)
         ax.set(
             title="Thermistors", xlabel="Time (s)", ylabel="Temperature (K)",
-            ylim=(280, 350)
         )
         plt.show()
 
@@ -285,8 +287,10 @@ class RadiometerReader(L0aReader):
                 motor.append(row[5])
 
         fig, ax = plt.subplots()
-        ax.plot(time, counts)
+        ax.plot(time, counts, label=['34 QV', 'NC', '18 QV', '24 QV', '34 QH', 'NC', '18 QH', '24 QH'])
         ax.set(title="Radiometer counts", xlabel="Time", ylabel="Counts")
+        leg = ax.legend()
+        make_pickable(fig, ax, leg)
 
         fig, ax = plt.subplots()
         ax.plot(time, motor)
