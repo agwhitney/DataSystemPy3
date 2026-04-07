@@ -19,6 +19,7 @@ def make_metadata_file(filenames, context: str | None = 'cristal') -> None:
             legend[n] = match.string
     ordered_legend = {k: v for k, v in sorted(legend.items(), key=lambda item: int(item[0]))}
     N = int( list(ordered_legend.keys())[-1] )
+    print(f"Creating metadata file for {len(ordered_legend)} acquired of {N} defined...")
 
     # Thermistor map and context id use the first timestamp
     try:
@@ -33,16 +34,15 @@ def make_metadata_file(filenames, context: str | None = 'cristal') -> None:
     match = re.search(r"[0-9]_" + context + r"_[a-zA-Z]", first)
     if match:
         context = match.group().split('_')[1]
+    print(f'Context = "{context}"')
 
     filelist = []
     for v in ordered_legend.values():
         name = Path(v).name
         filelist.append(name.split(context)[0] + context)
 
-    # The description list is a dump of things that are nearly the same.
-    # It's meant to be metadata but as is it is useless.
+    # The description list is a large dump of useless objects that are nearly identical.
     description = []
-    
     for i in range(N):
         description.append([
             {"name": "Thermistors", "active": "true", "ip": "127.0.0.1", "port": "8055", "num_items": "600", "context": context},
@@ -62,8 +62,9 @@ def make_metadata_file(filenames, context: str | None = 'cristal') -> None:
     filename = Path(first).parent / f"{timestamp}{context}_post.json"
     with open(filename, 'w') as fp:
         json.dump(obj, fp, indent=4)
+    print(f"Created metadata file: {filename}")
 
 
 if __name__ == '__main__':
     filenames = filedialog.askopenfilenames()
-    make_metadata_file(filenames, context='client')
+    make_metadata_file(filenames, context='cristal')

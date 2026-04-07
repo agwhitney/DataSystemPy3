@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from datastructures import DataFile
-from l0a_readers import GPSReader, ThermistorReader, RadiometerReader
+from readersL0a import GPSReader, ThermistorReader, RadiometerReader
 
 
 def parse_metadata(config: dict):
@@ -164,4 +164,4 @@ if __name__ == '__main__':
     from tkinter import filedialog
     filenames = filedialog.askopenfilenames()
     for filename in filenames:
-        processL0b(filename, singlefile=False)
+        processL0b(filename, singlefile=True)
