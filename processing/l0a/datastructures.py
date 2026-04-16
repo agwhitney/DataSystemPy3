@@ -64,8 +64,8 @@ class SNDSample(IsDescription):
 
 class ThermistorSample(IsDescription):
     Packagenumber = UInt32Col(1)
-    Voltages      = Float64Col(40)     # Unsigned short integer
-    Timestamp     = Float64Col(1)      # Signed 64-bit integer
+    Voltages      = Float64Col(40)
+    Timestamp     = Float64Col(1)    # Signed 64-bit integer
 
 
 class IMUSample(IsDescription):

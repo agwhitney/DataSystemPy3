@@ -12,7 +12,7 @@ dependencies = [
     "twisted>=25.5.0",
 ]
 
-[project.optional-dependencies]
+[project.optional-dependencies] # Install with uv sync --extra group
 h5analysis = [
     "vitables[pyqt6]>=3.1.0", # Usage: vitables [h5filepath]
 ]

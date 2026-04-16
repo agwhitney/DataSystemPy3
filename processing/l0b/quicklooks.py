@@ -1,7 +1,5 @@
-from utils import Reader, make_pickable
-from gps_reader import GPSReader
-from rad_reader import AMRReader
-from thm_reader import ThermistorReader
+from utils import make_pickable
+from reader import Reader
 
 from tkinter import filedialog
 import matplotlib.pyplot as plt
@@ -12,7 +10,7 @@ def plot_thermistors():
     ax.set(title=reader, xlabel='Time (s)', ylabel='Temperature (K)')
     
     for i in range(40):
-        reader.thm.plot_sensor(ax, i)
+        reader.thermistors.plot_sensor(ax, i)
     leg = fig.legend(loc='outside center right')
     make_pickable(fig, ax, leg)
     return fig, ax
@@ -20,8 +18,8 @@ def plot_thermistors():
 
 def plot_status():
     fig, ax = plt.subplots()
-    x = reader.rad.timestamp - reader.rad.timestamp[0]
-    y = reader.rad.status
+    x = reader.radiometer.timestamp - reader.radiometer.timestamp[0]
+    y = reader.radiometer.status
     ax.scatter(x*1000, y, marker='.')
     ax.set(
         title=reader, xlabel='Time (ms)', ylabel='System Flag',
@@ -31,15 +29,15 @@ def plot_status():
 
 
 def plot_channels(**kwargs):
-    fig, ax = reader.rad.plot_channels(**kwargs)
+    fig, ax = reader.radiometer.plot_channels(**kwargs)
     fig.suptitle(reader)
     return fig, ax
 
 
 def plot_motor():
     fig, ax = plt.subplots()
-    x = reader.rad.timestamp
-    y = reader.rad.motorpos
+    x = reader.radiometer.timestamp
+    y = reader.radiometer.motorpos
     ax.plot(x, y)
     return fig, ax
     
@@ -61,16 +59,21 @@ def plot_position():
 
 
 filenames = filedialog.askopenfilenames()
-# filename = "C:/Users/agwhi/Desktop/260206_kba/data/l0b/26_02_06__14_03_24__260206_kba_tarmac1.h5"
+# filenames = [
+#     "/Users/adam/Desktop/2024_07_23__14_14_50__1of2_240723_s2_noFoam_310K.h5"
+# ]
+    
 for filename in filenames:
     print(filename)
 
-    reader = Reader(filename, GPSReader, AMRReader, ThermistorReader)
+    reader = Reader(filename)
 
-    plot_timedelta()
-    plot_thermistors()
+    # plot_timedelta()
+    # plot_thermistors()
     # sfig, _ = plot_status()
-    cfig, _ = plot_channels(points=60000)
-    plot_position()
+    cfig, _ = plot_channels()
+    
+    # plot_position()
     plot_motor()
+
 plt.show()

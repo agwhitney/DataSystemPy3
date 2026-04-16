@@ -67,4 +67,6 @@ def make_metadata_file(filenames, context: str | None = 'cristal') -> None:
 
 if __name__ == '__main__':
     filenames = filedialog.askopenfilenames()
-    make_metadata_file(filenames, context='cristal')
+    if filenames:
+        make_metadata_file(filenames, context='cristalANT')
+# TODO loop the function not the argument

@@ -11,7 +11,7 @@ class Channel:
     label: str
 
 
-AMR_CHANNELS = [    
+AMR_CHANNELS = [
     Channel(0, 34, '34 QV'),
     Channel(1, 0, 'Not Connected'),
     Channel(2, 18.7, '18 QV'),
@@ -63,7 +63,6 @@ class RadiometerReader:
         return status
     
 
-
     @staticmethod
     def counts2volts(counts, bits=14, adc_vmax=4.096):
         step = 2**bits - 1
@@ -72,7 +71,7 @@ class RadiometerReader:
 
 
     def plot_channels(self, nrows: int, ncols: int, unit: str, points=None, channels=None):
-        mask = np.ma.masked_where(self.status != 0, self.status)
+        mask = np.ma.masked_where(self.status != 1, self.status)
         if unit == 'counts':
             y = self.counts
         elif unit == 'volts':
@@ -82,19 +81,15 @@ class RadiometerReader:
         for channel, ax in zip(channels, axs.flatten()):
             x = np.ma.masked_where(np.ma.getmask(mask), self.timestamp - self.timestamp[0])
             y = np.ma.masked_where(np.ma.getmask(mask), self.counts[:, channel.index])
-            ax.scatter(x[:points], y[:points], marker='.')
-            ax.set(title=channel.label, xlabel='Time elapsed (s)', ylabel=unit.title())
+            ax.plot(x[:points], y[:points])
+            ax.set(title=channel.label, xlabel='Time elapsed (s)', ylabel=unit.title(),)
         return fig, axs
 
 
 
 class AMRReader(RadiometerReader):
-    def __init__(self, filename):
-        file = tb.open_file(filename, 'r')
-        table = file.root.Radiometric_Data.MW_DATA
+    def __init__(self, table):
         super().__init__(table)
-        file.close()
-
         self.channels = AMR_CHANNELS
 
 
@@ -104,12 +99,8 @@ class AMRReader(RadiometerReader):
 
 
 class SNDReader(RadiometerReader):
-    def __init__(self, filename):
-        file = tb.open_file(filename, 'r')
-        table = file.root.Radiometric_Data.SND_DATA
+    def __init__(self, table):
         super().__init__(table)
-        file.close()
-
         self.channels = SND_CHANNELS
 
 
