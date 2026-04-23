@@ -16,7 +16,7 @@ from subprocess import Popen
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, L0A_SAVEDIR, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from genericparser import processL0b
 from motorcontrol import MotorControl
-from utils import create_log, create_timestamp
+from utils import create_log, write_to_log, create_timestamp
 
 
 class MasterClient():
@@ -97,7 +97,7 @@ class MasterClient():
             f.write(json.dumps(system_config))
 
         for instrument in system_config.values():
-            self.log.info(f"## SERVER: {instrument['name']} -- Active: {instrument['active']}")
+            write_to_log(self.log, f"## SERVER: {instrument['name']} -- Active: {instrument['active']}")
             if not instrument['active']:
                 continue
             
@@ -106,7 +106,7 @@ class MasterClient():
                     data_throughput = self.radiometer_metadata(instrument)
                     ## XB - Feb 5, 2014 -> this empirical estimation needs further verification.
                     self.items['rad'] = int(3.7 * 0.36 * self.file_acqtime * data_throughput)
-                    self.log.info(f"Estimated data throughput from radiometer: {data_throughput} kBps - {self.items['rad']} items")
+                    write_to_log(self.log, f"Estimated data throughput from radiometer: {data_throughput} kBps - {self.items['rad']} items")
                     self.items['rad'] = self.file_acqtime
                 
                 case 'Thermistors':
@@ -115,7 +115,7 @@ class MasterClient():
                     print(f"## Polling interval {polling_rate}s - Active ADC: {addresses}")
 
                     self.items['thm'] = int(self.file_acqtime / polling_rate)
-                    self.log.info(f"Estimated GPS-IMU data throughput: {5*8*len(addresses) / polling_rate} Bps - {self.items['thm']} items")
+                    write_to_log(self.log, f"Estimated GPS-IMU data throughput: {5*8*len(addresses) / polling_rate} Bps - {self.items['thm']} items")
                     self.items['thm'] = self.file_acqtime
 
                 case 'GPS-IMU':
@@ -123,7 +123,7 @@ class MasterClient():
                     print(f"Update frequency = {update_freq} Hz")
 
                     self.items['gps'] = int(self.file_acqtime * update_freq)
-                    self.log.info(f"Estimated GPS-IMU data throughput: {48 * update_freq} Bps - {self.items['gps']} items")
+                    write_to_log(self.log, f"Estimated GPS-IMU data throughput: {48 * update_freq} Bps - {self.items['gps']} items")
                     self.items['gps'] = self.file_acqtime
                 
         if not self.observer_client:
@@ -148,7 +148,7 @@ class MasterClient():
         for i in range(len(self.active_instances)):
             p = Popen([PATH_TO_PYTHON, PATH_TO_GENCLIENT, self.active_filenames[i]], shell=False)
             processes.append(p)
-            self.log.info(f"{self.active_filenames[i]} communication started, Pid: {p.pid}")
+            write_to_log(self.log, f"{self.active_filenames[i]} communication started, Pid: {p.pid}")
             print('--------------------')
         
         return processes
@@ -159,7 +159,7 @@ class MasterClient():
         Performs data acquisition by creating subprocess clients for each instrument. These connect to the subservers
         created in masterserver.py and handle data according to the protocols in genericclient.py
         """
-        self.log.info(f"For configuration using {self.server_ip} @ port {self.server_port}")
+        write_to_log(self.log, f"For configuration using {self.server_ip} @ port {self.server_port}")
         print(
             "-" * 30, "\n",
             "-- CLIENTS CONFIG INFORMATION --\n",
@@ -176,7 +176,7 @@ class MasterClient():
 
         for instance in self.instances:
             if not instance['active']:
-                self.log.info(f"Warning: {instance['name']} is set to inactive and will not acquire data.")
+                write_to_log(self.log, f"Warning: {instance['name']} is set to inactive and will not acquire data.")
                 continue
 
             match instance['name']:
@@ -254,12 +254,12 @@ class MasterClient():
         # Stop the motor if needed
         if not self.observer_client:
             if not self.stop_motor:
-                self.log.info("Motor is set in client configuration to NOT stop.")
+                write_to_log(self.log, "Motor is set in client configuration to NOT stop.")
 
             else:
                 for instance in self.active_instances:
                     if instance['name'] == 'Radiometer':
-                        self.log.info("Stopping motor")
+                        write_to_log(self.log, "Stopping motor")
                         self.motor = MotorControl(self.server_ip, self.server_port)
                         self.motor.send_stop()
                         self.motor.disconnect()
@@ -270,6 +270,7 @@ class MasterClient():
 
 if __name__ == '__main__':
     import sys
+    
 
     # Read the config file from given argument (e.g., 'ln2.json') or 'client.json'
     try:

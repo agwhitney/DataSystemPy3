@@ -5,7 +5,7 @@ from datetime import datetime
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
-from utils import create_log
+from utils import create_log, write_to_log
 from fpga import FPGA
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 
@@ -17,19 +17,15 @@ class TCPHandler(protocol.Protocol):
     instruments.py.
     """
     def connectionMade(self):
-        self.factory.log.info(
-            f"MasterServer: New TCP client received from {self.transport.getPeer()} - Instance: {self}"
-        )
+        write_to_log(self.factory.log, f"MasterServer: New TCP client received from {self.transport.getPeer()} - Instance: {self}")
         self.factory.clients.append(self)
         # Moved from init
         for i, p in enumerate(self.factory.processes):
-            self.factory.log.debug(f"Process number {i} ID {p.pid}")
+            write_to_log(self.factory.log, f"Process number {i} ID {p.pid}", level='debug')
 
 
     def dataReceived(self, data: bytes) -> None:
-        self.factory.log.info(
-            f"MasterServer: Command received from {self.transport.getPeer()} - {data}"
-        )
+        write_to_log(self.factory.log, f"MasterServer: Command received from {self.transport.getPeer()} - {data}")
         match data.decode():
             case 'STOP':  # AGW py2 labels this is not working, with lots of !
                 # Stops all processes
@@ -92,12 +88,8 @@ class TCPHandler(protocol.Protocol):
 
 
     def connectionLost(self, reason=None) -> None:
-        self.factory.log.error(
-            f"MasterServer: Connection lost from {self.transport.getPeer()} - Reason: {reason}"
-        )
-        self.factory.log.info(
-            f"MasterServer: Removing TCP client {self} at {self.transport.getPeer()}"
-        )
+        write_to_log(self.factory.log, f"MasterServer: Connection lost from {self.transport.getPeer()} - Reason: {reason}", level='error')
+        write_to_log(self.factory.log, f"MasterServer: Removing TCP client {self} at {self.transport.getPeer()}", level='info')
         self.factory.clients.remove(self)
 
 
@@ -115,7 +107,7 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
-    def __init__(self, system_config: dict, log: logging.Logger):
+    def __init__(self, system_config: dict, log: logging.Logger | None):
         """
         This loads the config and starts servers for each instrument as subprocesses.
         """
@@ -137,7 +129,7 @@ class MasterServer():
         processes = self.start_servers()
 
         # Start master server
-        self.log.info("Starting online control server -- FYI: the script won't come back while it's running!")
+        write_to_log(self.log, "Starting online control server -- FYI: the script won't come back while it's running!")
         factory = TCPHandlerFactory(self.log, processes, self.config['radiometer'], self.config)
         reactor.listenTCP(CONTROL_SERVER_PORT, factory)
         reactor.run()
@@ -152,7 +144,7 @@ class MasterServer():
             print(instrument['filepath'], instrument['active'])
             if instrument['active']:
                 p = Popen([PATH_TO_PYTHON, PATH_TO_GENSERVER, instrument['filepath']], shell=False)
-                self.log.info(f"Instrument in the configuration file: {instrument['name']} Active instrument: {server_count} {instrument['filepath']} started, Pid: {p.pid}")
+                write_to_log(self.log, f"Instrument in the configuration file: {instrument['name']} Active instrument: {server_count} {instrument['filepath']} started, Pid: {p.pid}")
                 processes.append(p)
                 server_count += 1
         print("---------------------------------")

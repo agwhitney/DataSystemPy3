@@ -38,6 +38,20 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logg
     return log
 
 
+def write_to_log(
+    log: logging.Logger | None,
+    message: str,
+    level: str = 'info'
+) -> None:
+    if not log:
+        print(f"(NO LOG) {level}: message")
+        return
+    match level:
+        case 'info': log.info(message)
+        case 'warn': log.warn(message)
+        case _: log.info(f"((Level{level} not handled)){message}")
+
+
 def get_thermistor_str(filename='thermistors.csv') -> str:
     """
     Called by L0b processor to create a long metadata string of thermistor labels.

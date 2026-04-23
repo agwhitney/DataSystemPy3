@@ -9,6 +9,8 @@ In general (i.e., in the config) I've brought keys to lowercase.
 import socket
 import struct
 
+from utils import write_to_log
+
 
 class FPGA():
     # Defined parameters
@@ -70,16 +72,6 @@ class FPGA():
         self.connect(self.ip, self.port)
 
 
-    def write_to_log(self, message: str, level='info') -> None:
-        if not self.log:
-            print(f"(NO LOG) {level}: message")
-            return
-        match level:
-            case 'info': self.log.info(message)
-            case 'warn': self.log.warn(message)
-            case _: self.log.info(f"((Level{level} not handled)){message}")
-
-
     @staticmethod
     def get_denominator(int_time_ms, fmax_khz=50000, ratio_max=16777215):  # fmax kHz
         ftarget = 2 / int_time_ms  # range 25 kHz - 2.9 Hz
@@ -92,7 +84,7 @@ class FPGA():
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.settimeout(3)  # AGW hoping this avoids lockout on interrupts if the ip is wrong for some reason
         self.client_socket.connect(tcp_address)
-        self.write_to_log(f"TCP/IP connected @ {tcp_address}")
+        write_to_log(f"TCP/IP connected @ {tcp_address}")
         # self.log.info(f"TCP/IP connected @ {tcp_address}")
 
 
@@ -101,23 +93,23 @@ class FPGA():
         for key in self.mapkey:
             if self.activated[key]:
                 estimate += self.bpd_remap[key] / self.int_time[key]
-                self.write_to_log(f"{key} channels activated -> int_time = {self.int_time[key]} ms")
+                write_to_log(f"{key} channels activated -> int_time = {self.int_time[key]} ms")
                 # self.log.info(f"{key} channels activated -> int_time = {self.int_time[key]} ms")
         
-        self.write_to_log(f"Estimated data throughput: {estimate} kB")
+        write_to_log(f"Estimated data throughput: {estimate} kB")
         # self.log.info(f"Estimated data throughput: {estimate} kB")
         if estimate > 400:
-            self.write_to_log("Data throughput should be <400 kBps. This acquistiion could crash.", level='warn')
-            self.write_to_log("DO NOT EXCEED 420 kBps, or you will need to reboot the acquisition system!", level='warn')
+            write_to_log("Data throughput should be <400 kBps. This acquistiion could crash.", level='warn')
+            write_to_log("DO NOT EXCEED 420 kBps, or you will need to reboot the acquisition system!", level='warn')
             # self.log.warning("Data throughput should be <400 kBps. This acquistiion could crash.")
             # self.log.warning("DO NOT EXCEED 420 kBps, or you will need to reboot the acquisition system!")
 
 
     def configure(self):
-        self.write_to_log("Configuring the FPGA.")
+        write_to_log("Configuring the FPGA.")
         # self.log.info("Configuring the FPGA.")
         for key in self.mapkey:
-            self.write_to_log(f"Sending configuration for {key}. OFF value = {self.offmap[key]}")
+            write_to_log(f"Sending configuration for {key}. OFF value = {self.offmap[key]}")
             # self.log.info(f"Sending configuration for {key}. OFF value = {self.offmap[key]}")
 
             active_ch = self.ACTIVATE_VALUE if self.activated[key] else self.DEACTIVATE_VALUE
@@ -133,7 +125,7 @@ class FPGA():
             sequence_ch = self.slot[key]
             sequencelength_ch = self.sequence_length[key]
 
-            self.write_to_log(
+            write_to_log(
                 f"{active_ch} - {int_time_ch} - {inst_seq} - {inst_ac} - {inst_fr} - {inst_lt} - {length_ch} - {sequence_ch} - {sequencelength_ch}"
             )
             # self.log.info(
@@ -144,7 +136,7 @@ class FPGA():
                 inst_ac=inst_ac, inst_fr=inst_fr, inst_lt=inst_lt, inst_seq=inst_seq,
                 sequence=sequence_ch, length=length_ch,  sequence_length=sequencelength_ch
             )
-        self.write_to_log("Finished configuring FPGA.")
+        write_to_log("Finished configuring FPGA.")
         # self.log.info("Finished configuring FPGA.")
 
 
@@ -180,7 +172,7 @@ class FPGA():
         """Combined send and receive. Prints returns for debugging."""
         send = self.send_instruction(container, inst, processor_order)
         recv = self.recv_instruction()
-        self.write_to_log(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
+        write_to_log(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
         # self.log.info(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
 
 
@@ -189,11 +181,11 @@ class FPGA():
 
 
     def disconnect_tcp(self):
-        self.write_to_log("Sending TCP/IP disconnect sequence to FPGA.")
+        write_to_log("Sending TCP/IP disconnect sequence to FPGA.")
         # self.log.info("Sending TCP/IP disconnect sequence to FPGA.")
         self.send_and_recv(33554432, 0, 1)
         self.client_socket.close()
-        self.write_to_log("FPGA socket closed.")
+        write_to_log("FPGA socket closed.")
         # self.log.info("FPGA socket closed.")
 
 
