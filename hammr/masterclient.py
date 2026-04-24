@@ -10,31 +10,54 @@ import logging  # type hinting
 import time
 import shutil
 
+from dataclasses import dataclass, field
 from datetime import datetime
 from subprocess import Popen
 
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, L0A_SAVEDIR, PATH_TO_GENCLIENT, PATH_TO_PYTHON
-from genericparser import processL0b
 from motorcontrol import MotorControl
 from utils import create_log, write_to_log, create_timestamp
 
 
+
+@dataclass
+class ClientConfig():
+    parsing_config : dict = field(default_factory=dict)  # Sub-config for parsing method (effectively removed)
+    server_ip      : str = "127.0.0.1"
+    server_port    : int = 9022
+    is_observer    : bool = False
+    start_motor    : bool = True
+    stop_motor     : bool = True
+    num_files      : int = 1
+    file_acqtime   : int = 30
+    context        : str = "context"
+    instances      : list = field(default_factory=dict)
+
+    @classmethod
+    def from_json(cls, filename) -> 'ClientConfig':
+        with open(filename, 'r') as f:
+            config = json.load(f)
+        return cls(
+            parsing_config  = config['parsing'],
+            server_ip       = config['master_server']['ip'],
+            server_port     = config['master_server']['port'],
+            is_observer     = config['observer']['active'],
+            start_motor     = config['motor_start']['value'],
+            stop_motor      = config['motor_stop']['value'],
+            num_files       = config['acquisition_time']['total_files'],
+            file_acqtime    = config['acquisition_time']['file_time'],
+            context         = config['context'],
+            instances       = config['instances']  # Not in py2 but trims a lot of typing
+        )
+
+    # TODO def dump_to_json
+
+
+
 class MasterClient():
-    def __init__(self, config: dict, log: logging.Logger):
+    def __init__(self, config: ClientConfig, log: logging.Logger):
         self.log = log
-
-        # Read the client configuration
-        self.parse_cfg       : dict = config['parsing']  # Sub-config for parsing method
-        self.server_ip       : str = config['master_server']['ip']
-        self.server_port     : int = config['master_server']['port']
-        self.observer_client : bool = config['observer']['active']
-        self.start_motor     : bool = config['motor_start']['value']
-        self.stop_motor      : bool = config['motor_stop']['value']
-
-        self.num_files       : int = config['acquisition_time']['total_files']
-        self.file_acqtime    : int = config['acquisition_time']['file_time']
-        self.context         : str = config['context']
-        self.instances       : list = config['instances']  # Not in py2 but trims a lot of typing
+        self.config = config
 
         # Additional variables
         self.delay = 3  # "System will wait {self.delay} before starting"
@@ -50,6 +73,7 @@ class MasterClient():
 
         # Copy thermistor map to data folder for use in post-processing.
         # Having this here makes sense, I think?, but is a bit irrelevant to the rest.
+        # TODO have this done at server creation
         self.thermistor_map_path = L0A_SAVEDIR/f'{self.timestamp}thermistors.csv'
         shutil.copy(PATH_TO_CONFIGS/'thermistors.csv', self.thermistor_map_path)
 
@@ -90,9 +114,9 @@ class MasterClient():
 
     def get_serverconfig(self):
         # Get the running system config from the motor-FPGA connection
-        self.motor = MotorControl(self.server_ip, self.server_port)
+        self.motor = MotorControl(self.config.server_ip, self.config.server_port)
         system_config = self.motor.send_getsysconfig()
-        filename = self.timestamp + self.context + "_ServerInformation.bin"
+        filename = self.timestamp + self.config.context + "_ServerInformation.bin"
         with open(L0A_SAVEDIR / filename, 'w') as f:
             f.write(json.dumps(system_config))
 
@@ -105,42 +129,43 @@ class MasterClient():
                 case 'Radiometer':
                     data_throughput = self.radiometer_metadata(instrument)
                     ## XB - Feb 5, 2014 -> this empirical estimation needs further verification.
-                    self.items['rad'] = int(3.7 * 0.36 * self.file_acqtime * data_throughput)
+                    self.items['rad'] = int(3.7 * 0.36 * self.config.file_acqtime * data_throughput)
                     write_to_log(self.log, f"Estimated data throughput from radiometer: {data_throughput} kBps - {self.items['rad']} items")
-                    self.items['rad'] = self.file_acqtime
+                    self.items['rad'] = self.config.file_acqtime
                 
                 case 'Thermistors':
                     polling_rate = instrument['characteristics']['polling_interval']
                     addresses = instrument['characteristics']['addresses']
                     print(f"## Polling interval {polling_rate}s - Active ADC: {addresses}")
 
-                    self.items['thm'] = int(self.file_acqtime / polling_rate)
+                    self.items['thm'] = int(self.config.file_acqtime / polling_rate)
                     write_to_log(self.log, f"Estimated GPS-IMU data throughput: {5*8*len(addresses) / polling_rate} Bps - {self.items['thm']} items")
-                    self.items['thm'] = self.file_acqtime
+                    self.items['thm'] = self.config.file_acqtime
 
                 case 'GPS-IMU':
                     update_freq = instrument['characteristics']['update_frequency']
                     print(f"Update frequency = {update_freq} Hz")
 
-                    self.items['gps'] = int(self.file_acqtime * update_freq)
+                    self.items['gps'] = int(self.config.file_acqtime * update_freq)
                     write_to_log(self.log, f"Estimated GPS-IMU data throughput: {48 * update_freq} Bps - {self.items['gps']} items")
-                    self.items['gps'] = self.file_acqtime
+                    self.items['gps'] = self.config.file_acqtime
                 
-        if not self.observer_client:
+        if not self.config.is_observer:
             print(f"System will pause for {self.delay} seconds then continue.")
             time.sleep(self.delay)
 
 
-    def sendto_parser(self, filename: str):
-        if self.parse_cfg['active']:
-            verbose     : bool = self.parse_cfg['verbose']
-            remove_bin  : bool = self.parse_cfg['delete_raw_files']
-            single_file : bool = self.parse_cfg['single_file']
-            print(f"Starting parser. Verbose: {verbose}. Remove .bin: {remove_bin}. Single file: {single_file}")
-            processL0b(filename, verbose, remove_bin, single_file)
-            # AGW removed an unlabeled try-except.
-        else:
-            print("Not running L0a -> L0b parser per config setting.")
+    def sendto_parser(self, filename: str) -> None:
+        pass
+        # if self.config.parsing_config['active']:
+        #     verbose     : bool = self.config.parsing_config['verbose']
+        #     remove_bin  : bool = self.config.parsing_config['delete_raw_files']
+        #     single_file : bool = self.config.parsing_config['single_file']
+        #     print(f"Starting parser. Verbose: {verbose}. Remove .bin: {remove_bin}. Single file: {single_file}")
+        #     processL0b(filename, verbose, remove_bin, single_file)
+        #     # AGW removed an unlabeled try-except.
+        # else:
+        #     print("Not running L0a -> L0b parser per config setting.")
         
 
     def start_clients(self) -> list:
@@ -154,16 +179,16 @@ class MasterClient():
         return processes
 
 
-    def acquire(self):
+    def acquire(self) -> None:
         """
         Performs data acquisition by creating subprocess clients for each instrument. These connect to the subservers
         created in masterserver.py and handle data according to the protocols in genericclient.py
         """
-        write_to_log(self.log, f"For configuration using {self.server_ip} @ port {self.server_port}")
+        write_to_log(self.log, f"For configuration using {self.config.server_ip} @ port {self.config.server_port}")
         print(
             "-" * 30, "\n",
             "-- CLIENTS CONFIG INFORMATION --\n",
-            f"Total: {self.num_files} files of {self.file_acqtime} seconds each\n",
+            f"Total: {self.config.num_files} files of {self.config.file_acqtime} seconds each\n",
             "-" * 30, "\n",
             f"-- System will pause for {self.delay} seconds and then continue --\n",
             "-" * 30, "\n",
@@ -171,10 +196,10 @@ class MasterClient():
         time.sleep(self.delay)
 
         # Prepare the parserfile
-        if self.observer_client:
+        if self.config.is_observer:
             self.timestamp = "ObserverMode_FileToBeDeleted_"
 
-        for instance in self.instances:
+        for instance in self.config.instances:
             if not instance['active']:
                 write_to_log(self.log, f"Warning: {instance['name']} is set to inactive and will not acquire data.")
                 continue
@@ -183,7 +208,7 @@ class MasterClient():
                 case 'Radiometer':
                     instance['num_items'] = self.items['rad']
 
-                    if self.start_motor:
+                    if self.config.start_motor:
                         print("-" * 30, "\n", "Starting motor.")
                         self.motor.send_start()
                         self.motor.disconnect()
@@ -202,7 +227,7 @@ class MasterClient():
             self.active_instruments.append(instance['name'])
             self.active_filenames.append(ACQ_CONFIGS_TMP / f"{self.timestamp}{instance['name']}.json")
 
-        parse_filename = L0A_SAVEDIR / f"{self.timestamp}{self.context}.bin"
+        parse_filename = L0A_SAVEDIR / f"{self.timestamp}{self.config.context}.bin"
         parse_metadata = {
             'instruments': self.active_instruments,
             'filesID': parse_filename.stem,
@@ -212,8 +237,8 @@ class MasterClient():
         }
 
         # Loop for as many files are required per the client config file
-        for n in range(self.num_files):
-            new_context = f"{self.timestamp}{n+1}of{self.num_files}_{self.context}"
+        for n in range(self.config.num_files):
+            new_context = f"{self.timestamp}{n+1}of{self.config.num_files}_{self.config.context}"
 
             # Update raw file name
             for instance, filename in zip(self.active_instances, self.active_filenames):
@@ -237,7 +262,7 @@ class MasterClient():
                 for p in processes:
                     if p.poll() is None:  # Process is still running
                         active_proc += 1
-                        msg += f"({n+1} / {self.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {p.pid} -> STOPPED: {p.poll()})"
+                        msg += f"({n+1} / {self.config.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {p.pid} -> STOPPED: {p.poll()})"
                 print(msg)
                 if active_proc == 0:
                     break
@@ -252,15 +277,15 @@ class MasterClient():
             print(f"----------\n{parse_metadata}\n----------")
 
         # Stop the motor if needed
-        if not self.observer_client:
-            if not self.stop_motor:
+        if not self.config.is_observer:
+            if not self.config.stop_motor:
                 write_to_log(self.log, "Motor is set in client configuration to NOT stop.")
 
             else:
                 for instance in self.active_instances:
                     if instance['name'] == 'Radiometer':
                         write_to_log(self.log, "Stopping motor")
-                        self.motor = MotorControl(self.server_ip, self.server_port)
+                        self.motor = MotorControl(self.config.server_ip, self.config.server_port)
                         self.motor.send_stop()
                         self.motor.disconnect()
 
@@ -269,18 +294,38 @@ class MasterClient():
 
 
 if __name__ == '__main__':
-    import sys
-    
+    import argparse
 
-    # Read the config file from given argument (e.g., 'ln2.json') or 'client.json'
-    try:
-        config = sys.argv[1]
-    except IndexError:  # No args passed
-        config = 'client.json'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--filename', type=str, help="Provide a filename to load from config/, e.g., 'ln2.json'")
+    parser.add_argument('-c', '--context', type=str, help="Context string applied to all files (no spaces)")
+    parser.add_argument('-s', '--seconds', type=int, help="Seconds to run per created file")
+    parser.add_argument('-n', '--numfiles', type=int, help="Number of files to create")
 
-    config_path = PATH_TO_CONFIGS / config
-    with open(config_path, 'r') as f:
-        config = json.load(f)
+    args = parser.parse_args()
+
+    if any([args.context, args.seconds, args.numfiles]):
+        c = args.context.replace(' ', '') if args.context else "context"
+        s = args.seconds if args.seconds else 30
+        n = args.numfiles if args.numfiles else 1
+        config = ClientConfig(
+            context = c,
+            file_acqtime = s,
+            num_files = n,
+            instances = [
+                {"name": "Thermistors", "active": True, "ip": "127.0.0.1", "port": 8055, "num_items": 0},
+                {"name": "Radiometer", "active": True, "ip": "127.0.0.1", "port": 7555, "num_items": 0},
+                {"name": "GPS-IMU", "active": True, "ip": "127.0.0.1", "port": 9055, "num_items": 0}
+            ]
+        )
+    elif args.filename:
+        print("hey")
+        filepath = PATH_TO_CONFIGS / args.filename
+        config = ClientConfig.from_json(filepath)
+    else:
+        print('aye')
+        filepath = PATH_TO_CONFIGS / 'client.json'
+        config = ClientConfig.from_json(filepath)
 
     # Create a log
     log = create_log(
