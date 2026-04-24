@@ -301,10 +301,10 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--context', type=str, help="Context string applied to all files (no spaces)")
     parser.add_argument('-s', '--seconds', type=int, help="Seconds to run per created file")
     parser.add_argument('-n', '--numfiles', type=int, help="Number of files to create")
-
     args = parser.parse_args()
 
     if any([args.context, args.seconds, args.numfiles]):
+        # Use what's given or defaults. Do not use a file.
         c = args.context.replace(' ', '') if args.context else "context"
         s = args.seconds if args.seconds else 30
         n = args.numfiles if args.numfiles else 1
@@ -319,11 +319,11 @@ if __name__ == '__main__':
             ]
         )
     elif args.filename:
-        print("hey")
+        # Use given file
         filepath = PATH_TO_CONFIGS / args.filename
         config = ClientConfig.from_json(filepath)
     else:
-        print('aye')
+        # Use default file 
         filepath = PATH_TO_CONFIGS / 'client.json'
         config = ClientConfig.from_json(filepath)
 

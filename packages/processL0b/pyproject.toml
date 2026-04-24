@@ -1,0 +1,9 @@
+[project]
+name = "processL0b"
+version = "0.1.0"
+description = "Handle organized data (Level 0b) from HAMMR-HD radiometer"
+requires-python = ">=3.12"
+dependencies = [
+    "tables",
+    "vitables[pyqt6]>=3.1.0", # Usage: vitables [h5filepath]
+]
