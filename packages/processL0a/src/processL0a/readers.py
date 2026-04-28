@@ -2,8 +2,6 @@ from datetime import datetime
 import time
 import struct
 
-def helpout():
-    print("I'm helping")
 
 class L0aReader:
     def __init__(self, filename):

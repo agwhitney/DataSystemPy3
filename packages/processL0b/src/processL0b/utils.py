@@ -1,16 +1,3 @@
-from pathlib import Path
-
-class Reader:
-    def __init__(self, filename, gps, rad, thm):
-        self.filename = Path(filename)
-        self.gps = gps(filename)
-        self.rad = rad(filename)
-        self.thm = thm(filename)
-
-    def __str__(self):
-        return self.filename.name
-
-
 def make_pickable(fig, ax, leg):
     pickradius = 5
     linemap = {}

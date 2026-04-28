@@ -5,6 +5,7 @@ MasterClient basically runs as a script. There are a lot of self. variables that
 used outside of the scope of the method that uses them. I've removed some, but really what
 should happen is things should be moved into more specific methods.
 """
+import argparse
 import json
 import logging  # type hinting
 import time
@@ -17,6 +18,8 @@ from subprocess import Popen
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, L0A_SAVEDIR, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from motorcontrol import MotorControl
 from utils import create_log, write_to_log, create_timestamp
+
+from processL0a.create_l0b import create_l0b
 
 
 
@@ -156,16 +159,15 @@ class MasterClient():
 
 
     def sendto_parser(self, filename: str) -> None:
-        pass
-        # if self.config.parsing_config['active']:
-        #     verbose     : bool = self.config.parsing_config['verbose']
-        #     remove_bin  : bool = self.config.parsing_config['delete_raw_files']
-        #     single_file : bool = self.config.parsing_config['single_file']
-        #     print(f"Starting parser. Verbose: {verbose}. Remove .bin: {remove_bin}. Single file: {single_file}")
-        #     processL0b(filename, verbose, remove_bin, single_file)
-        #     # AGW removed an unlabeled try-except.
-        # else:
-        #     print("Not running L0a -> L0b parser per config setting.")
+        if self.config.parsing_config['active']:
+            verbose     : bool = self.config.parsing_config['verbose']
+            remove_bin  : bool = self.config.parsing_config['delete_raw_files']
+            single_file : bool = self.config.parsing_config['single_file']
+            print(f"Starting parser. Verbose: {verbose}. Remove .bin: {remove_bin}. Single file: {single_file}")
+            create_l0b(filename, verbose=verbose, removebinfiles=remove_bin, singlefile=single_file)
+            # AGW removed an unlabeled try-except.
+        else:
+            print("Not running L0a -> L0b parser per config setting.")
         
 
     def start_clients(self) -> list:
@@ -293,9 +295,8 @@ class MasterClient():
         self.sendto_parser(parse_filename)
 
 
-if __name__ == '__main__':
-    import argparse
 
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--filename', type=str, help="Provide a filename to load from config/, e.g., 'ln2.json'")
     parser.add_argument('-c', '--context', type=str, help="Context string applied to all files (no spaces)")
@@ -335,3 +336,7 @@ if __name__ == '__main__':
     )
     client = MasterClient(config, log)
     client.acquire()
+
+
+if __name__ == '__main__':
+    main()

@@ -5,8 +5,8 @@ import time
 import json
 from pathlib import Path
 
-from datastructures import DataFile
-from readersL0a import GPSReader, ThermistorReader, RadiometerReader
+from .datastructures import DataFile
+from .readers import GPSReader, ThermistorReader, RadiometerReader
 
 
 def parse_metadata(config: dict):
@@ -33,7 +33,7 @@ def parse_metadata(config: dict):
 
 
 
-def processL0b(
+def create_l0b(
         filename: Path | str,
         l0adir: Path | str = '',
         l0bdir: Path | str = '',
@@ -158,10 +158,3 @@ def processL0b(
         df.close()
     except UnboundLocalError:
         print("DataFile has already been closed.")
-
-
-if __name__ == '__main__':
-    from tkinter import filedialog
-    filenames = filedialog.askopenfilenames()
-    for filename in filenames:
-        processL0b(filename, singlefile=True)
