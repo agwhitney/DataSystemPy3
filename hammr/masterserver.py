@@ -6,7 +6,7 @@ from twisted.internet import protocol, reactor
 from subprocess import Popen
 
 from utils import create_log, write_to_log
-from fpga import FPGA
+from fpga import FPGA, FPGAConfig
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 
 
@@ -71,16 +71,16 @@ class TCPHandler(protocol.Protocol):
             
             case 'MSTART':
                 print("Starting motor")
-                fpga = FPGA(self.factory.motor_instr, self.factory.log)
+                fpga = FPGA(systemconfig=self.factory.motor_instr, fpgaconfig=self.factory.fpga_config, log=self.factory.log)
                 print("[MasterServer] Sending START to motor")
-                fpga.motor_control(fpga.START_VALUE)
+                fpga.motor_control(fpga.fpgaconfig.motorstart)
                 fpga.disconnect_tcp()
                 self.transport.write("Starting motor".encode())
             
             case 'MSTOP':
                 print("Stopping motor")
-                fpga = FPGA(self.factory.motor_instr, self.factory.log)
-                fpga.motor_control(fpga.STOP_VALUE)
+                fpga = FPGA(systemconfig=self.factory.motor_instr, fpgaconfig=self.factory.fpga_config, log=self.factory.log)
+                fpga.motor_control(fpga.fpgaconfig.motorstop)
                 print("[MasterServer] Sending STOP to motor")
                 fpga.disconnect_tcp()
                 self.transport.write("[MasterServer] Stopping motor".encode())
@@ -97,20 +97,19 @@ class TCPHandler(protocol.Protocol):
 class TCPHandlerFactory(protocol.Factory):
     protocol = TCPHandler
 
-    def __init__(self, log: logging.Logger, processes: list, motor_instr: dict, system_config: dict):
+    def __init__(self, log: logging.Logger, processes: list, motor_instr: dict, system_config: dict, fpga_config: FPGAConfig):
         # AGW py2 set protocol params here, but this is the preferred way.
         self.clients = []
         self.log = log
         self.processes = processes
         self.motor_instr = motor_instr
         self.system_config = system_config
+        self.fpga_config = fpga_config
 
 
 class MasterServer():
-    def __init__(self, system_config: dict, log: logging.Logger | None):
-        """
-        This loads the config and starts servers for each instrument as subprocesses.
-        """
+    def __init__(self, system_config: dict, fpga_config: FPGAConfig, log: logging.Logger | None):
+        """This loads the config and starts servers for each instrument as subprocesses."""
         self.log = log
         self.config = system_config
 
@@ -130,7 +129,7 @@ class MasterServer():
 
         # Start master server
         write_to_log(self.log, "Starting online control server -- FYI: the script won't come back while it's running!")
-        factory = TCPHandlerFactory(self.log, processes, self.config['radiometer'], self.config)
+        factory = TCPHandlerFactory(log=self.log, processes=processes, motor_instr=self.config['radiometer'], system_config=self.config, fpga_config=fpga_config)
         reactor.listenTCP(CONTROL_SERVER_PORT, factory)
         reactor.run()
 
@@ -159,9 +158,12 @@ if __name__ == '__main__':
         title = "ACQSystem Server - DAIS 2.0",
     )
 
-    # Read the config file
+    # Read the system config file
     config_filepath = PATH_TO_CONFIGS / 'system.json'
     with open(config_filepath, 'r') as f:
         system_config = json.load(f)
 
-    MasterServer(system_config, log)
+    # Create an FPGA config object
+    fpga_config = FPGAConfig.from_json(PATH_TO_CONFIGS / 'fpga.json')
+
+    MasterServer(system_config, fpga_config, log)

@@ -1,15 +1,18 @@
 {
     "activate": 15,
     "deactivate": 0,
+    "reset": 16777216,
+    "disconnect": 33554432,
     "counter": 240,
     "no_counter": 0,
 
     "motor": {
+        "base": 50331648,
         "start": 170,
         "stop": 85
     },
 
-    "mw": {
+    "amr": {
         "off": 0,
         "bytes_per_datagram": 22,
         "datagram_header": [85, 85, 85]

@@ -6,42 +6,90 @@ the order. It was weird and confusing and I confirmed with XB that the config sh
 
 In general (i.e., in the config) I've brought keys to lowercase. 
 """
+from dataclasses import dataclass, field
+from logging import Logger
+import json
 import socket
 import struct
 
 from utils import write_to_log
 
 
+@dataclass
+class FPGAChannelConfig():
+    """Channel specific configuration values used by the FPGA."""
+    off : int
+    bytes_per_datagram : int
+    header : field(default_factory=list)
+
+
+@dataclass
+class FPGAConfig():
+    """Configuration values used by the FPGA"""
+    activate   : int
+    deactivate : int
+    reset      : int
+    disconnect : int
+    counter    : int  # Something to do with debugging
+    nocounter  : int
+    motorbase  : int  # Start and Stop are added to this value
+    motorstart : int
+    motorstop  : int
+    amr : FPGAChannelConfig
+    mmw : FPGAChannelConfig
+    snd : FPGAChannelConfig
+
+    @classmethod
+    def from_json(cls, filename) -> 'FPGAConfig':
+        with open(filename, 'r') as f:
+            config = json.load(f)
+        amr : dict = config['amr']
+        mmw : dict = config['mmw']
+        snd : dict = config['snd']
+
+        return cls(
+            activate = config['activate'],
+            deactivate = config['deactivate'],
+            reset = config['reset'],
+            disconnect = config['disconnect'],
+            counter = config['counter'],
+            nocounter = config['no_counter'],
+            motorbase = config['motor']['base'],
+            motorstart = config['motor']['start'],
+            motorstop = config['motor']['stop'],
+            amr = FPGAChannelConfig(
+                off=amr['off'], bytes_per_datagram=amr['bytes_per_datagram'], header=amr['datagram_header']
+            ),
+            mmw = FPGAChannelConfig(
+                off=mmw['off'], bytes_per_datagram=mmw['bytes_per_datagram'], header=mmw['datagram_header']
+            ),
+            snd = FPGAChannelConfig(
+                off=snd['off'], bytes_per_datagram=snd['bytes_per_datagram'], header=snd['datagram_header']
+            ),
+        )
+
+
+
 class FPGA():
-    # Defined parameters
-    mapkey = ('mw', 'mmw', 'snd')
-    header = {'mw': 85, 'mmw': 87, 'snd': 93}  # 'U' #85; 'W' #87 ']' #93  Used in .h5 structure?
-    offmap = {'mw': 0, 'mmw': 16, 'snd': 32}
-    # TODO these are only used in the estimated data throughput, and maybe an FPGA config file would be nice to have.
-    bpd = {'arm': 22, 'act': 14, 'snd': 38}  # "Bytes per Datagram" py2 this is ordered ARM, SND, ACT  # ARM is a typo of AMR
-    bpd_remap = {'mw': bpd['arm'], 'mmw': bpd['act'], 'snd': bpd['snd']}
-
-    ACTIVATE_VALUE = 15
-    DEACTIVATE_VALUE = 0
-    COUNTER_VALUE = 240
-    NOCOUNTER_VALUE  = 0
-
-    # These constants are called in masterserver.py to FPGA.motor_control
-    START_VALUE = 170
-    STOP_VALUE = 85
-    
     inst = {'ac': 0, 'fr': 1, 'lt': 12}
     inst_base = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]  # py2 Inst_S#, with # = 0--9.
+    
 
-
-    def __init__(self, config, log):
+    def __init__(
+        self,
+        systemconfig,
+        fpgaconfig: FPGAConfig,
+        log: Logger | None
+    ):
+        self.fpgaconfig = fpgaconfig
         self.log = log
         self.client_socket: socket.socket  # Set in init via connect()
+        self.channel_map = {'mw': self.fpgaconfig.amr, 'mmw': self.fpgaconfig.mmw, 'snd': self.fpgaconfig.snd}
 
         # load a bunch from the config (which is just the radiometer config, and really just a subset of that)
-        self.tcp_buffer_size = config['characteristics']['configuration']['buffer_length']
-        self.ip = config['characteristics']['configuration']['ip']
-        self.port = config['characteristics']['configuration']['port']
+        self.tcp_buffer_size = systemconfig['characteristics']['configuration']['buffer_length']
+        self.ip = systemconfig['characteristics']['configuration']['ip']
+        self.port = systemconfig['characteristics']['configuration']['port']
         
         # py2 these were lists. `length` and `slot` were one-dimensional and accessed using multiples of 10
         self.activated = {}
@@ -50,8 +98,8 @@ class FPGA():
         self.sequence_length = {}
         self.length = {}
         self.slot = {}
-        for key in self.mapkey:
-            cfg = config['characteristics'][key]
+        for key in self.channel_map:
+            cfg = systemconfig['characteristics'][key]
 
             self.int_time[key] = cfg['integration_time_ms']
             self.activated[key] = cfg['active']
@@ -73,74 +121,67 @@ class FPGA():
 
 
     @staticmethod
-    def get_denominator(int_time_ms, fmax_khz=50000, ratio_max=16777215):  # fmax kHz
+    def get_denominator(int_time_ms, fmax_khz=50000, ratio_max=16777215) -> int:  # fmax kHz
         ftarget = 2 / int_time_ms  # range 25 kHz - 2.9 Hz
         ratio = int(fmax_khz / ftarget)
         return min(ratio, ratio_max)  # Intersects at about int_time = 671 ms
 
 
-    def connect(self, ip: str, port: int):
+    def connect(self, ip: str, port: int) -> None:
         tcp_address = (ip, port)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.settimeout(3)  # AGW hoping this avoids lockout on interrupts if the ip is wrong for some reason
         self.client_socket.connect(tcp_address)
-        write_to_log(f"TCP/IP connected @ {tcp_address}")
-        # self.log.info(f"TCP/IP connected @ {tcp_address}")
+        write_to_log(self.log, f"TCP/IP connected @ {tcp_address}")
 
 
-    def estimated_data_throughput(self):
+    def estimated_data_throughput(self) -> None:
         estimate = 0
-        for key in self.mapkey:
+        for key, channelcfg in self.channel_map:
             if self.activated[key]:
-                estimate += self.bpd_remap[key] / self.int_time[key]
-                write_to_log(f"{key} channels activated -> int_time = {self.int_time[key]} ms")
-                # self.log.info(f"{key} channels activated -> int_time = {self.int_time[key]} ms")
+                estimate += self.channelcfg.bytes_per_datagram / self.int_time[key]
+                write_to_log(self.log, f"{key} channels activated -> int_time = {self.int_time[key]} ms")
         
-        write_to_log(f"Estimated data throughput: {estimate} kB")
-        # self.log.info(f"Estimated data throughput: {estimate} kB")
+        write_to_log(self.log, f"Estimated data throughput: {estimate} kB")
         if estimate > 400:
-            write_to_log("Data throughput should be <400 kBps. This acquistiion could crash.", level='warn')
-            write_to_log("DO NOT EXCEED 420 kBps, or you will need to reboot the acquisition system!", level='warn')
-            # self.log.warning("Data throughput should be <400 kBps. This acquistiion could crash.")
-            # self.log.warning("DO NOT EXCEED 420 kBps, or you will need to reboot the acquisition system!")
+            write_to_log(self.log, "Data throughput should be <400 kBps. This acquistiion could crash.", level='warn')
+            write_to_log(self.log, "DO NOT EXCEED 420 kBps, or you will need to reboot the acquisition system!", level='warn')
 
 
-    def configure(self):
-        write_to_log("Configuring the FPGA.")
-        # self.log.info("Configuring the FPGA.")
-        for key in self.mapkey:
-            write_to_log(f"Sending configuration for {key}. OFF value = {self.offmap[key]}")
-            # self.log.info(f"Sending configuration for {key}. OFF value = {self.offmap[key]}")
+    def configure(self) -> None:
+        write_to_log(self.log, "Configuring the FPGA.")
+        for key, channelcfg in self.channel_map:
+            write_to_log(self.log, f"Sending configuration for {key}. OFF value = {channelcfg.off}")
 
-            active_ch = self.ACTIVATE_VALUE if self.activated[key] else self.DEACTIVATE_VALUE
-            active_ch += self.COUNTER_VALUE if self.counter[key] else 0  # Reads a little funny, but the False case is active_ch += 0
+            active_ch = self.fpgaconfig.activate if self.activated[key] else self.fpgaconfig.deactivate
+            active_ch += self.fpgaconfig.counter if self.counter[key] else 0  # False case is active_ch += 0
 
             int_time_ch = self.int_time[key]
-            inst_seq = [i + self.offmap[key] for i in self.inst_base]
-            inst_ac = self.inst['ac'] + self.offmap[key]
-            inst_fr = self.inst['fr'] + self.offmap[key]
-            inst_lt = self.inst['lt'] + self.offmap[key]
+            inst_seq = [i + channelcfg.off for i in self.inst_base]
+            inst_ac = self.inst['ac'] + channelcfg.off
+            inst_fr = self.inst['fr'] + channelcfg.off
+            inst_lt = self.inst['lt'] + channelcfg.off
 
             length_ch = self.length[key]
             sequence_ch = self.slot[key]
             sequencelength_ch = self.sequence_length[key]
 
-            write_to_log(
+            write_to_log(self.log, 
                 f"{active_ch} - {int_time_ch} - {inst_seq} - {inst_ac} - {inst_fr} - {inst_lt} - {length_ch} - {sequence_ch} - {sequencelength_ch}"
             )
-            # self.log.info(
-            #     f"{active_ch} - {int_time_ch} - {inst_seq} - {inst_ac} - {inst_fr} - {inst_lt} - {length_ch} - {sequence_ch} - {sequencelength_ch}"
-            # )
             self.configure_channel(
                 activated=active_ch, int_time=int_time_ch,
                 inst_ac=inst_ac, inst_fr=inst_fr, inst_lt=inst_lt, inst_seq=inst_seq,
                 sequence=sequence_ch, length=length_ch,  sequence_length=sequencelength_ch
             )
-        write_to_log("Finished configuring FPGA.")
-        # self.log.info("Finished configuring FPGA.")
+        write_to_log(self.log, "Finished configuring FPGA.")
 
 
-    def configure_channel(self, activated, int_time, inst_seq, inst_ac, inst_fr, inst_lt, sequence, length, sequence_length):
+    def configure_channel(
+        self, activated, int_time,
+        inst_seq, inst_ac, inst_fr, inst_lt,
+        sequence, length, sequence_length
+    ) -> None:
         self.send_and_recv(activated, inst_ac, 0)
         
         int_val = self.get_denominator(int_time)
@@ -150,7 +191,7 @@ class FPGA():
         self.send_and_recv(sequence_length, inst_lt, 0)
 
 
-    def configure_sequence(self, inst_seq, sequence, length):
+    def configure_sequence(self, inst_seq, sequence, length) -> None:
         for i in range(10):
             self.send_and_recv(sequence[i] + 256*length[i], inst_seq[i], 0)
 
@@ -172,43 +213,42 @@ class FPGA():
         """Combined send and receive. Prints returns for debugging."""
         send = self.send_instruction(container, inst, processor_order)
         recv = self.recv_instruction()
-        write_to_log(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
-        # self.log.info(f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
+        write_to_log(self.log, f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
 
 
-    def reset_hardware(self):
-        self.send_and_recv(16777216, 0, 1)
+    def reset_hardware(self) -> None:
+        self.send_and_recv(self.fpgaconfig.reset, 0, 1)
 
 
-    def disconnect_tcp(self):
-        write_to_log("Sending TCP/IP disconnect sequence to FPGA.")
-        # self.log.info("Sending TCP/IP disconnect sequence to FPGA.")
-        self.send_and_recv(33554432, 0, 1)
+    def disconnect_tcp(self) -> None:
+        write_to_log(self.log, "Sending TCP/IP disconnect sequence to FPGA.")
+        self.send_and_recv(self.fpgaconfig.disconnect, 0, 1)
         self.client_socket.close()
-        write_to_log("FPGA socket closed.")
-        # self.log.info("FPGA socket closed.")
+        write_to_log(self.log, "FPGA socket closed.")
 
 
-    def motor_control(self, control):
-        self.send_and_recv(50331648 + control, 0, 1)
+    def motor_control(self, command: int) -> None:
+        self.send_and_recv(self.fpgaconfig.motorbase + command, 0, 1)
 
 
-    def start_acquisition(self):
+    def start_acquisition(self) -> None:
         self.send_and_recv(0, 0, 1)
 
 
+
 if __name__ == '__main__':
-    import json
-    from utils import create_log
     from filepaths import PATH_TO_CONFIGS
+
+    fpgaconfig = FPGAConfig.from_json(PATH_TO_CONFIGS / 'fpga.json')
+    
     with open(PATH_TO_CONFIGS / 'system.json') as f:
         data = json.load(f)['radiometer']
-    log = create_log('dummy.log', "Dummy")
 
-    f = FPGA(data, log)
+    f = FPGA(data, fpgaconfig, None)
     print('starting motor')
-    f.motor_control(f.START_VALUE)
+    f.motor_control(f.fpgaconfig.motorstart)
     input("press enter to send STOP")
-    f.motor_control(f.STOP_VALUE)
+    f.motor_control(f.fpgaconfig.motorstop)
 
     f.disconnect_tcp()
+
