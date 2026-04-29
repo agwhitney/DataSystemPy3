@@ -10,11 +10,13 @@ dependencies = [
     "pywin32>=310 ; sys_platform == 'win32'" ,
     "tables>=3.10.2",
     "twisted>=25.5.0",
-    "processL0a"
+    "processL0a",
+    "processL0b",
 ]
 
 [tool.uv.sources]
 processL0a = {workspace = true}
+processL0b = {workspace = true}
 
 [tool.uv.workspace]
 members = ['packages/*']

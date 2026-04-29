@@ -1,10 +1,13 @@
 # Copied readers for now because things there are still coupled to tables
-from datetime import datetime
-from math import log, nan
-from tkinter import filedialog
 import time
 import struct
 import matplotlib.pyplot as plt
+import numpy as np
+
+from datetime import datetime
+from math import log, nan
+from tkinter import filedialog
+from pathlib import Path
 
 from processL0b.utils import make_pickable
 
@@ -20,7 +23,7 @@ class L0aReader:
         self.data_flag = b'DATA:'
         self.stop_flag = b':ENDS\n'
 
-        self.filename = filename
+        self.filename = Path(filename)
 
         self.data = []
 
@@ -281,14 +284,16 @@ class RadiometerReader(L0aReader):
         counts = []
         motor = []
         for row in self.data:
-            if row[2] == 0:
+            if row[2] == 1:
                 time.append(row[0])
                 counts.append(row[1])
                 motor.append(row[5])
+        time = np.array(time)
 
         fig, ax = plt.subplots()
-        ax.plot(time, counts, label=['34 QV', 'NC', '18 QV', '24 QV', '34 QH', 'NC', '18 QH', '24 QH'])
-        ax.set(title="Radiometer counts", xlabel="Time", ylabel="Counts")
+        labels = ['34 QV', 'NC', '18 QV', '24 QV', '34 QH', 'NC', '18 QH', '24 QH']
+        ax.plot(time - time[0], counts, label=labels)
+        ax.set(title=self.filename.name, xlabel="Time", ylabel="Counts")
         leg = ax.legend()
         make_pickable(fig, ax, leg)
 
@@ -296,7 +301,7 @@ class RadiometerReader(L0aReader):
         ax.plot(time, motor)
         ax.set(title="Motor position", xlabel="Time", ylabel="Position")
 
-        plt.show()
+        return fig, ax
 
 
 
@@ -322,3 +327,4 @@ if __name__ == '__main__':
 
         reader.parse_file()
         reader.quicklook()
+    plt.show()
