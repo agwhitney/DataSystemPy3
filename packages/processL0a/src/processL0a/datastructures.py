@@ -1,61 +1,79 @@
 """
-OUT OF DATE IN FAVOR OF SCRIPTS IN processing/ MODULE
-
 py2 h5classes.py
 The *Sample classes define the tables in the .h5 file.
 """
 import csv
 import tables as tb
-from tables import IsDescription, UInt8Col, UInt16Col, Float64Col, StringCol
-
-from utils import get_thermistor_str
-
-# type hinting
 from pathlib import Path
+from tables import IsDescription, UInt8Col, UInt16Col, UInt32Col, Float64Col, StringCol
+
+
+def get_thermistor_str(filename='') -> str:
+    """
+    Called by L0b processor to create a long metadata string of thermistor labels.
+    Assumes a line of headers followed by lines of data. Ignores lines starting with `#`.
+    """
+    if filename == '':
+        filename = Path('config/thermistors.csv')
+    s = ''
+    with open(filename, 'r', newline='') as f:  # newline='' for csv reader
+        reader = csv.reader(f, delimiter=',')
+        i = 0
+        for row in reader:
+            if row[0].startswith('#'):
+                continue
+
+            if i == 0:
+                # Column headers. Excluded to match previous, but could probably be included w/o issue
+                pass
+            else:
+                s += f'thermistorName[{i}] = "{row[3].strip()}"\n'
+            i += 1
+    return s
 
 
 class AMRSample(IsDescription):
     Counts        = UInt16Col(8)     # Unsigned short integer
-    Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte
-    SystemStatus  = UInt8Col(1)      # unsigned byte
-    NewSequence   = UInt8Col(1)      # unsigned byte
-    MotorPosition = UInt16Col(1)     # Unsigned short integer
-    Timestamp     = Float64Col(1)     # Signed 64-bit integer
+    Packagenumber = UInt32Col()     # AGW Upped from 16 to 32
+    Id            = UInt8Col()      # unsigned byte
+    SystemStatus  = UInt8Col()      # unsigned byte
+    NewSequence   = UInt8Col()      # unsigned byte
+    MotorPosition = UInt16Col()     # Unsigned short integer
+    Timestamp     = Float64Col()    # Signed 64-bit integer
 
 
 class ACTSample(IsDescription):
     Counts        = UInt16Col(4)     # Unsigned short integer
-    Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte
-    SystemStatus  = UInt8Col(1)      # unsigned byte
-    NewSequence   = UInt8Col(1)      # unsigned byte
-    MotorPosition = UInt16Col(1)     # Unsigned short integer
-    Timestamp     = Float64Col(1)    # Signed 64-bit integer
+    Packagenumber = UInt32Col()
+    Id            = UInt8Col()      # unsigned byte
+    SystemStatus  = UInt8Col()      # unsigned byte
+    NewSequence   = UInt8Col()      # unsigned byte
+    MotorPosition = UInt16Col()     # Unsigned short integer
+    Timestamp     = Float64Col()    # Signed 64-bit integer
 
 
 class SNDSample(IsDescription):
     Counts        = UInt16Col(16)    # Unsigned short integer
-    Packagenumber = UInt16Col(1)
-    Id            = UInt8Col(1)      # unsigned byte
-    SystemStatus  = UInt8Col(1)      # unsigned byte
-    NewSequence   = UInt8Col(1)      # unsigned byte
-    MotorPosition = UInt16Col(1)     # Unsigned short integer
-    Timestamp     = Float64Col(1)    # Signed 64-bit integer
+    Packagenumber = UInt32Col()
+    Id            = UInt8Col()      # unsigned byte
+    SystemStatus  = UInt8Col()      # unsigned byte
+    NewSequence   = UInt8Col()      # unsigned byte
+    MotorPosition = UInt16Col()     # Unsigned short integer
+    Timestamp     = Float64Col()    # Signed 64-bit integer
 
 
 class ThermistorSample(IsDescription):
-    Packagenumber = UInt16Col(1)
-    Voltages      = Float64Col(40)     # Unsigned short integer
-    Timestamp     = Float64Col(1)      # Signed 64-bit integer
+    Packagenumber = UInt32Col()
+    Voltages      = Float64Col(40)
+    Timestamp     = Float64Col()    # Signed 64-bit integer
 
 
 class IMUSample(IsDescription):
-    Packagenumber = UInt16Col(1)
+    Packagenumber = UInt32Col()
     EulerAngles   = Float64Col(3)
     Position      = Float64Col(3)
-    GPSTime       = Float64Col(1)
-    Timestamp     = Float64Col(1)
+    GPSTime       = Float64Col()
+    Timestamp     = Float64Col()
 
 
 class Information(IsDescription):
@@ -63,9 +81,9 @@ class Information(IsDescription):
 
 
 class ThermistorMap(IsDescription):
+    Index         = UInt8Col()
     Digitizer     = UInt8Col()
     Thermistor    = UInt8Col()
-    DataSerial    = UInt8Col()
     Location      = StringCol(50)  # Description of thermistor's physical placement
     Model         = StringCol(20)  # Model number
 
@@ -88,6 +106,9 @@ class DataFile:
 
 
     def __del__(self):
+        self.h5file.close()
+
+    def close(self):
         self.h5file.close()
 
 
@@ -131,9 +152,9 @@ class DataFile:
                 if i == 0:
                     pass
                 else:
-                    row['Digitizer'] = int(line[0])
-                    row['Thermistor'] = int(line[1])
-                    row['DataSerial'] = int(line[2])
+                    row['Index'] = int(line[0])
+                    row['Digitizer'] = int(line[1])
+                    row['Thermistor'] = int(line[2])
                     row['Location'] = line[3]
                     row['Model'] = line[4]
                     row.append()

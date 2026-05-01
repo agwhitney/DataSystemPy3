@@ -26,16 +26,31 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logg
         filename = create_timestamp() + filename
     
     logging.basicConfig(
-        level = logging.DEBUG,
+        level = logging.INFO,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         filename = ACQ_LOGS / filename,
         filemode = 'a',
     )
     log = logging.getLogger(title)
-    log.addHandler(logging.StreamHandler())  # Logged events are also printed
+    log.addHandler(logging.StreamHandler())  # Logged events are also printed TODO Can stream handlers be different levels?
     log.info(f"Welcome to {title}")
 
     return log
+
+
+def write_to_log(
+    log: logging.Logger | None,
+    message: str,
+    level: str = 'info'
+) -> None:
+    if not log:
+        print(f"(NO LOG) {level}: {message}")
+        return
+    match level:
+        case 'debug': log.debug(message)
+        case 'info': log.info(message)
+        case 'warn': log.warn(message)
+        case 'error': log.error(message)
 
 
 def get_thermistor_str(filename='thermistors.csv') -> str:

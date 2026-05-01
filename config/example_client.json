@@ -17,7 +17,7 @@
     "parsing": {
         "_description": "Controls the parser once the acquisiton of all files has end",
         "_active": "true or false",
-        "active": true,
+        "active": false,
         "_delete_raw_files": "true deletes the binary files | false keeps for future parsing",
         "delete_raw_files": false,
         "_verbose": "true prints parsing information, only for debuging purposes| false does not print this information",

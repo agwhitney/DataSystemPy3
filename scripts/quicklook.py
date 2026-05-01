@@ -1,6 +1,15 @@
-from datetime import datetime
+# Copied readers for now because things there are still coupled to tables
 import time
 import struct
+import matplotlib.pyplot as plt
+import numpy as np
+
+from datetime import datetime
+from math import log, nan
+from tkinter import filedialog
+from pathlib import Path
+
+from processL0b.utils import make_pickable
 
 
 class L0aReader:
@@ -14,11 +23,13 @@ class L0aReader:
         self.data_flag = b'DATA:'
         self.stop_flag = b':ENDS\n'
 
-        self.filename = filename
+        self.filename = Path(filename)
+
+        self.data = []
 
 
 
-    def parse_file(self, line_limit=0):
+    def parse_file(self, line_limit=10_000):
         start = time.time()
         file = open(self.filename, 'rb')
         print(file.readline().decode())  # welcome line
@@ -69,13 +80,15 @@ class L0aReader:
 
     def process_data(self, package_number, timestamp, data) -> bytes:
         raise NotImplementedError
+    
+
+    def quicklook(self):
+        raise NotImplementedError
 
 
-    @staticmethod
-    def store_data(table, data: dict):
-        for key, val in data.items():
-            table.row[key] = val
-        table.row.append()
+    def store_data(self, data: dict):
+        row = list(data.values())
+        self.data.append(row)
 
 
     def summary(self) -> str:
@@ -83,11 +96,9 @@ class L0aReader:
             
 
 class GPSReader(L0aReader):
-    def __init__(self, filename, datafile):
+    def __init__(self, filename):
         super().__init__(filename)
         self.package_flag = b'PACG:'
-        self.table = datafile.tables['IMU']
-
 
     def __str__(self):
         return "GPS Parser"
@@ -112,8 +123,32 @@ class GPSReader(L0aReader):
         gps_timestamp = time.mktime(d.timetuple())
 
         row = {'Packagenumber': package_number, 'Timestamp': timestamp, 'EulerAngles': euler_angles, 'Position': position, 'GPSTime': gps_timestamp}
-        self.store_data(self.table, row)
+        self.store_data(row)
         return b''
+    
+
+    def quicklook(self):
+        time = []
+        gpstime = []
+        coords = []
+        for row in self.data:
+            time.append(row[1])
+            gpstime.append(row[4])
+            coords.append(row[3])
+        delta = [g - t for g, t in zip(gpstime, time)]
+
+        fig, ax = plt.subplots()
+        ax.plot(time, delta)
+        ax.set(title="System time vs GPS delta", xlabel='System', ylabel='GPS - System')
+
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        x, y, z = zip(*coords)
+        ax.scatter(x, y, z)
+        ax.set(title="GPS position coordinates", xlabel="Latitude", ylabel="Longitude", zlabel="Elevation")
+
+        plt.show()
+
 
 
 class ThermistorReader(L0aReader):
@@ -124,10 +159,9 @@ class ThermistorReader(L0aReader):
     """
     THERMISTOR_TOTAL = 40
 
-    def __init__(self, filename, datafile):
+    def __init__(self, filename):
         super().__init__(filename)
         self.package_flag = b'PACT:'
-        self.table = datafile.tables['THM']
 
     
     def __str__(self):
@@ -139,18 +173,38 @@ class ThermistorReader(L0aReader):
 
             voltages += [0.001] * (self.THERMISTOR_TOTAL - len(voltages))  # Fills count to 40 if there are fewer connected/reading.
             row = {'Packagenumber': package_number, 'Timestamp': timestamp, 'Voltages': voltages}
-            self.store_data(self.table, row)
+            self.store_data(row)
             return b''
-            
+    
+
+    def quicklook(self):
+        def kelvin(volt):
+            r = 5000 * (volt / (1.12 - volt))
+            try:
+                temp = 1 / (1.29e-3 + 2.34e-4*log(r) + 1.10e-7*log(r)**3 + -6.51e-11*log(r)**5)
+            except ValueError:
+                temp = nan
+            return temp
+        
+        time = []
+        temps = []
+        for row in self.data:
+            time.append(row[1])
+            temps.append(list(map(kelvin, row[2])))
+
+        fig, ax = plt.subplots()
+        ax.plot(time, temps)
+        ax.set(
+            title="Thermistors", xlabel="Time (s)", ylabel="Temperature (K)",
+        )
+        plt.show()
+
+
 
 class RadiometerReader(L0aReader):
-    def __init__(self, filename, datafile):
+    def __init__(self, filename):
         super().__init__(filename)
         self.package_flag = b'PACR:'
-        self.table_amr = datafile.tables['AMR']
-        self.table_act = datafile.tables['ACT']
-        self.table_snd = datafile.tables['SND']
-
 
         # counters - x is just the number of processed rows
         self.n_AMR = 0
@@ -202,32 +256,8 @@ class RadiometerReader(L0aReader):
                 row = self.get_radiometer_row(package_number, timestamp, values, i=8)
                 index = indexend
 
-                self.store_data(self.table_amr, row)
+                self.store_data(row)
                 self.n_AMR += 1
-
-            elif header == self.MMW_HEADER:
-                indexend = index + self.bytes_per_datagram['ACT'] - 3
-                values = struct.unpack('>5HB', data[index:indexend])
-                index = indexend
-
-                row = self.get_radiometer_row(package_number, timestamp, values, i=4)
-                self.store_data(self.table_act, row)
-                self.n_ACT += 1
-
-                # if self.verbose:
-                #     print(f"ACT: Line {self.n_ACT} -- {values}")
-
-            elif header == self.SND_HEADER:
-                indexend = index + self.bytes_per_datagram['SND'] - 3
-                values = struct.unpack('>17HB', data[index:indexend])
-                index = indexend
-
-                row = self.get_radiometer_row(package_number, timestamp, values, i=16)
-                self.store_data(self.table_snd, row)
-                self.n_SND += 1
-
-                # if self.verbose:
-                #     print(f"SND: Line {self.n_SND} -- {values}")
 
             else:
                 if index > max(self.bytes_per_datagram.values()):  # Crawl exceeded what should have been the longest datagram without finding one
@@ -247,3 +277,54 @@ class RadiometerReader(L0aReader):
         # Return unprocessed bytes
         remainder = data[-bytes_remaining:]
         return remainder
+    
+
+    def quicklook(self):
+        time = []
+        counts = []
+        motor = []
+        for row in self.data:
+            if row[2] == 1:
+                time.append(row[0])
+                counts.append(row[1])
+                motor.append(row[5])
+        time = np.array(time)
+
+        fig, ax = plt.subplots()
+        labels = ['34 QV', 'NC', '18 QV', '24 QV', '34 QH', 'NC', '18 QH', '24 QH']
+        ax.plot(time - time[0], counts, label=labels)
+        ax.set(title=self.filename.name, xlabel="Time", ylabel="Counts")
+        leg = ax.legend()
+        make_pickable(fig, ax, leg)
+
+        fig, ax = plt.subplots()
+        ax.plot(time, motor)
+        ax.set(title="Motor position", xlabel="Time", ylabel="Position")
+
+        return fig, ax
+
+
+
+
+
+if __name__ == '__main__':
+    import sys
+    
+    if len(sys.argv) == 1:
+        filenames = filedialog.askopenfilenames(initialdir="~/Desktop/")
+    else:
+        filenames = sys.argv[1:]
+    
+    for filename in filenames:
+        if filename.find("Radiometer") != -1:
+            reader = RadiometerReader(filename)
+        elif filename.find("GPS-IMU") != -1:
+            reader = GPSReader(filename)
+        elif filename.find("Thermistors") != -1:
+            reader = ThermistorReader(filename)
+        else:
+            raise ValueError("Provided file not found or incorrect.")
+
+        reader.parse_file()
+        reader.quicklook()
+    plt.show()

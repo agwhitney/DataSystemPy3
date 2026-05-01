@@ -1,8 +1,8 @@
-import tables as tb
+from tables.table import Table as H5Table
 
 
 class GPSReader:
-    def __init__(self, table):
+    def __init__(self, table: H5Table):
         self.package_number = table.col('Packagenumber').flatten()
         self.euler_angles = table.col('EulerAngles')
         self.position = table.col('Position')

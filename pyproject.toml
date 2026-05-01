@@ -10,9 +10,13 @@ dependencies = [
     "pywin32>=310 ; sys_platform == 'win32'" ,
     "tables>=3.10.2",
     "twisted>=25.5.0",
+    "processL0a",
+    "processL0b",
 ]
 
-[project.optional-dependencies] # Install with uv sync --extra group
-h5analysis = [
-    "vitables[pyqt6]>=3.1.0", # Usage: vitables [h5filepath]
-]
+[tool.uv.sources]
+processL0a = {workspace = true}
+processL0b = {workspace = true}
+
+[tool.uv.workspace]
+members = ['packages/*']
