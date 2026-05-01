@@ -24,8 +24,26 @@ from processL0a.create_l0b import create_l0b
 
 
 @dataclass
-class ClientConfig():
-    parsing_config : dict = field(default_factory=dict)  # Sub-config for parsing method (effectively removed)
+class ParsingConfig:
+    active : bool = False
+    delete_raw_files : bool = False
+    verbose : bool = False
+    single_file : bool = False
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'ParsingConfig':
+        return cls(
+            active = data['active'],
+            delete_raw_files = data['delete_raw_files'],
+            verbose = data['verbose'],
+            single_file = data['single_file'],
+        )
+
+
+
+@dataclass
+class ClientConfig:
+    parsing_config : dict = ParsingConfig  # Sub-config for parsing method (effectively removed)
     server_ip      : str = "127.0.0.1"
     server_port    : int = 9022
     is_observer    : bool = False
@@ -40,8 +58,9 @@ class ClientConfig():
     def from_json(cls, filename) -> 'ClientConfig':
         with open(filename, 'r') as f:
             config = json.load(f)
+        parsing_config = ParsingConfig.from_dict(config['parsing'])
         return cls(
-            parsing_config  = config['parsing'],
+            parsing_config  = parsing_config,
             server_ip       = config['master_server']['ip'],
             server_port     = config['master_server']['port'],
             is_observer     = config['observer']['active'],
@@ -53,11 +72,9 @@ class ClientConfig():
             instances       = config['instances']  # Not in py2 but trims a lot of typing
         )
 
-    # TODO def dump_to_json
 
 
-
-class MasterClient():
+class MasterClient:
     def __init__(self, config: ClientConfig, log: logging.Logger):
         self.log = log
         self.config = config
@@ -159,10 +176,11 @@ class MasterClient():
 
 
     def sendto_parser(self, filename: str) -> None:
-        if self.config.parsing_config['active']:
-            verbose     : bool = self.config.parsing_config['verbose']
-            remove_bin  : bool = self.config.parsing_config['delete_raw_files']
-            single_file : bool = self.config.parsing_config['single_file']
+        """This is a convenience that IMO shouldn't exist like this"""
+        if self.config.parsing_config.active:
+            verbose     : bool = self.config.parsing_config.verbose
+            remove_bin  : bool = self.config.parsing_config.delete_raw_files
+            single_file : bool = self.config.parsing_config.single_file
             print(f"Starting parser. Verbose: {verbose}. Remove .bin: {remove_bin}. Single file: {single_file}")
             create_l0b(filename, verbose=verbose, removebinfiles=remove_bin, singlefile=single_file)
             # AGW removed an unlabeled try-except.
@@ -297,19 +315,32 @@ class MasterClient():
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    # Create a log
+    log = create_log(
+        filename = "Client_ACQSystem.log",
+        title = "ACQSystem Client - DAIS 2.0",
+        timestamp = True,
+    )
+
+    # Create a command-line parser
+    parser = argparse.ArgumentParser(
+        prog = "uv run hammr/masterclient.py",
+        description = "No argument is equivalent to '-f client.json'. Passing any of -c, -s, or -n will not refer to a file.",
+    )
     parser.add_argument('-f', '--filename', type=str, help="Provide a filename to load from config/, e.g., 'ln2.json'")
-    parser.add_argument('-c', '--context', type=str, help="Context string applied to all files (no spaces)")
-    parser.add_argument('-s', '--seconds', type=int, help="Seconds to run per created file")
-    parser.add_argument('-n', '--numfiles', type=int, help="Number of files to create")
+    parser.add_argument('-c', '--context', type=str, help="Context string applied to all files (no spaces) (default 'context')")
+    parser.add_argument('-s', '--seconds', type=int, help="Seconds to run per created file (default 30)")
+    parser.add_argument('-n', '--numfiles', type=int, help="Number of files to create (default 1)")
     args = parser.parse_args()
 
     if any([args.context, args.seconds, args.numfiles]):
         # Use what's given or defaults. Do not use a file.
+        write_to_log(log, "Loading client config from passed parameters")
         c = args.context.replace(' ', '') if args.context else "context"
         s = args.seconds if args.seconds else 30
         n = args.numfiles if args.numfiles else 1
         config = ClientConfig(
+            parsing_config = ParsingConfig(),
             context = c,
             file_acqtime = s,
             num_files = n,
@@ -322,18 +353,15 @@ def main():
     elif args.filename:
         # Use given file
         filepath = PATH_TO_CONFIGS / args.filename
+        write_to_log(log, f"Loading client config from {filepath}")
         config = ClientConfig.from_json(filepath)
     else:
-        # Use default file 
+        # Use default file "client.json"
         filepath = PATH_TO_CONFIGS / 'client.json'
+        write_to_log(log, f"Loading client config from {filepath}")
         config = ClientConfig.from_json(filepath)
 
-    # Create a log
-    log = create_log(
-        filename = "Client_ACQSystem.log",
-        title = "ACQSystem Client - DAIS 2.0",
-        timestamp = True,
-    )
+    # Create the client and run it
     client = MasterClient(config, log)
     client.acquire()
 

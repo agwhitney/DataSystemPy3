@@ -16,7 +16,7 @@ from utils import write_to_log
 
 
 @dataclass
-class FPGAChannelConfig():
+class FPGAChannelConfig:
     """Channel specific configuration values used by the FPGA."""
     off : int
     bytes_per_datagram : int
@@ -24,7 +24,7 @@ class FPGAChannelConfig():
 
 
 @dataclass
-class FPGAConfig():
+class FPGAConfig:
     """Configuration values used by the FPGA"""
     activate   : int
     deactivate : int
@@ -70,14 +70,14 @@ class FPGAConfig():
 
 
 
-class FPGA():
+class FPGA:
     inst = {'ac': 0, 'fr': 1, 'lt': 12}
     inst_base = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]  # py2 Inst_S#, with # = 0--9.
     
 
     def __init__(
         self,
-        systemconfig,
+        systemconfig: dict,
         fpgaconfig: FPGAConfig,
         log: Logger | None
     ):
@@ -86,7 +86,7 @@ class FPGA():
         self.client_socket: socket.socket  # Set in init via connect()
         self.channel_map = {'mw': self.fpgaconfig.amr, 'mmw': self.fpgaconfig.mmw, 'snd': self.fpgaconfig.snd}
 
-        # load a bunch from the config (which is just the radiometer config, and really just a subset of that)
+        # Load a bunch from the config (which is just the radiometer config, and really just a subset of that)
         self.tcp_buffer_size = systemconfig['characteristics']['configuration']['buffer_length']
         self.ip = systemconfig['characteristics']['configuration']['ip']
         self.port = systemconfig['characteristics']['configuration']['port']
@@ -137,9 +137,9 @@ class FPGA():
 
     def estimated_data_throughput(self) -> None:
         estimate = 0
-        for key, channelcfg in self.channel_map:
+        for key, channelcfg in self.channel_map.items():
             if self.activated[key]:
-                estimate += self.channelcfg.bytes_per_datagram / self.int_time[key]
+                estimate += channelcfg.bytes_per_datagram / self.int_time[key]
                 write_to_log(self.log, f"{key} channels activated -> int_time = {self.int_time[key]} ms")
         
         write_to_log(self.log, f"Estimated data throughput: {estimate} kB")
@@ -150,7 +150,7 @@ class FPGA():
 
     def configure(self) -> None:
         write_to_log(self.log, "Configuring the FPGA.")
-        for key, channelcfg in self.channel_map:
+        for key, channelcfg in self.channel_map.items():
             write_to_log(self.log, f"Sending configuration for {key}. OFF value = {channelcfg.off}")
 
             active_ch = self.fpgaconfig.activate if self.activated[key] else self.fpgaconfig.deactivate
@@ -213,7 +213,7 @@ class FPGA():
         """Combined send and receive. Prints returns for debugging."""
         send = self.send_instruction(container, inst, processor_order)
         recv = self.recv_instruction()
-        write_to_log(self.log, f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.")
+        write_to_log(self.log, f"Sent {send}. Instruction: {inst} Slot value: {container}. Received {recv}.", level='debug')
 
 
     def reset_hardware(self) -> None:

@@ -1,5 +1,5 @@
 import json
-import logging  # type checking
+import logging
 
 from datetime import datetime
 from twisted.internet import protocol, reactor
@@ -153,9 +153,9 @@ class MasterServer():
 if __name__ == '__main__':
     # Create a log
     log = create_log(
-        timestamp = True,
-        filename = "Server_ACQSystem.log",
         title = "ACQSystem Server - DAIS 2.0",
+        filename = "Server_ACQSystem.log",
+        timestamp = True,
     )
 
     # Read the system config file

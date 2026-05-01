@@ -16,8 +16,11 @@ import time
 from twisted.internet import protocol, reactor, task
 from twisted.protocols import basic
 
-from fpga import FPGA
-from filepaths import SERIAL_PORT
+from fpga import FPGA, FPGAConfig
+from filepaths import SERIAL_PORT, PATH_TO_CONFIGS
+
+# Used by the radiometer and this seems like the simplest way to provide it
+FPGA_CONFIG = FPGAConfig.from_json(PATH_TO_CONFIGS / 'fpga.json')
 
 
 class TCPInstrument(protocol.Protocol):
@@ -113,7 +116,7 @@ class SerialTransportRadiometer(SerialTransport):
     def __init__(self, network):
         super().__init__(network)
 
-        fpga = FPGA(self.network.config, self.network.log)
+        fpga = FPGA(systemconfig=self.network.config, fpgaconfig=FPGA_CONFIG, log=self.network.log)
         fpga.estimated_data_throughput()
         fpga.configure()
         fpga.reset_hardware()
