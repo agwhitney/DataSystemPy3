@@ -34,46 +34,46 @@ def get_thermistor_str(filename='') -> str:
 
 class AMRSample(IsDescription):
     Counts        = UInt16Col(8)     # Unsigned short integer
-    Packagenumber = UInt32Col(1)     # AGW Upped from 16 to 32
-    Id            = UInt8Col(1)      # unsigned byte
-    SystemStatus  = UInt8Col(1)      # unsigned byte
-    NewSequence   = UInt8Col(1)      # unsigned byte
-    MotorPosition = UInt16Col(1)     # Unsigned short integer
-    Timestamp     = Float64Col(1)    # Signed 64-bit integer
+    Packagenumber = UInt32Col()     # AGW Upped from 16 to 32
+    Id            = UInt8Col()      # unsigned byte
+    SystemStatus  = UInt8Col()      # unsigned byte
+    NewSequence   = UInt8Col()      # unsigned byte
+    MotorPosition = UInt16Col()     # Unsigned short integer
+    Timestamp     = Float64Col()    # Signed 64-bit integer
 
 
 class ACTSample(IsDescription):
     Counts        = UInt16Col(4)     # Unsigned short integer
-    Packagenumber = UInt32Col(1)
-    Id            = UInt8Col(1)      # unsigned byte
-    SystemStatus  = UInt8Col(1)      # unsigned byte
-    NewSequence   = UInt8Col(1)      # unsigned byte
-    MotorPosition = UInt16Col(1)     # Unsigned short integer
-    Timestamp     = Float64Col(1)    # Signed 64-bit integer
+    Packagenumber = UInt32Col()
+    Id            = UInt8Col()      # unsigned byte
+    SystemStatus  = UInt8Col()      # unsigned byte
+    NewSequence   = UInt8Col()      # unsigned byte
+    MotorPosition = UInt16Col()     # Unsigned short integer
+    Timestamp     = Float64Col()    # Signed 64-bit integer
 
 
 class SNDSample(IsDescription):
     Counts        = UInt16Col(16)    # Unsigned short integer
-    Packagenumber = UInt32Col(1)
-    Id            = UInt8Col(1)      # unsigned byte
-    SystemStatus  = UInt8Col(1)      # unsigned byte
-    NewSequence   = UInt8Col(1)      # unsigned byte
-    MotorPosition = UInt16Col(1)     # Unsigned short integer
-    Timestamp     = Float64Col(1)    # Signed 64-bit integer
+    Packagenumber = UInt32Col()
+    Id            = UInt8Col()      # unsigned byte
+    SystemStatus  = UInt8Col()      # unsigned byte
+    NewSequence   = UInt8Col()      # unsigned byte
+    MotorPosition = UInt16Col()     # Unsigned short integer
+    Timestamp     = Float64Col()    # Signed 64-bit integer
 
 
 class ThermistorSample(IsDescription):
-    Packagenumber = UInt32Col(1)
+    Packagenumber = UInt32Col()
     Voltages      = Float64Col(40)
-    Timestamp     = Float64Col(1)    # Signed 64-bit integer
+    Timestamp     = Float64Col()    # Signed 64-bit integer
 
 
 class IMUSample(IsDescription):
-    Packagenumber = UInt32Col(1)
+    Packagenumber = UInt32Col()
     EulerAngles   = Float64Col(3)
     Position      = Float64Col(3)
-    GPSTime       = Float64Col(1)
-    Timestamp     = Float64Col(1)
+    GPSTime       = Float64Col()
+    Timestamp     = Float64Col()
 
 
 class Information(IsDescription):

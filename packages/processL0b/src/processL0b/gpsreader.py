@@ -1,6 +1,3 @@
-import tables as tb
-
-
 class GPSReader:
     def __init__(self, table):
         self.package_number = table.col('Packagenumber').flatten()
