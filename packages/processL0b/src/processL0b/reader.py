@@ -1,3 +1,4 @@
+import pandas as pd
 import tables as tb
 
 from pathlib import Path
@@ -25,5 +26,8 @@ class Reader:
         self.thermistors = ThermistorReader(data_thm, meta_thm)
 
 
-    def correlate_timestamps(self):
-        ...
+    def correlate_timestamps(self, view: pd.DataFrame, frame: pd.DataFrame):
+        """
+        Take a view of one dataframe and find where the timestamps are contained in the other.
+        Return the subset of the other, or maybe the union of both?
+        """

@@ -1,11 +1,11 @@
 import pandas as pd
 
-from tables.table import Table
+from tables.table import Table as H5Table
 
 
 
 class ThermistorReader:
-    def __init__(self, table: Table, metatable: Table):
+    def __init__(self, table: H5Table, metatable: H5Table):
         timestamp = table.col('Timestamp').flatten()
         voltages = table.col('Voltages')
         

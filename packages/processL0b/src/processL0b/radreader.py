@@ -1,7 +1,7 @@
 import pandas as pd
 
 from dataclasses import dataclass
-from tables.table import Table
+from tables.table import Table as H5Table
 
 
 
@@ -9,7 +9,7 @@ from tables.table import Table
 class Channel:
     """The channel index is determined by the physical connection at the analog backend board."""
     index: int
-    frequency: float
+    frequency: float  # GHz
     label: str
 
 
@@ -46,9 +46,9 @@ SND_CHANNELS = [
 
 
 class AMRReader:
-    def __init__(self, table: Table):
+    def __init__(self, table: H5Table):
         self.channels = AMR_CHANNELS
-        self.data : pd.DataFrame()  # Created/populated below
+        self.data : pd.DataFrame  # Created/populated below
 
         # Raw data from HDF5 file
         counts = table.col('Counts')
