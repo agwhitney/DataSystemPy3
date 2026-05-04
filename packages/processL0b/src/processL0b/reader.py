@@ -26,8 +26,22 @@ class Reader:
         self.thermistors = ThermistorReader(data_thm, meta_thm)
 
 
-    def correlate_timestamps(self, view: pd.DataFrame, frame: pd.DataFrame):
+    def get_calibration_point(self, index: int, thermistors: list[int], motor_start: int, motor_stop: int) -> tuple[float, pd.Series]:
         """
-        Take a view of one dataframe and find where the timestamps are contained in the other.
-        Return the subset of the other, or maybe the union of both?
+        Returns a tuple containing temperature and a radiometer row.
+        Index is the row of the timestamp to use from the thermistors table.
+        Counts is determined as the average between the motor start and stop positions.
+        Temperature is determined as the average of the given thermistors.
         """
+        subset = self.radiometer.data[
+            (self.radiometer.data['Timestamp'] - self.thermistors.temps['Timestamp'][index] > 0)
+            &
+            (self.radiometer.data['Timestamp'] - self.thermistors.temps['Timestamp'][index+1] < 0)
+        ]
+        subset = subset[
+            (subset['MotorPosition'] > motor_start)
+            &
+            (subset['MotorPosition'] < motor_stop)
+        ]
+        temperature = self.thermistors.temps[thermistors].mean(axis=1).iloc[index]
+        return (temperature, subset.mean())
