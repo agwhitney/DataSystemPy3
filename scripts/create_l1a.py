@@ -1,6 +1,7 @@
 import pandas as pd
 
 from processL0b.reader import Reader
+from processL0b.utils import find_closest_index, save_cal_file, load_cal_file
 
 
 # Motor values determined by eye. Nadir from LN2 minimum, Zenith = Nadir + 8000
@@ -10,11 +11,6 @@ MOTOR_ZENITH = [11500, 12000]
 MOTOR_NADIR = [3500, 4000]
 
 
-def find_closest_index(series: pd.Series, target: float) -> int:
-    """Returns the index of the value in `series` closest to `target`."""
-    return series.iloc[
-        (series - target).abs().argsort()[:1]
-    ].index[0]
 
 
 def get_calibration_values(ln2_filename: str) -> pd.DataFrame:
@@ -49,13 +45,13 @@ def get_calibration_values(ln2_filename: str) -> pd.DataFrame:
     })
     df['Gain'] = (df['ZenithCounts'] - df['NadirCounts']) / (zenith_per_revolution['Temperature'].mean() - LN2_TEMP)
     df['Offset'] = df['ZenithCounts'] - df['Gain'] * zenith_per_revolution['Temperature'].mean()
-
+    df.index.name = 'Channel'
     return df
 
 
 def apply_calibration_values(calibration: pd.DataFrame, l0b_filename: str) -> pd.DataFrame:
     reader = Reader(l0b_filename)
-    brightness_temps = reader.radiometer.data.copy()
+    brightness_temps = reader.radiometer.data
     for channel in reader.radiometer.channels:
         brightness_temps[channel.label] = (brightness_temps[channel.label] - calibration.loc[channel.label, 'Offset']) / calibration.loc[channel.label, 'Gain']
     
@@ -63,13 +59,7 @@ def apply_calibration_values(calibration: pd.DataFrame, l0b_filename: str) -> pd
 
 
 if __name__ == '__main__':
-    df = get_calibration_values("C:\\Users\\agwhi\\Desktop\\cristal\\data413\\l0b\\26_04_13__17_42_51__LN2config1.h5")
-    print(df)
+    df = load_cal_file("calfile.csv")
 
     bf = apply_calibration_values(df, "C:\\Users\\agwhi\\Desktop\\cristal\\data413\\l0b\\26_04_13__13_29_44__cristalANT.h5")
     print(bf.head())
-
-    import matplotlib.pyplot as plt
-    subset = bf[ (bf['MotorPosition'] > MOTOR_NADIR[0]) & (bf['MotorPosition'] < MOTOR_NADIR[1]) ]
-    plt.plot(subset['Revolution'], subset['34 QV'], linestyle='none', marker='.')
-    plt.show()

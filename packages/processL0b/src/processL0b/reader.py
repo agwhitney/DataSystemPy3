@@ -29,6 +29,9 @@ class Reader:
 
         file.close()
 
+    def __repr__(self) -> str:
+        return f"<L0b Reader object containing {self.filename}>"
+
     def plot_revolution(
         self,
         ax: plt.Axes,

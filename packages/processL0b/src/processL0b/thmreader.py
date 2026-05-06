@@ -24,6 +24,10 @@ class ThermistorReader:
         self.data = self._get_temperatures()
 
 
+    def __repr__(self) -> str:
+        return "<L0b Reader object for Thermistor data>"
+
+
     def _get_temperatures(self) -> pd.DataFrame:
         data = {'Timestamp': self.voltages['Timestamp']}
         for _, row in self.meta.iterrows():

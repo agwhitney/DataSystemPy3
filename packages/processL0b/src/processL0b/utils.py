@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 
 
@@ -48,3 +49,23 @@ def make_pickable(fig, ax, leg):
         fig.canvas.draw()
     
     fig.canvas.mpl_connect('pick_event', on_pick)
+
+
+
+def find_closest_index(series: pd.Series, target: float) -> int:
+    """Returns the index of the value in `series` closest to `target`."""
+    return series.iloc[
+        (series - target).abs().argsort()[:1]
+    ].index[0]
+
+
+
+def save_cal_file(df: pd.DataFrame, filename: str) -> None:
+    df.to_csv(filename)
+
+
+
+def load_cal_file(filename: str) -> pd.DataFrame:
+    df = pd.read_csv(filename, index_col="Channel")
+    return df
+

@@ -62,3 +62,7 @@ class AMRReader:
         # Columns derived from raw data
         # A jump in the motor position (arbitrarily 1000) is used to determine that a new revolution has begun.
         self.data = self.data.assign( Revolution = (self.data['MotorPosition'].diff() > 1000).groupby(bool).cumsum() )
+
+
+    def __repr__(self) -> str:
+        return "<L0b Reader object for AMR data>"

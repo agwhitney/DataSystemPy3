@@ -19,6 +19,10 @@ class GPSReader:
             'Yaw': euler_angles[:, 2],
         })
 
+
+    def __repr__(self) -> str:
+        return "<L0b Reader object for GPS-IMU data>"
+
     
     def timedelta(self):
         return abs(self.gps_time - self.timestamp)
