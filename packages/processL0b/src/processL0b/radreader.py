@@ -60,4 +60,5 @@ class AMRReader:
         self.data = pd.concat([df1, df2], axis=1)
 
         # Columns derived from raw data
+        # A jump in the motor position (arbitrarily 1000) is used to determine that a new revolution has begun.
         self.data = self.data.assign( Revolution = (self.data['MotorPosition'].diff() > 1000).groupby(bool).cumsum() )

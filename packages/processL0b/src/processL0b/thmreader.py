@@ -21,7 +21,7 @@ class ThermistorReader:
             'Location': metatable.col('Location'),
             'Model': metatable.col('Model'),
         })
-        self.temps = self._get_temperatures()
+        self.data = self._get_temperatures()
 
 
     def _get_temperatures(self) -> pd.DataFrame:
@@ -34,6 +34,6 @@ class ThermistorReader:
 
     def get_meta_rows(self, indices: list[int] | int) -> pd.DataFrame:
         """Return the row(s) of metadata associated with thermistor `index` (!= table index)."""
-        if type(indices) == int:
+        if type(indices) is int:
             indices = [indices]
         return self.meta[self.meta['Index'].isin(indices)]

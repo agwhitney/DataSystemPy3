@@ -1,11 +1,13 @@
-import pandas as pd
+import matplotlib.pyplot as plt
 import tables as tb
 
 from pathlib import Path
 
 from .gpsreader import GPSReader
-from .radreader import AMRReader
+from .radreader import AMRReader, Channel
 from .thmreader import ThermistorReader
+from .utils import counts2volts
+
 
 class Reader:
     def __init__(self, filename: str):
@@ -25,23 +27,36 @@ class Reader:
         self.gps = GPSReader(data_gps)
         self.thermistors = ThermistorReader(data_thm, meta_thm)
 
+        file.close()
 
-    def get_calibration_point(self, index: int, thermistors: list[int], motor_start: int, motor_stop: int) -> tuple[float, pd.Series]:
+    def plot_revolution(
+        self,
+        ax: plt.Axes,
+        channel: Channel,
+        index: int = 3,
+        xunit: str = 'counts',
+        yunit: str = 'counts',
+    ) -> plt.Axes:
+        """Plot a single motor revolution to the given axis.
+        xunit : str = 'counts' | 'angle'
+        yunit : str = 'counts' | 'volts'
         """
-        Returns a tuple containing temperature and a radiometer row.
-        Index is the row of the timestamp to use from the thermistors table.
-        Counts is determined as the average between the motor start and stop positions.
-        Temperature is determined as the average of the given thermistors.
-        """
-        subset = self.radiometer.data[
-            (self.radiometer.data['Timestamp'] - self.thermistors.temps['Timestamp'][index] > 0)
-            &
-            (self.radiometer.data['Timestamp'] - self.thermistors.temps['Timestamp'][index+1] < 0)
-        ]
-        subset = subset[
-            (subset['MotorPosition'] > motor_start)
-            &
-            (subset['MotorPosition'] < motor_stop)
-        ]
-        temperature = self.thermistors.temps[thermistors].mean(axis=1).iloc[index]
-        return (temperature, subset.mean())
+        subset = self.radiometer.data[ self.radiometer.data['Revolution'] == index ]
+        match xunit:
+            case 'counts':
+                x = subset['MotorPosition']
+                xlabel = 'Motor counts'
+            case 'angle':
+                x = subset['MotorPosition'] * (360 / 16000)
+                xlabel = 'Motor angle (deg.)'
+        match yunit:
+            case 'counts':
+                y = subset[channel.label]
+                ylabel = 'Counts'
+            case 'volts':
+                y = counts2volts(subset[channel.label])
+                ylabel = 'Volts (V)'
+        ax.plot(x, y, label=channel.label)
+        ax.set(title=self.filename, xlabel=xlabel, ylabel=ylabel)
+        return ax
+        
