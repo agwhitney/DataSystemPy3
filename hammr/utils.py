@@ -15,7 +15,7 @@ def create_timestamp() -> str:
     return datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
 
 
-def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logging.Logger:
+def create_log(filename="newlog.log", title="ACQSystem", timestamp=True, level=logging.INFO) -> logging.Logger:
     """
     Called in various places to make a log with consistent formatting.
     """
@@ -26,7 +26,7 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True) -> logg
         filename = create_timestamp() + filename
     
     logging.basicConfig(
-        level = logging.INFO,
+        level = level,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         filename = ACQ_LOGS / filename,
         filemode = 'a',

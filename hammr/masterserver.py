@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 
@@ -108,7 +109,12 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
-    def __init__(self, system_config: dict, fpga_config: FPGAConfig, log: logging.Logger | None):
+    def __init__(
+            self,
+            system_config: dict,
+            fpga_config: FPGAConfig,
+            log: logging.Logger | None
+    ):
         """This loads the config and starts servers for each instrument as subprocesses."""
         self.log = log
         self.config = system_config
@@ -151,17 +157,38 @@ class MasterServer():
 
 
 if __name__ == '__main__':
-    # Create a log
-    log = create_log(
-        title = "ACQSystem Server - DAIS 2.0",
-        filename = "Server_ACQSystem.log",
-        timestamp = True,
+    parser = argparse.ArgumentParser(
+        prog = "uv run hammr/masterserver.py &",
+        description = "& runs the server in the background. -d provides a chosen system config for debugging."
     )
+    parser.add_argument('-d', '--debug', type=str, help="Provide a filename to load from config/")
+    args = parser.parse_args()
 
-    # Read the system config file
-    config_filepath = PATH_TO_CONFIGS / 'system.json'
-    with open(config_filepath, 'r') as f:
-        system_config = json.load(f)
+    if args.debug:
+        config_filepath = PATH_TO_CONFIGS / args.debug
+        with open(config_filepath, 'r') as f:
+            system_config = json.load(f)
+
+        log = create_log(
+            title = 'ACQSystem Server - DAIS 2.0',
+            filename = "Server_ACQSystem_debug.log",
+            timestamp = True,
+            level = logging.DEBUG
+        )
+        write_to_log(log, f"Logging at DEBUG with system config '{args.debug}'", level='debug')
+
+    else:
+        # Read the system config file
+        config_filepath = PATH_TO_CONFIGS / 'system.json'
+        with open(config_filepath, 'r') as f:
+            system_config = json.load(f)
+
+        # Create a log
+        log = create_log(
+            title = "ACQSystem Server - DAIS 2.0",
+            filename = "Server_ACQSystem.log",
+            timestamp = True,
+        )
 
     # Create an FPGA config object
     fpga_config = FPGAConfig.from_json(PATH_TO_CONFIGS / 'fpga.json')
