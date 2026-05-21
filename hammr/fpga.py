@@ -115,7 +115,7 @@ class FPGA:
             self.length[key] = _length
             self.slot[key] = _slot
 
-        self.log.info(f"Init FPGA: IP {self.ip} Port {self.port} Buffer size {self.tcp_buffer_size}")
+        write_to_log(self.log, f"Init FPGA: IP {self.ip} Port {self.port} Buffer size {self.tcp_buffer_size}")
         self.connect(self.ip, self.port)
 
 
