@@ -14,13 +14,12 @@ import struct
 
 from utils import write_to_log
 
-
 @dataclass
 class FPGAChannelConfig:
     """Channel specific configuration values used by the FPGA."""
     off : int
     bytes_per_datagram : int
-    header : field(default_factory=list)
+    header : list
 
 
 @dataclass
