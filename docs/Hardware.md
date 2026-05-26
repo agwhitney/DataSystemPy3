@@ -42,4 +42,4 @@ and the regulated voltage $V_r$ is either 1.06 or 1.12 (I've seen conflicting in
 
 
 ## Radiometer
-Following the HAMMR-HD overhaul, only the Advanced Microwave Radiometer (AMR) channels are handled by this software. Most of the time, these are labeled as "microwave" or "mw".
+Following the HAMMR-HD overhaul, only the Advanced Microwave Radiometer (AMR) channels are handled by this software. Code may refer to 'mw' or 'amr'.

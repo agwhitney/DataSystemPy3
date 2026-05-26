@@ -1,7 +1,7 @@
 # Software Repositories
 This repository is available on GitHub (https://github.com/agwhitney/DataSystemPy3) but it should be assumed that the instrument will not have internet access. To apply code repo changes to the instrument computer, set up a reference repository (called a bare repo) on the instrument which can be pushed to from the controlling computer.
 
-GitHub bare repo <--push & pull--> Controlling Comptuer project --push--> Instrument bare repo <--pull-- Instrument project
+GitHub <--push & pull--> Controlling Computer project --push--> Instrument bare repo <--pull-- Instrument project
 
 ## Initial Setup
 ### Step 1: Initialize Instrument Computer
