@@ -33,7 +33,7 @@ def get_thermistor_str(filename='') -> str:
 
 
 class AMRSample(IsDescription):
-    Counts        = UInt16Col(8)     # Unsigned short integer
+    Counts        = UInt16Col(8)    # Unsigned short integer
     Packagenumber = UInt32Col()     # AGW Upped from 16 to 32
     Id            = UInt8Col()      # unsigned byte
     SystemStatus  = UInt8Col()      # unsigned byte
@@ -43,7 +43,7 @@ class AMRSample(IsDescription):
 
 
 class ACTSample(IsDescription):
-    Counts        = UInt16Col(4)     # Unsigned short integer
+    Counts        = UInt16Col(4)    # Unsigned short integer
     Packagenumber = UInt32Col()
     Id            = UInt8Col()      # unsigned byte
     SystemStatus  = UInt8Col()      # unsigned byte
@@ -53,7 +53,7 @@ class ACTSample(IsDescription):
 
 
 class SNDSample(IsDescription):
-    Counts        = UInt16Col(16)    # Unsigned short integer
+    Counts        = UInt16Col(16)   # Unsigned short integer
     Packagenumber = UInt32Col()
     Id            = UInt8Col()      # unsigned byte
     SystemStatus  = UInt8Col()      # unsigned byte

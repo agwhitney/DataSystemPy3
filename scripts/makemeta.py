@@ -1,15 +1,22 @@
+"""Create a metadata file for an incomplete instrument run defined by client.json.
+A proper solution within the paradigm would update a metadata file at each step
+rather than all at once at the end.
+
+Usage: Select the numbered files to include using the GUI; for example, files 1of50, 2of50, etc.
+The script cares most about numbers, so repeats are okay, but don't mix measurements.
+Next, input the file context string that matches that of the selected files.
+
+Output: A metadata file like `{first-timestamp}{context}_post.json`
+
+TODO Robustness to regular expression context determination
+"""
 import re
 import json
 from tkinter import filedialog
 from pathlib import Path
 
 
-def make_metadata_file(filenames, context: str | None = 'cristal') -> None:
-    """
-    Create a metadata file for an incomplete instrument run defined by client.json.
-    A proper solution within the paradigm would update a metadata file at each step
-    rather than all at once at the end.
-    """
+def make_metadata_file(filenames: list[str], context: str) -> None:
     # Organize files by @of# regex match
     # Instrument suffixes don't matter so no problem to overlap/overwrite
     legend = {}
@@ -32,10 +39,10 @@ def make_metadata_file(filenames, context: str | None = 'cristal') -> None:
     # Use context to strip instrument names from legend
     if not context:
         raise NotImplementedError("Regex for context is commented out.")
-    match = re.search(r"[0-9]_" + context + r"_[a-zA-Z]", first)
-    if match:
-        context = match.group().split('_')[1]
-    print(f'Context = "{context}"')
+    # match = re.search(r"[0-9]_" + context + r"_[a-zA-Z]", first)
+    # if match:
+    #     context = match.group().split('_')[1]
+    # print(f'Context = "{context}"')
 
     filelist = []
     for v in ordered_legend.values():
@@ -61,12 +68,13 @@ def make_metadata_file(filenames, context: str | None = 'cristal') -> None:
         "description": description
     }
     filename = Path(first).parent / f"{timestamp}{context}_post.json"
-    with open(filename, 'w') as fp:
-        json.dump(obj, fp, indent=4)
+    with open(filename, 'w') as file:
+        json.dump(obj, file, indent=4)
     print(f"Created metadata file: {filename}")
 
 
 if __name__ == '__main__':
     filenames = filedialog.askopenfilenames()
+    context = input("Please enter the context string: ")
     if filenames:
-        make_metadata_file(filenames, context='cristalANT')
+        make_metadata_file(filenames, context)
