@@ -32,7 +32,7 @@ class ThermistorReader:
         data = {'Timestamp': self.voltages['Timestamp']}
         for _, row in self.meta.iterrows():
             model = row['Model'].decode()
-            data[row['Index']] = voltage2kelvin(model, self.voltages[ row['Index'] ])
+            data[row['Index']] = voltage2kelvin(model, self.voltages[row['Index']])
         return pd.DataFrame(data)
 
 

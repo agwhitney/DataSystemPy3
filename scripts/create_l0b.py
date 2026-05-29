@@ -4,7 +4,7 @@ from tkinter import filedialog
 from processL0a.create_l0b import create_l0b
 
 
-def main(combine_files: bool | None = True):
+def main(combine_files: bool = True):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-s", "--single-file", help="Combine inputs to a single output",

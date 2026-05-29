@@ -14,26 +14,33 @@ import re
 import json
 from tkinter import filedialog
 from pathlib import Path
+from typing import Iterable
 
 
-def make_metadata_file(filenames: list[str], context: str) -> None:
+def make_metadata_file(
+        filenames: Iterable[str],
+        context: str,
+) -> None:
+    """Creates a metadata file used for pointing the L0b parser to the correct files.
+    Used when an acquisition definition isn't completed and so a metadata file isn't created.
+    """
     # Organize files by @of# regex match
     # Instrument suffixes don't matter so no problem to overlap/overwrite
     legend = {}
     for filename in filenames:
         match = re.search(r"\d+of\d+", filename)
         if match:
-            n = match.group().split('of')[0]
+            n = int(match.group().split('of')[0])
+            N = int(match.group().split('of')[1])
             legend[n] = match.string
     ordered_legend = {k: v for k, v in sorted(legend.items(), key=lambda item: int(item[0]))}
-    N = int( list(ordered_legend.keys())[-1] )
     print(f"Creating metadata file for {len(ordered_legend)} acquired of {N} defined...")
 
     # Thermistor map and context id use the first timestamp
     try:
-        first = legend['1']
+        first = legend[1]
     except KeyError:
-        raise KeyError("Need a file number 1")
+        raise KeyError("A file numbered 1 is required.")
     timestamp = Path(first).name[:20]
 
     # Use context to strip instrument names from legend
@@ -51,7 +58,7 @@ def make_metadata_file(filenames: list[str], context: str) -> None:
 
     # The description list is a large dump of useless objects that are nearly identical.
     description = []
-    for i in range(N):
+    for _ in range(len(ordered_legend)):
         description.append([
             {"name": "Thermistors", "active": "true", "ip": "127.0.0.1", "port": "8055", "num_items": "600", "context": context},
             {"name": "Radiometer", "active": "true", "ip": "127.0.0.1", "port": "7555", "num_items": "600", "context": context},
@@ -67,7 +74,7 @@ def make_metadata_file(filenames: list[str], context: str) -> None:
         "filename": filelist,
         "description": description
     }
-    filename = Path(first).parent / f"{timestamp}{context}_post.json"
+    filename = Path(first).parent / f"{timestamp}{context}_{len(ordered_legend)}files.json"
     with open(filename, 'w') as file:
         json.dump(obj, file, indent=4)
     print(f"Created metadata file: {filename}")
@@ -75,6 +82,8 @@ def make_metadata_file(filenames: list[str], context: str) -> None:
 
 if __name__ == '__main__':
     filenames = filedialog.askopenfilenames()
+    context_guess = Path(filenames[0]).name
+    print(context_guess)
     context = input("Please enter the context string: ")
     if filenames:
         make_metadata_file(filenames, context)

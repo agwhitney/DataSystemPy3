@@ -7,12 +7,13 @@ should happen is things should be moved into more specific methods.
 """
 import argparse
 import json
-import logging  # type hinting
 import time
 import shutil
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from logging import Logger
+from pathlib import Path
 from subprocess import Popen
 
 from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, L0A_SAVEDIR, PATH_TO_GENCLIENT, PATH_TO_PYTHON
@@ -43,7 +44,7 @@ class ParsingConfig:
 
 @dataclass
 class ClientConfig:
-    parsing_config : dict = ParsingConfig  # Sub-config for parsing method (effectively removed)
+    parsing_config : ParsingConfig  # Sub-config for parsing method (effectively removed)
     server_ip      : str = "127.0.0.1"
     server_port    : int = 9022
     is_observer    : bool = False
@@ -52,7 +53,7 @@ class ClientConfig:
     num_files      : int = 1
     file_acqtime   : int = 30
     context        : str = "context"
-    instances      : list = field(default_factory=dict)
+    instances      : list = list(field(default_factory=dict))
 
     @classmethod
     def from_json(cls, filename) -> 'ClientConfig':
@@ -75,7 +76,7 @@ class ClientConfig:
 
 
 class MasterClient:
-    def __init__(self, config: ClientConfig, log: logging.Logger):
+    def __init__(self, config: ClientConfig, log: Logger):
         self.log = log
         self.config = config
 
@@ -175,7 +176,7 @@ class MasterClient:
             time.sleep(self.delay)
 
 
-    def sendto_parser(self, filename: str) -> None:
+    def sendto_parser(self, filename: str | Path) -> None:
         """This is a convenience that IMO shouldn't exist like this"""
         if self.config.parsing_config.active:
             verbose     : bool = self.config.parsing_config.verbose
@@ -247,7 +248,7 @@ class MasterClient:
             self.active_instruments.append(instance['name'])
             self.active_filenames.append(ACQ_CONFIGS_TMP / f"{self.timestamp}{instance['name']}.json")
 
-        parse_filename = L0A_SAVEDIR / f"{self.timestamp}{self.config.context}.bin"
+        parse_filename = L0A_SAVEDIR / f"{self.timestamp}{self.config.context}.json"
         parse_metadata = {
             'instruments': self.active_instruments,
             'filesID': parse_filename.stem,
