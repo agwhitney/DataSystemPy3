@@ -1,9 +1,9 @@
-"""
-py2 has a BasicClient protocol and factory, which don't get used. I've omitted them.
-The log was implemented but not used. Most print statements could probably also get logged.
-MasterClient basically runs as a script. There are a lot of self. variables that aren't 
-used outside of the scope of the method that uses them. I've removed some, but really what
-should happen is things should be moved into more specific methods.
+""" 
+This is the main acquisition logic. The MasterClient object communicates with a running MasterServer (masterserver.py)
+to get the system configuration and then creates subprocesses for each active instrument to acquire data. The subprocesses
+use the protocols defined in genericclient.py to connect to the subservers created in masterserver.py and acquire data.
+The MasterClient also handles metadata management and can launch a parser (create_l0b) after acquisition if configured to do so.
+(summary by copilot)
 """
 import argparse
 import json
@@ -27,7 +27,6 @@ from processL0a.create_l0b import create_l0b
 load_dotenv()
 CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
 DATA_PATH = Path( os.path.expandvars(os.getenv('DATA_PATH')) )
-
 
 
 @dataclass
@@ -164,7 +163,7 @@ class MasterClient:
                 case 'Thermistors':
                     polling_rate = instrument['characteristics']['polling_interval']
                     addresses = instrument['characteristics']['addresses']
-                    print(f"## Polling interval {polling_rate}s - Active ADC: {addresses}")
+                    write_to_log(self.log, f"## Polling interval {polling_rate}s - Active ADC: {addresses}")
 
                     self.items['thm'] = int(self.config.file_acqtime / polling_rate)
                     write_to_log(self.log, f"Estimated GPS-IMU data throughput: {5*8*len(addresses) / polling_rate} Bps - {self.items['thm']} items")
@@ -172,7 +171,7 @@ class MasterClient:
 
                 case 'GPS-IMU':
                     update_freq = instrument['characteristics']['update_frequency']
-                    print(f"Update frequency = {update_freq} Hz")
+                    write_to_log(self.log, f"Update frequency = {update_freq} Hz")
 
                     self.items['gps'] = int(self.config.file_acqtime * update_freq)
                     write_to_log(self.log, f"Estimated GPS-IMU data throughput: {48 * update_freq} Bps - {self.items['gps']} items")
@@ -196,7 +195,7 @@ class MasterClient:
             print("Not running L0a -> L0b parser per config setting.")
         
 
-    def start_clients(self) -> list:
+    def start_clients(self) -> list[Popen]:
         processes = []
         for i in range(len(self.active_instances)):
             p = Popen([PATH_TO_PYTHON, PATH_TO_GENCLIENT, self.active_filenames[i]], shell=False)
@@ -281,23 +280,31 @@ class MasterClient:
             # Start client subprocesses
             processes = self.start_clients()
 
-            # Wait for them to finish
-            t1 = time.time()
-            while True:
-                time.sleep(self.wait_time)
-                active_proc = 0
-                msg = "--------------------\n"
+            # Wait for them to finish. CTRL+C will cleanly escape.
+            try:
+                t1 = time.time()
+                while True:
+                    time.sleep(self.wait_time)
+                    active_proc = 0
+                    msg = "--------------------\n"
+                    for p in processes:
+                        if p.poll() is None:  # Process is still running
+                            active_proc += 1
+                            msg += f"({n+1} / {self.config.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {p.pid} -> STOPPED: {p.poll()})\n"
+                    print(msg)
+                    if active_proc == 0:
+                        break
+                
+                # update timestring for next file
+                print(f"Total elapsed time: {time.time() - t1:.1f} seconds")
+                self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+
+            except KeyboardInterrupt:
+                write_to_log(self.log, "Received a keyboard interrupt: escaping the acquisition process.")
                 for p in processes:
-                    if p.poll() is None:  # Process is still running
-                        active_proc += 1
-                        msg += f"({n+1} / {self.config.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {p.pid} -> STOPPED: {p.poll()})"
-                print(msg)
-                if active_proc == 0:
-                    break
-    
-            # update timestring for next file
-            print(f"Total elapsed time: {time.time() - t1:.1f} seconds")
-            self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+                    print(f"Sending SIGKILL to {p.pid}")
+                    p.kill()
+                break  # Breaks `for n in range(self.config.num_files)` loop, ending acquisition.
 
         # Write metadata for parser to file 
         with open(parse_filename, 'w') as f:
