@@ -11,7 +11,7 @@ import os
 import time
 import shutil
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from dotenv import load_dotenv
 from logging import Logger
@@ -51,6 +51,7 @@ class ParsingConfig:
 @dataclass
 class ClientConfig:
     parsing_config : ParsingConfig  # Sub-config for parsing method (effectively removed)
+    instances      : list
     server_ip      : str = "127.0.0.1"
     server_port    : int = 9022
     is_observer    : bool = False
@@ -59,7 +60,6 @@ class ClientConfig:
     num_files      : int = 1
     file_acqtime   : int = 30
     context        : str = "context"
-    instances      : list = list(field(default_factory=dict))
 
     @classmethod
     def from_json(cls, filename) -> 'ClientConfig':
@@ -68,6 +68,7 @@ class ClientConfig:
         parsing_config = ParsingConfig.from_dict(config['parsing'])
         return cls(
             parsing_config  = parsing_config,
+            instances       = config['instances'],  # Not in py2 but trims a lot of typing
             server_ip       = config['master_server']['ip'],
             server_port     = config['master_server']['port'],
             is_observer     = config['observer']['active'],
@@ -76,7 +77,6 @@ class ClientConfig:
             num_files       = config['acquisition_time']['total_files'],
             file_acqtime    = config['acquisition_time']['file_time'],
             context         = config['context'],
-            instances       = config['instances']  # Not in py2 but trims a lot of typing
         )
 
 
@@ -296,11 +296,12 @@ class MasterClient:
                         break
                 
                 # update timestring for next file
-                print(f"Total elapsed time: {time.time() - t1:.1f} seconds")
+                write_to_log(self.log, f"Closing file {n+1}. Total elapsed time: {time.time() - t1:.1f} seconds")
                 self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
 
             except KeyboardInterrupt:
                 write_to_log(self.log, "Received a keyboard interrupt: escaping the acquisition process.")
+                write_to_log(self.log, f"Total elapsed time: {time.time() - t1:.1f} seconds")
                 for p in processes:
                     print(f"Sending SIGKILL to {p.pid}")
                     p.kill()
