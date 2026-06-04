@@ -7,25 +7,32 @@ should happen is things should be moved into more specific methods.
 """
 import argparse
 import json
+import os
 import time
 import shutil
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from dotenv import load_dotenv
 from logging import Logger
 from pathlib import Path
 from subprocess import Popen
 
-from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, L0A_SAVEDIR, PATH_TO_GENCLIENT, PATH_TO_PYTHON
+from filepaths import PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from motorcontrol import MotorControl
 from utils import create_log, write_to_log, create_timestamp
 
 from processL0a.create_l0b import create_l0b
 
+load_dotenv()
+CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
+DATA_PATH = Path( os.path.expandvars(os.getenv('DATA_PATH')) )
+
 
 
 @dataclass
 class ParsingConfig:
+    """Functionally a child of ClientConfig"""
     active : bool = False
     delete_raw_files : bool = False
     verbose : bool = False
@@ -95,7 +102,7 @@ class MasterClient:
         # Copy thermistor map to data folder for use in post-processing.
         # Having this here makes sense, I think?, but is a bit irrelevant to the rest.
         # TODO have this done at server creation
-        self.thermistor_map_path = L0A_SAVEDIR/f'{self.timestamp}thermistors.csv'
+        self.thermistor_map_path = DATA_PATH/f'{self.timestamp}thermistors.csv'
         shutil.copy(PATH_TO_CONFIGS/'thermistors.csv', self.thermistor_map_path)
 
 
@@ -138,7 +145,7 @@ class MasterClient:
         self.motor = MotorControl(self.config.server_ip, self.config.server_port)
         system_config = self.motor.send_getsysconfig()
         filename = self.timestamp + self.config.context + "_ServerInformation.bin"
-        with open(L0A_SAVEDIR / filename, 'w') as f:
+        with open(DATA_PATH / filename, 'w') as f:
             f.write(json.dumps(system_config))
 
         for instrument in system_config.values():
@@ -246,9 +253,9 @@ class MasterClient:
 
             self.active_instances.append(instance)
             self.active_instruments.append(instance['name'])
-            self.active_filenames.append(ACQ_CONFIGS_TMP / f"{self.timestamp}{instance['name']}.json")
+            self.active_filenames.append(CONFIGS_PATH / f"{self.timestamp}{instance['name']}.json")
 
-        parse_filename = L0A_SAVEDIR / f"{self.timestamp}{self.config.context}.json"
+        parse_filename = DATA_PATH / f"{self.timestamp}{self.config.context}.json"
         parse_metadata = {
             'instruments': self.active_instruments,
             'filesID': parse_filename.stem,

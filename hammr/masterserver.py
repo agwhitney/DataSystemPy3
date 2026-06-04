@@ -1,14 +1,21 @@
 import argparse
 import json
 import logging
+import os
 
 from datetime import datetime
+from dotenv import load_dotenv
+from pathlib import Path
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
 from utils import create_log, write_to_log
 from fpga import FPGA, FPGAConfig
-from filepaths import PATH_TO_CONFIGS, ACQ_CONFIGS_TMP, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
+from filepaths import PATH_TO_CONFIGS, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
+
+load_dotenv()
+CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
+
 
 
 class TCPHandler(protocol.Protocol):
@@ -124,7 +131,7 @@ class MasterServer():
         timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
         for cfg in self.config.values():
             print("---------------------------------")
-            filepath = ACQ_CONFIGS_TMP / f"{timestamp}{cfg['name']}.json"
+            filepath = CONFIGS_PATH / f"{timestamp}{cfg['name']}.json"
             cfg['filepath'] = str(filepath)
             with open(filepath, 'w') as f:
                 f.write(json.dumps(cfg))  # Sub-config is saved with one change (filepath added)

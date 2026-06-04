@@ -6,13 +6,14 @@ the order. It was weird and confusing and I confirmed with XB that the config sh
 
 In general (i.e., in the config) I've brought keys to lowercase. 
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from logging import Logger
 import json
 import socket
 import struct
 
 from utils import write_to_log
+
 
 @dataclass
 class FPGAChannelConfig:

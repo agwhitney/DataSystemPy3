@@ -3,9 +3,15 @@ Generic  methods.
 """
 import csv
 import logging
+import os
 from datetime import datetime
+from dotenv import load_dotenv
+from pathlib import Path
 
-from filepaths import ACQ_LOGS, PATH_TO_CONFIGS
+from filepaths import PATH_TO_CONFIGS
+
+load_dotenv()
+LOGS_PATH = Path( os.path.expandvars(os.getenv('LOGS_PATH')) )
 
 
 def create_timestamp() -> str:
@@ -28,7 +34,7 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True, level=l
     logging.basicConfig(
         level = level,
         format = "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        filename = ACQ_LOGS / filename,
+        filename = LOGS_PATH / filename,
         filemode = 'a',
     )
     log = logging.getLogger(title)
@@ -47,10 +53,14 @@ def write_to_log(
         print(f"(NO LOG) {level}: {message}")
         return
     match level:
-        case 'debug': log.debug(message)
-        case 'info': log.info(message)
-        case 'warn': log.warn(message)
-        case 'error': log.error(message)
+        case 'debug':
+            log.debug(message)
+        case 'info':
+            log.info(message)
+        case 'warn':
+            log.warn(message)
+        case 'error':
+            log.error(message)
 
 
 def get_thermistor_str(filename='thermistors.csv') -> str:

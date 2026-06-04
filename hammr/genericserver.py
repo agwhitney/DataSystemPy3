@@ -1,12 +1,17 @@
 import argparse
 import json
+import os
 
+from dotenv import load_dotenv
+from pathlib import Path
 from twisted.internet import reactor
 from twisted.internet.serialport import SerialPort
 
 from utils import create_log
 from instruments import Instrument
-from filepaths import ACQ_CONFIGS
+
+load_dotenv()
+CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
 
 
 def main():
@@ -20,7 +25,7 @@ def main():
     parser.add_argument('--http-logging', action='store_true', default=False, help="Log messages to GDAIS-control HTTP server")
     args = parser.parse_args()
 
-    instr_config_file = ACQ_CONFIGS / args.instr_config
+    instr_config_file = CONFIGS_PATH / args.instr_config
     in_background = args.background
     http_logging = args.http_logging
 

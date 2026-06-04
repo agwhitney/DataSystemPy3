@@ -8,15 +8,21 @@ I've added a couple of file.close() to the failed-connection cases.
 """
 import argparse
 import json
-import io, logging  # Type checking (ruff override for oneliner ->) # noqa: E401
+import os
 
+from dotenv import load_dotenv
+from io import TextIOWrapper
+from logging import Logger
+from pathlib import Path
 from twisted.internet import protocol, reactor
 from twisted.internet.error import ReactorNotRunning
 from twisted.protocols import basic
 from time import time
 
 from utils import create_log
-from filepaths import L0A_SAVEDIR
+
+load_dotenv()
+DATA_PATH = Path( os.path.expandvars(os.getenv('DATA_PATH')) )
 
 
 class TCPClient(basic.Int32StringReceiver):
@@ -48,7 +54,7 @@ class TCPClient(basic.Int32StringReceiver):
 class TCPClientFactory(protocol.ClientFactory):
     protocol = TCPClient
 
-    def __init__(self, open_file: io.TextIOWrapper, num_items: int, name: str, log: logging.Logger):
+    def __init__(self, open_file: TextIOWrapper, num_items: int, name: str, log: Logger):
         self.name = name
         self.file = open_file
         self.measure_time = num_items  # py2 per comment `NumItems` contains seconds, not items.
@@ -104,7 +110,7 @@ def main():
 
     # Open a file object that will be written to. Passed to and closed by protocol.
     # TODO The protocol should probably handle this itself?
-    filepath = L0A_SAVEDIR / f"{context}_{name}.bin"
+    filepath = DATA_PATH / f"{context}_{name}.bin"
     binfile = open(filepath, 'wb')
 
     # Connect client

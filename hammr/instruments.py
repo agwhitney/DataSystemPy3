@@ -9,10 +9,10 @@ This is in place of having the client list as a global. Fear is that the follow-
 I've removed the two Connection classes. It seems the plan was to introduce compatability for different types of connections,
 but the final version only implements Serial. Literally all it does is load instr_config['serial_connection'] to a class.
 """
-import logging  # type hinting only
 import struct
 import time
 
+from logging import Logger
 from twisted.internet import protocol, reactor, task
 from twisted.protocols import basic
 
@@ -59,7 +59,7 @@ class TCPInstrument(protocol.Protocol):
 class TCPInstrumentFactory(protocol.Factory):
     protocol = TCPInstrument
     
-    def __init__(self, config: dict, log: logging.Logger):
+    def __init__(self, config: dict, log: Logger):
         self.clients = []
         self.name = config['name']
         self.log = log
@@ -270,7 +270,7 @@ class Instrument():
     Protocols are above, and connection details are provided in the passed config (forked from the server config).
     This is applied in genericserver.py.
     """
-    def __init__(self, config: dict, log: logging.Logger):
+    def __init__(self, config: dict, log: Logger):
         # Store connection details from config
         self.connection = config['serial_connection']
         self.connection['port'] = self.connection[SERIAL_PORT]  # SERIAL_PORT is determined by OS

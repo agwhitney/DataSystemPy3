@@ -1,7 +1,6 @@
-"""
-Replaces py2 GeneralPaths.py, primarily by using the pathlib module and object-oriented paths.
-py2 also contained a handful of constants that already exist in places that make more sense, so I've omitted them.
-Note that Path / str is Path
+""" Replaces GeneralPaths.py and uses Path objects.
+The savedata structure is moved to .env and included in scripts using python-dotenv.
+This makes it a little cleaner, I think, and more intuitive to the end-user.
 """
 import platform
 from pathlib import Path
@@ -30,42 +29,3 @@ if system == 'Windows':
 elif system == 'Linux':
     PATH_TO_PYTHON = project / '.venv/bin/python'
     SERIAL_PORT = 'portLinux'
-
-
-# Data output structure
-# Specify the directory path as Path("directory")
-ACQ = project / 'AcqSystem'  # Debugging
-# ACQ = Path('/data/amr')  # HAMMR-HD
-
-## One of these two is redundant
-ACQ_CONFIGS = ACQ / 'configs'
-ACQ_CONFIGS_TMP = ACQ_CONFIGS / 'tmp'
-
-L0A_SAVEDIR = ACQ / 'data'
-L0B_SAVEDIR = L0A_SAVEDIR / 'h5_files'
-
-ACQ_LOGS = ACQ / 'logs'
-
-
-# Verifying and Debugging methods
-def check_structure():
-    """Validate that the ACQ folder structure exists (by creating it if it doesn't)"""
-    for path in [ACQ, ACQ_CONFIGS, L0A_SAVEDIR, ACQ_LOGS, ACQ_CONFIGS_TMP, L0B_SAVEDIR]:
-        path.mkdir(exist_ok=True)
-    print("Folder structure is set up")
-
-
-def print_tree(root=ACQ):
-    """Visualize a file tree (dirs only)"""
-    print("-"*20, f"\nFolder structure in {root}")
-    print(root.stem)
-    for path in sorted(root.rglob('*')):
-        depth = len(path.relative_to(root).parts)
-        spacer = "- " * depth
-        if path.is_dir():
-            print(spacer + path.name)
-    print("-" * 20)
-
-
-# Not an ifmain so this will run whenever the module is imported
-check_structure()
