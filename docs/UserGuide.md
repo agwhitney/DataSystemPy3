@@ -1,7 +1,6 @@
 # Steps for Acquisition
 ## Connect
-1. Power on HAMMR-HD. Wait a short time (~30 s) for the on-board computer to fully boot (see Troubleshooting #2). You can test the connection with a `ping` command.
-    * `ping 169.254.51.248`
+1. Power on HAMMR-HD. Wait a short time (~30 s) for the on-board computer to fully boot (see Troubleshooting #2).
 2. Connect to the HHD on-board computer in TWO separate terminals.
     * `ssh msl@169.254.51.248` in each terminal window.
 3. Designate one window for AMR and the other for HMS and change to the project directory in each.
@@ -13,22 +12,23 @@
 1. In the HMS window, send the configuration to the FPGA. This will take a long time (over a minute).
     * `./client-remote-config -i 192.168.137.110 -a RUN_SEQ -f ./init_18G_hyms_eng_mode.seq`
     * Most lines should say "SUCCESS" but some will be empty.
-    * There was an error that running this more than once would lock the FPGA into a non-measuring state. This should be fixed, but try to avoid it.
+    * There was an error that sending this configuration more than once would lock the FPGA into a non-measuring state. This should be fixed, but try to avoid it.
     ![hyms init](images/hyms_init.png)
 2. Send the switching sequence to the FPGA. This will take some time (~30 s).
     * `./client-remote-config -i 192.168.137.110 -a RUN_SEQ -f ./hyms_switch_control.seq`
     ![hyms switch](images/hyms_switch.png)
 3. Make a directory within `./savedata/` where data will be saved to.
     * `mkdir ./savedata/[new directory]`
+    * `./savedata` is a link to a folder called `/data/hyms/`.
 
 ## Configure AMR
-1. Run the AMR server application in the background. This configures the FPGA and other hardware and begins streaming data that will be collected when the client application starts.
+1. In the AMR window, run the AMR server application in the background. This configures the FPGA and other hardware and begins streaming data that will be collected when the client application starts.
     * `uv run hammr/masterserver.py &`
     * The `&` at the end sends the command to the background.
     * Press `ENTER` to return to the command prompt.
     ![amr server](images/amr_server.png)
 
-**There should be no need to reconfigure the systems past this point. The acquisition softwares below can be stopped and started as many times as desired until the system is reset.**
+**There should be no need to reconfigure either system past this point. The acquisition softwares below can be stopped and started as many times as desired until the system is reset.**
 
 ## Start the acquisition softwares
 <!-- 1. In the AMR terminal, change the client configuration.
@@ -38,26 +38,27 @@
     ![nano](images/amr_nano.png) -->
 1. In the AMR terminal, run the AMR client application.
     * `uv run hammr/masterclient.py`
-    * The configuration (`config/client.json`) for campaigns will be unchanged, so there is no need to edit this file.
-    * There is a default config for LN2 measurements that can be used by running `uv run hammr/masterclient.py ln2.json`
+    * By default, this refers to `config/client.json`. A different client config file can be used by appended `-f [filename]` to the command.
+    * You can quickly define a config by appending the command with some combination of `-c [context] -n [number of files] -s [seconds per file]`.
 2. In the HMS terminal, run the HMS acquisition.
-    * `./client-remote-stream -i 192.168.137.110 -p 5002 -d data/[new directory]/` **The `/` at the end of the directory is required.**
+    * `./client-remote-stream -i 192.168.137.110 -p 5002 -d savedata/[new directory]/` **The `/` at the end of the directory is required.**
     * This will hold the HMS terminal and you can't pass more commands until the software is stopped.
     ![running](images/amr_client_start.png)
 
 
 ## To stop the softwares
-1. The AMR client will end when the config definition is complete. By default for the CRISTAL campaign this will be one hour.
-    - Using `CTRL + C` will stop acquisition, but may not stop all of the running scripts. See Troubleshooting #1.
+1. The AMR client will end when the config definition is complete.
+    - Alternatively, `CTRL + C` will cleanly stop acquisition.
 2. Kill the HMS acquisition with `CTRL + C`
-3. Bring the AMR server to the foreground with `fg` and use `CTRL + C` to kill.
+3. Bring the AMR server to the foreground with `fg` and use `CTRL + C` to kill the process.
+    - This isn't really necessary if you are planning to shut down.
 ![kill](images/both_kill.png)
 
 ## Transferring Data
-Data is saved in the folders `/data/hyms/` and `/data/amr/`. The simplest way to copy this to the operator laptop is the `rsync` tool to copy only the new files. From a local terminal, i.e., _not_ connected to the instrument with SSH:
-`rsync -avP msl@169.254.51.248:/data ~/cristaldata`
+Data is saved in the folder `/data/`. The simplest way to copy this to the operator laptop is via `rsync`. From a local terminal, i.e., one _not_ SSH'd to the instrument:
+`rsync -avP msl@169.254.51.248:/data/ [destination directory]`
 
-The default file explorer app has a connection to the instrument via SSH that can be used to transfer files in a GUI.
+On the operator laptop, the file explorer app has a connection to the instrument that can be used to transfer files with the GUI.
 
 
 # Quick Looks
@@ -74,14 +75,10 @@ There is one Python script which takes a binary data file as an argument, locate
 1. (AMR) "Port is already in use" or similar
     * Happens if the server script doesn't finish cleanly, and subserver scripts are still running. You can confirm this using the command `ps`. Kill those scripts with `killall python` `killall python3` and `killall uv`.
 2. (SSH) "No route to host"
-    * The hardware connection is fine. This probably happens if you try to SSH before the system is fully booted and can be avoided by testing first with `ping` before `ssh`. Unplug and re-plug the ethernet connections from either or both sides and try again. The HAMMR side works better. Once connected you will not disconnect due to this issue.
+    * The hardware connection is probably fine. This seems to happen if you try to SSH before the system is fully booted, and so it is best practice to wait a short while before trying to connect.
+    * If you have physical access, you can unplug and re-plug the ethernet cables and try again. Otherwise, a reboot can work.
+    * Once connected, this issue will not appear.
 
-## Known Issues
-* (HMS) Save directory is restricted to software directory.
-    * SOLVED using a symlink.
-* (Acquisition) Not confirmed if this can run headless, i.e., running script is possibly coupled to SSH connection.
-    * (untested) `nohup` command.
-    * (untested) `tmux` terminal multiplexer.
 
 
 # Reference

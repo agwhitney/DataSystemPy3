@@ -90,7 +90,7 @@ The radiometer has characteristics for the microwave (MW), millimeter-wave (MMW)
     }
 }
 ```
-The `channel.slot//.value` field is an array of five bits, 0 or 1. From left to right, these set Noise Source 3, 2, and 1 on (1) or off (0), the Dicke switch from REF (0) to ANT (1), and the RF on (0) or off (1). It is advised NOT to turn RF off.
+The `channel.slot#.value` field is an array of five bits, 0 or 1. From left to right for microwave, these set Noise Source 3, 2, and 1 on (1) or off (0), the Dicke switch from REF (0) to ANT (1), and the RF on (0) or off (1). It is advised NOT to turn RF off. 
 
 
 # client.json
@@ -114,13 +114,13 @@ This file has thorough metadata describing most variables.
 # fpga.json
 This file collects the explicit integer values that are used to configure the FPGA. This does not include runtime configuration settings. The channel set objects also contain metadata about the datagrams that are packaged and saved.
 
-__There should be no reason to change this file__ except in the case of low-level changes to the FPGA.
+__There should be no reason to change this file__ except in the case of changes to the FPGA.
 
 
 # thermistors.csv
-`thermistors.csv` is a table recording the details of the physical temperature sensors within HAMMR-HD. This is not used for acquisition, but the table is copied when `masterserver.py` runs and is then used in post-processing.
+`thermistors.csv` is a table recording the details of the physical temperature sensors within HAMMR-HD. This is not used for acquisition, but the table is copied when `masterserver.py` runs and is then used later in post-processing.
 
-Lines beginning with `#` are intended as comments. The table has five columns:
+Lines beginning with `#` are comments. The table has five columns:
 
 1) __Index__ - (integer 1 - 40) Absolute index of digitizer and thermistor. This is the order that will by read over the connection. The offset is a legacy artifact due to the connection order, I believe.
 2) __Digitizer__ - (integer 1 - 5) Address of the analog-to-digital converter that the thermistor is connected to.
