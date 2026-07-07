@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 
+from datetime import datetime
 from dotenv import load_dotenv
 from io import TextIOWrapper
 from logging import Logger
@@ -25,12 +26,16 @@ load_dotenv()
 DATA_PATH = Path( os.path.expandvars(os.getenv('DATA_PATH')) )
 
 
+def format_timestamp(ts: float, fmt="%H:%M:%S") -> str:
+    return datetime.fromtimestamp(ts).strftime(fmt)
+    
+
 class TCPClient(basic.Int32StringReceiver):
     def connectionMade(self):
         self.factory.log.info("genericclient.TCPClient.connectionMade Connected to TCP")
         start_time = time()  # seconds since epoch
         self.end_time = start_time + self.factory.measure_time
-        self.factory.log.info(f"Starting time: {start_time} - Ending time: {self.end_time}")
+        self.factory.log.info(f"Starting time: {format_timestamp(start_time)} - Ending time: {format_timestamp(self.end_time)}")
 
     
     def dataReceived(self, data: bytes):
