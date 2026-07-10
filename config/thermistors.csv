@@ -22,8 +22,8 @@ Index,Digitizer,Thermistor,Location,Model
 28,3,4,Paraboloid (backside middle),KS502J2
 29,3,5,Paraboloid (backside top),KS502J2
 30,3,6,Motor controller,KS502J2
-31,3,7,Motor,KS502J2
-32,3,8,12 V DC-to-DC converter,KS502J2
+31,3,7,12 V DC-to-DC converter,KS502J2
+32,3,8,Motor,KS502J2
 33,4,1,118 GHz (multiplier),KS502J2
 34,4,2,118 GHz (DRO),KS502J2
 35,4,3,118 GHz plate,KS502J2
