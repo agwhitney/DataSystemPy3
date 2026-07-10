@@ -211,11 +211,18 @@ class MasterClient:
         Performs data acquisition by creating subprocess clients for each instrument. These connect to the subservers
         created in masterserver.py and handle data according to the protocols in genericclient.py
         """
+        continuous_mode = True if self.config.num_files == -1 else False
         write_to_log(self.log, f"For configuration using {self.config.server_ip} @ port {self.config.server_port}")
+        write_to_log(
+            self.log,
+            f"Running continuously - filetime = {self.config.file_acqtime} seconds" if continuous_mode
+                else f"Total: {self.config.num_files} files of {self.config.file_acqtime} seconds each"
+        )
         print(
             "-" * 30, "\n",
             "-- CLIENTS CONFIG INFORMATION --\n",
-            f"Total: {self.config.num_files} files of {self.config.file_acqtime} seconds each\n",
+            f"Running continuously, producing files of {self.config.file_acqtime} seconds each" if continuous_mode
+                else f"Total: {self.config.num_files} files of {self.config.file_acqtime} seconds each\n",
             "-" * 30, "\n",
             f"-- System will pause for {self.delay} seconds and then continue --\n",
             "-" * 30, "\n",
@@ -264,8 +271,16 @@ class MasterClient:
         }
 
         # Loop for as many files are required per the client config file
-        for n in range(self.config.num_files):
-            new_context = f"{self.timestamp}{n+1}of{self.config.num_files}_{self.config.context}"
+        n = 0
+        while True:
+            n += 1
+            if continuous_mode:
+                new_context = f"{self.timestamp}{n}_{self.config.context}"
+            else:
+                if n > self.config.num_files:
+                    write_to_log(self.log, f"Completed {self.config.num_files} files. Ending acquisition.")
+                    break
+                new_context = f"{self.timestamp}{n}of{self.config.num_files}_{self.config.context}"
 
             # Update raw file name
             for instance, filename in zip(self.active_instances, self.active_filenames):
@@ -277,10 +292,11 @@ class MasterClient:
             parse_metadata['filename'].append(new_context)
             parse_metadata['description'].append(self.active_instances)
 
-            # Start client subprocesses
+            # Start client subprocesses. Yes, they start again with every loop.
             processes = self.start_clients()
 
-            # Wait for them to finish. CTRL+C will cleanly escape.
+            # The clients stop themselves, hopefully. They record a stop time and check against it - but only when they receive data.
+            # If they don't stop, most likely the data is not being received, probably due to a bad connection.
             try:
                 t1 = time.time()
                 while True:
@@ -290,22 +306,23 @@ class MasterClient:
                     for p in processes:
                         if p.poll() is None:  # Process is still running
                             active_proc += 1
-                            msg += f"({n+1} / {self.config.num_files}) -- {datetime.now().strftime('%y_%m_%d__%H_%M_%S__')} - Process # {p.pid} -> STOPPED: {p.poll()})\n"
+                            msg += f"({n} / {self.config.num_files}) -- {create_timestamp()} - Process # {p.pid} -> STOPPED: {p.poll()})\n"
                     print(msg)
                     if active_proc == 0:
                         break
                 
                 # update timestring for next file
-                write_to_log(self.log, f"Closing file {n+1}. Total elapsed time: {time.time() - t1:.1f} seconds")
-                self.timestamp = datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
+                write_to_log(self.log, f"Closing file {n}. Total elapsed time: {time.time() - t1:.1f} seconds")
+                self.timestamp = create_timestamp()
 
+            # This intercepts CTRL+C. It also intercepts SIGKILL sent from systemd, but it may be more correct to use a different signal handler pattern.
             except KeyboardInterrupt:
                 write_to_log(self.log, "Received a keyboard interrupt: escaping the acquisition process.")
                 write_to_log(self.log, f"Total elapsed time: {time.time() - t1:.1f} seconds")
                 for p in processes:
                     print(f"Sending SIGKILL to {p.pid}")
                     p.kill()
-                break  # Breaks `for n in range(self.config.num_files)` loop, ending acquisition.
+                break
 
         # Write metadata for parser to file 
         with open(parse_filename, 'w') as f:
