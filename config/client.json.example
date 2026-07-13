@@ -1,4 +1,15 @@
 {
+    "acquisition_time": {
+        "_file_time": "Recording time per file (seconds)", 
+        "file_time": 10,
+        "_total_files": "Total number of consecutive files that will be acquired. Use -1 for continuous acquisition.",
+        "total_files": 2
+    },
+
+    "_context": "This string will be included in all saved files.", 
+    "context": "Context",
+    
+    
     "master_server": {
         "_ip_info": "Active Client: 127.0.0.1 | Observer Client direct cable: 192.168.1.1 | Observer Client CSUnet: 129.82.224.49",
         "ip": "127.0.0.1",
@@ -34,14 +45,6 @@
         "value": true
     },
 
-    "acquisition_time": {
-        "_file_time": "Recording time per file (seconds)", 
-        "file_time": 10,
-        "_total_files": "Total number of consecutive files that will be acquired",
-        "total_files": 2
-    },
-    "_context": "This string will be included in all saved files.", 
-    "context": "Context",
     "instances": [
         {"name": "Thermistors", "active": true, "ip": "127.0.0.1", "port": 8055, "num_items": 0},
         {"name": "Radiometer", "active": true, "ip": "127.0.0.1", "port": 7555, "num_items": 0},

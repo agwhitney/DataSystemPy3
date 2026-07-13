@@ -363,7 +363,7 @@ def main():
     parser.add_argument('-f', '--filename', type=str, help="Provide a filename to load from config/, e.g., 'ln2.json'")
     parser.add_argument('-c', '--context', type=str, help="Context string applied to all files (no spaces) (default 'context')")
     parser.add_argument('-s', '--seconds', type=int, help="Seconds to run per created file (default 30)")
-    parser.add_argument('-n', '--numfiles', type=int, help="Number of files to create (default 1)")
+    parser.add_argument('-n', '--numfiles', type=int, help="Number of files to create (default 1) (-1 for continuous mode)")
     args = parser.parse_args()
 
     if any([args.context, args.seconds, args.numfiles]):
