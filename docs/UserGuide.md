@@ -1,60 +1,68 @@
-# Steps for Acquisition
-## Connect
-1. Power on HAMMR-HD. Wait a short time (~30 s) for the on-board computer to fully boot (see Troubleshooting #2).
-2. Connect to the HHD on-board computer in TWO separate terminals.
-    * `ssh msl@169.254.51.248` in each terminal window.
-3. Designate one window for AMR and the other for HMS and change to the project directory in each.
-    * AMR: `cd DataSystemPy3`
-    * HMS: `cd asic-spectrometer-cdh/software/c/flight/client`
-    ![ssh login](images/ssh_login.png)
+To connect to the HAMMR-HD on-board computer:
+1. Power on HAMMR-HD. Wait a short time for the on-board computer to fully boot.
+2. Connect to the on-board computer via secure shell (SSH).
+    * `ssh msl@169.254.41.248`
 
-## Configure HMS
-1. In the HMS window, send the configuration to the FPGA. This will take a long time (over a minute).
+Sometimes you will see "no route to host." It is unclear what causes this. One idea is that trying to connect before the system is ready causes an error with some network handshake. With physical access, unplugging and replugging the ethernet cable will eventually work. Otherwise, power cycling will eventually work. Once connected, you will not see this issue repeat.
+
+
+# Steps for AMR Acquisition
+1. Change your directory to be the one for this project.
+    * `cd ~/DataSystemPy3`
+2. Configure the server/system, if needed. In general, this shouldn't be necessary.
+    * __Option 1:__ edit the default system config `config/system.json`.
+    * __Option 2:__ load a different config from the config folder using the command flag `-d [filename]` when running the script.
+3. Run the server script. The `&` at the end runs it in the background. The flag is optional.
+    * `uv run hammr/masterserver.py [-d [filename]] &`
+4. Configure the client/acquisition. Relevant parameters are the number of files, the duration recorded in each file, and the context string.
+    * __Option 1:__ edit the default client config `config/client.json`.
+    * __Option 2:__ load a different config from the config folder using the command flag `-f [filename]`.
+    * __Option 3:__ provide the three parameters using any of the command flags `-c [context] -n [number of files] -s [seconds per file]`.
+        * These take precedence over `-f`.
+5. Run the client script. Each flag is optional.
+    * `uv run hammr/masterclient.py [-f [filename] -c [context] -n [number of files] -s [seconds per file]]`
+
+
+## AMR Setup
+Data are saved in this structure:
+```
+DATA/
+  | data/
+  | configs/
+  | logs/
+```
+The location and name of the `DATA/` folder is defined in the `.env` file. Change line 2 `ACQROOT="./DATA"` to point to wherever you like. Then, use `uv run scripts/init_acq_folders.py` to create those folders, if they don't already exist. The acquisition scripts will NOT create the folders.
+
+
+## FAQ
+* Set the number of files to -1 to run a continuous acquisition.
+* Use <kbd>CTRL + C</kbd> to stop a program running in the foreground (the client). For the server script in the background, use `fg` to bring it to the foreground and then use <kbd>CTRL + C</kbd>.
+    * Stopping the client will create a metadata file used in post-processing. Stopping the server is only needed to restart the server.
+* Running the server in the foreground is fine, but you won't be able to enter any more commands. In the past, users would open a second SSH connection, but this is unnecessary with `&`.
+
+
+
+# Steps for HyMS Acquisition
+1. Change your directory to be the one for this project.
+    * `cd $hymsdir`
+2. Configure the FPGA.
     * `./client-remote-config -i 192.168.137.110 -a RUN_SEQ -f ./init_18G_hyms_eng_mode.seq`
-    * Most lines should say "SUCCESS" but some will be empty.
-    * There was an error that sending this configuration more than once would lock the FPGA into a non-measuring state. This should be fixed, but try to avoid it.
-    ![hyms init](images/hyms_init.png)
-2. Send the switching sequence to the FPGA. This will take some time (~30 s).
-    * `./client-remote-config -i 192.168.137.110 -a RUN_SEQ -f ./hyms_switch_control.seq`
-    ![hyms switch](images/hyms_switch.png)
-3. Make a directory within `./savedata/` where data will be saved to.
-    * `mkdir ./savedata/[new directory]`
-    * `./savedata` is a link to a folder called `/data/hyms/`.
+3. Set the switching configuration.
+    * `./client-remote-config -i 192.168.137.110 -a RUN_SEQ -f ./switch_control.seq`
+4. Run the acquisition.
+    * `./client-remote-stream -i 192.168.137.110 -p 5002 -d [data folder]/`
+    * __The trailing `/` on `[data folder]` is necessary!__
 
-## Configure AMR
-1. In the AMR window, run the AMR server application in the background. This configures the FPGA and other hardware and begins streaming data that will be collected when the client application starts.
-    * `uv run hammr/masterserver.py &`
-    * The `&` at the end sends the command to the background.
-    * Press `ENTER` to return to the command prompt.
-    ![amr server](images/amr_server.png)
+## HyMS Setup
+Data must be saved in the HyMS project folder, but this is impractical (and a bug). This is handled via a symbolic link. To set this up, use a command like the following:
+* `ln -s $hymsdir/[linked folder for data] [real path for data]`
+* For example: `ln -s $hymsdir/BalloonData /data/hyms/BalloonData`
 
-**There should be no need to reconfigure either system past this point. The acquisition softwares below can be stopped and started as many times as desired until the system is reset.**
-
-## Start the acquisition softwares
-<!-- 1. In the AMR terminal, change the client configuration.
-    * `nano config/client.json`
-    * There is a default LN2 config called `ln2.json`.
-    * To save and quit nano, press `CTRL + X`, `Y`, and then `ENTER`.
-    ![nano](images/amr_nano.png) -->
-1. In the AMR terminal, run the AMR client application.
-    * `uv run hammr/masterclient.py`
-    * By default, this refers to `config/client.json`. A different client config file can be used by appended `-f [filename]` to the command.
-    * You can quickly define a config by appending the command with some combination of `-c [context] -n [number of files] -s [seconds per file]`.
-2. In the HMS terminal, run the HMS acquisition.
-    * `./client-remote-stream -i 192.168.137.110 -p 5002 -d savedata/[new directory]/` **The `/` at the end of the directory is required.**
-    * This will hold the HMS terminal and you can't pass more commands until the software is stopped.
-    ![running](images/amr_client_start.png)
+## FAQ
+* `$hymsdir` is a variable (set in `~/.bashrc`) that equals `/home/msl/asic-spectrometer-cdh/software/c/flight/client`.
 
 
-## To stop the softwares
-1. The AMR client will end when the config definition is complete.
-    - Alternatively, `CTRL + C` will cleanly stop acquisition.
-2. Kill the HMS acquisition with `CTRL + C`
-3. Bring the AMR server to the foreground with `fg` and use `CTRL + C` to kill the process.
-    - This isn't really necessary if you are planning to shut down.
-![kill](images/both_kill.png)
-
-## Transferring Data
+# Transferring Data
 Data is saved in the folder `/data/`. The simplest way to copy this to the operator laptop is via `rsync`. From a local terminal, i.e., one _not_ SSH'd to the instrument:
 `rsync -avP msl@169.254.51.248:/data/ [destination directory]`
 

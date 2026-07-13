@@ -3,7 +3,7 @@ This document concerns the files within the `config` folder. These files are use
 
 
 ## JSON File Structure
-A JSON file contains an _object_ of `key : value` pairs between braces `{}`, and is meant to be a format that is convenient for data interchange. Keys are represented by strings. Values can be many different data types, including other objects. See (json.org)[json.org] for more information. Note that strict JSON does __not__ allow for comments, but some parsers will interpret `//` as beginning a comment. Python's standard `json` package does not. Keys prefixed with an underscore are occasionally used to the same effect, but more detail is provided below.
+A JSON file contains an _object_ of `key : value` pairs between braces `{}`, and is meant to be a format that is convenient for data interchange. Keys are represented by strings. Values can be many different data types, including other objects. See (json.org)[json.org] for more information. Note that strict JSON does __not__ allow for comments, but some parsers  (not default Python) will interpret `//` as beginning a comment. Keys prefixed with an underscore may be used to represent comments instead.
 
 
 # system.json
@@ -65,8 +65,8 @@ The thermistors have a similar structure:
 ```
 The radiometer has characteristics for the microwave (MW), millimeter-wave (MMW), and sounding (SND) channels. The structure is the same for each.
 ```jsonc
+// radiometer
 "characteristics" : {
-    // radiometer
     "configuration" : {
         "ip"            : "string",
         "port"          : "int",
@@ -85,7 +85,7 @@ The radiometer has characteristics for the microwave (MW), millimeter-wave (MMW)
                 "value"   : "array[int]",  // Five control bits. See below.
                 "length"  : "int"  // The number of times to repeat this slot before moving to the next.
             },
-            "slot1" : {}  // Goes to slot9 for 10 total.
+            "slot1" : {...}  // Goes to slot9 for 10 total.
         }
     }
 }
