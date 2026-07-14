@@ -18,6 +18,7 @@ from twisted.protocols import basic
 
 from fpga import FPGA, FPGAConfig
 from filepaths import SERIAL_PORT, PATH_TO_CONFIGS
+from utils import ThermistorTelemetryHandler
 
 # Used by the radiometer and this seems like the simplest way to provide it
 FPGA_CONFIG = FPGAConfig.from_json(PATH_TO_CONFIGS / 'fpga.json')
@@ -140,6 +141,8 @@ class SerialTransportThermistors(SerialTransport):
         self.total_adc = len(self.addresses)
         self.network.log.info(f"Number of ADCs = {self.total_adc}")
 
+        self.handler = ThermistorTelemetryHandler()
+
 
     @staticmethod
     def poll_command(address: str):
@@ -167,7 +170,10 @@ class SerialTransportThermistors(SerialTransport):
 
     
     def get_data(self):
+        if self.data:  # bool(b'') is False
+            self.handler.add_and_process(self.data)
         self.visited_adcs = 0
+        self.data = b''
         cmd = self.poll_command(self.addresses[self.visited_adcs])
         self.sendLine(cmd)
 
@@ -178,14 +184,15 @@ class SerialTransportThermistors(SerialTransport):
     def lineReceived(self, line: bytes):
         self.visited_adcs += 1
         if self.visited_adcs < self.total_adc:
-            self.dataline += line[:-1]
+            self.data += line[:-1]  # strip default (cr)
             # "Next command gives some extratime to the SLAVE to release the comm. bus, further reducing this value could end with comm. problems... up to you!"
             time.sleep(0.2)
             cmd = self.poll_command(self.addresses[self.visited_adcs])
             self.sendLine(cmd)
 
         elif self.visited_adcs == self.total_adc:
-            self.dataline += line[:-1] + ':ENDS\n'.encode()  # strip default (cr)
+            self.data += line[:-1]  # strip default (cr)
+            self.dataline += self.data + ':ENDS\n'.encode()
             self.write_down(self.dataline)
 
 

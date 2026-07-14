@@ -83,3 +83,45 @@ def get_thermistor_str(filename='thermistors.csv') -> str:
                 s += f'thermistorName[{i}] = "{row[3].strip()}"\n'
             i += 1
     return s
+
+
+class ThermistorTelemetryHandler:
+    def __init__(self):
+        self.datasets = []
+        self.max_len = 20
+        self.number_of_thermistors = 40
+
+        self.hot_threshold = 0.14  # lower voltage is hotter  # 0.14 should be ~350 K
+
+
+    def add_and_process(self, data: bytes) -> None:
+        self.add_dataset(data)
+        averages = self.average_voltages()
+        self.process_voltages(averages)
+
+
+    def add_dataset(self, data: bytes) -> None:
+        self.datasets.append([float(x) for x in data.decode().split('+')[1:]])
+        if len(self.datasets) > self.max_len:
+            self.datasets.pop(0)
+
+    
+    def average_voltages(self) -> list[float]:
+        """Return a simple mean of each thermistor"""
+        result = []
+        for v in range(self.number_of_thermistors):
+            total = 0
+            for dataset in self.datasets:
+                total += dataset[v]
+            result.append(total / self.number_of_thermistors)
+        return result
+    
+
+    def process_voltages(self, voltages: list[float]) -> None:
+        for v in voltages:
+            if v < self.hot_threshold:
+                self.handle_hot()
+
+
+    def handle_hot(self) -> None:
+        print("Too hot!?")
