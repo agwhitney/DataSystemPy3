@@ -48,15 +48,16 @@ The location and name of the `DATA/` folder is defined in the `.env` file. Chang
 2. Configure the FPGA.
     * `./client-remote-config -i 192.168.137.110 -a RUN_SEQ -f ./init_18G_hyms_eng_mode.seq`
 3. Set the switching configuration.
-    * `./client-remote-config -i 192.168.137.110 -a RUN_SEQ -f ./switch_control.seq`
+    * `./client-remote-config -i 192.168.137.110 -a RUN_SEQ -f ./hyms_switch_control.seq`
 4. Run the acquisition.
     * `./client-remote-stream -i 192.168.137.110 -p 5002 -d [data folder]/`
-    * __The trailing `/` on `[data folder]` is necessary!__
+       * __The trailing `/` on `[data folder]` is necessary!__
+    * This will hold the foreground, so you may choose to add `&` at the end to send this to the background.
 
 ## HyMS Setup
 Data must be saved in the HyMS project folder, but this is impractical (and a bug). This is handled via a symbolic link. To set this up, use a command like the following:
 * `ln -s $hymsdir/[linked folder for data] [real path for data]`
-* For example: `ln -s $hymsdir/BalloonData /data/hyms/BalloonData`
+   * For example: `ln -s $hymsdir/BalloonData /data/hyms/BalloonData`
 
 ## FAQ
 * `$hymsdir` is a variable (set in `~/.bashrc`) that equals `/home/msl/asic-spectrometer-cdh/software/c/flight/client`.
