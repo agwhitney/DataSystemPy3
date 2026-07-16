@@ -57,7 +57,8 @@ The location and name of the `DATA/` folder is defined in the `.env` file. Chang
 ## HyMS Setup
 Data must be saved in the HyMS project folder, but this is impractical (and a bug). This is handled via a symbolic link. To set this up, use a command like the following:
 * `ln -s $hymsdir/[linked folder for data] [real path for data]`
-   * For example: `ln -s $hymsdir/BalloonData /data/hyms/BalloonData`
+   * For example: `ln -s $hymsdir/savedata /data/hyms/`
+Once you have that linked folder, you can work in it relative to `$hymsdir`. For example, you can make a new folder in `savedata/` and add it to `[data folder]` in step 4 above.
 
 ## FAQ
 * `$hymsdir` is a variable (set in `~/.bashrc`) that equals `/home/msl/asic-spectrometer-cdh/software/c/flight/client`.
