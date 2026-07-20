@@ -1,5 +1,5 @@
-from processL0b.utils import make_pickable
 from processL0b.reader import Reader
+from processL0b.plot_utils import make_pickable, toggle_lines_on_number_keys
 
 from tkinter import filedialog
 import matplotlib.pyplot as plt
@@ -9,10 +9,14 @@ def plot_thermistors():
     fig, ax = plt.subplots(layout='constrained')
     ax.set(title=reader, xlabel='Time (s)', ylabel='Temperature (K)')
     
+    x = reader.thermistors.data['Timestamp'] - reader.thermistors.data['Timestamp'][0]
     for i in range(40):
-        ax.plot(reader.thermistors.data['Timestamp'], reader.thermistors.data[i+1], label=f"index={i+1}")
+        y = reader.thermistors.data[i+1]
+        label = reader.thermistors.meta['Location'].iloc[i].decode()
+        ax.plot(x, reader.thermistors.data[i+1], label=f"{(i//8)+1}-{(i%8)+1} {label}")
     leg = fig.legend(loc='outside center right')
     make_pickable(fig, ax, leg)
+    toggle_lines_on_number_keys(fig, ax, leg)
     return fig, ax
 
 
