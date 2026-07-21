@@ -133,7 +133,7 @@ class ThermistorReader(L0aReader):
         return "Thermistors Parser"
 
 
-    def process_data(self, package_number, timestamp, data):
+    def process_data(self, package_number: int, timestamp: float, data: bytes) -> bytes:
             voltages = [float(i) for i in data.decode().split('+')[1:]]  # Data starts with '+' creating empty entry
 
             voltages += [0.001] * (self.THERMISTOR_TOTAL - len(voltages))  # Fills count to 40 if there are fewer connected/reading.
