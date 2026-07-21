@@ -8,6 +8,7 @@ from .thmreader import ThermistorReader
 from .utils import counts2volts
 
 
+
 class Reader:
     def __init__(self, filename: str):
         self.filename = Path(filename).name
