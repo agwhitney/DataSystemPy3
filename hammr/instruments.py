@@ -171,7 +171,8 @@ class SerialTransportThermistors(SerialTransport):
     
     def get_data(self):
         if self.data:  # bool(b'') is False
-            self.handler.add_and_process(self.data)
+            self.handler.check_data(self.data)
+
         self.visited_adcs = 0
         self.data = b''
         cmd = self.poll_command(self.addresses[self.visited_adcs])
