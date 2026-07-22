@@ -12,7 +12,7 @@ def plot_thermistors():
     x = reader.thermistors.data['Timestamp'] - reader.thermistors.data['Timestamp'][0]
     for i in range(40):
         y = reader.thermistors.data[i+1]
-        label = reader.thermistors.meta['Location'].iloc[i].decode()
+        label = reader.thermistors.meta['Location'].iloc[i]
         ax.plot(x, y, label=f"{(i//8)+1}-{(i%8)+1} {label}")
     leg = fig.legend(loc='outside center right')
     make_pickable(fig, ax, leg)
@@ -76,9 +76,9 @@ for filename in filenames:
     print(filename)
 
     reader = Reader(filename)
-    # plot_thermistors()
-    fig, ax = plot_channels()
-    ax.set(xlim=(2, 4), ylim=(10000, 14000))
+    plot_thermistors()
+    # fig, ax = plot_channels()
+    # ax.set(xlim=(2, 4), ylim=(10000, 14000))
     # plot_motor()
 
 plt.show()
