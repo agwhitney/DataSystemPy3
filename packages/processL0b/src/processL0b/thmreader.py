@@ -1,8 +1,8 @@
 import pandas as pd
+from .utils import voltage2kelvin
 
 from tables.table import Table as H5Table
 
-from .utils import voltage2kelvin
 
 
 class ThermistorReader:
@@ -18,8 +18,8 @@ class ThermistorReader:
             'Index': metatable.col('Index'),
             'Digitizer': metatable.col('Digitizer'),
             'Thermistor': metatable.col('Thermistor'),
-            'Location': metatable.col('Location'),
-            'Model': metatable.col('Model'),
+            'Location': metatable.col('Location').astype(str),
+            'Model': metatable.col('Model').astype(str),
         })
         self.data = self._get_temperatures()
 
@@ -28,10 +28,17 @@ class ThermistorReader:
         return "<L0b Reader object for Thermistor data>"
 
 
+    def to_excel(self, filename: str) -> None:
+        """Create an Excel file with the thermistor data and metadata."""
+        with pd.ExcelWriter(filename) as writer:
+            self.data.to_excel(writer, sheet_name='Temperatures')
+            self.meta.to_excel(writer, sheet_name='Metadata')
+
+
     def _get_temperatures(self) -> pd.DataFrame:
         data = {'Timestamp': self.voltages['Timestamp']}
         for _, row in self.meta.iterrows():
-            model = row['Model'].decode()
+            model = row['Model']
             data[row['Index']] = voltage2kelvin(model, self.voltages[row['Index']])
         return pd.DataFrame(data)
 

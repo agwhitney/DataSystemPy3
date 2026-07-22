@@ -9,7 +9,7 @@ from math import log, nan
 from tkinter import filedialog
 from pathlib import Path
 
-from processL0b.utils import make_pickable
+from processL0b.plot_utils import make_pickable
 
 
 class L0aReader:

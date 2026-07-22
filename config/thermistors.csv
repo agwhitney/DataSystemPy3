@@ -30,7 +30,7 @@ Index,Digitizer,Thermistor,Location,Model
 36,4,4,60 GHz plate,KS502J2
 37,4,5,60 GHz plate (beside heater),KS502J2
 38,4,6,60 GHz plate (LNA),KS502J2
-39,4,7,61 GHz plate (level shifter),KS502J2
+39,4,7,60 GHz plate (level shifter),KS502J2
 40,4,8,ABEB (external),KS502J2
 1,5,1,Optical bench MW-horn,KS502J2
 2,5,2,183 GHz (multiplier),KS502J2
