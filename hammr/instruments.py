@@ -137,6 +137,7 @@ class SerialTransportThermistors(SerialTransport):
         self.polling_interval : float = self.network.config['characteristics']['polling_interval']
         self.addresses        : list[str] = self.network.config['characteristics']['addresses']
 
+        self.data = b''
         self.visited_adcs = 0
         self.total_adc = len(self.addresses)
         self.network.log.info(f"Number of ADCs = {self.total_adc}")
@@ -171,7 +172,10 @@ class SerialTransportThermistors(SerialTransport):
     
     def get_data(self):
         if self.data:  # bool(b'') is False
-            self.handler.check_data(self.data)
+            try:
+                self.handler.check_data(self.data)
+            except:  # Sometimes the first bit is weird I think
+                pass
 
         self.visited_adcs = 0
         self.data = b''

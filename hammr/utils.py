@@ -88,12 +88,19 @@ def get_thermistor_str(filename='thermistors.csv') -> str:
 class ThermistorTelemetryHandler:
     def __init__(self):
         self.hot_threshold = 0.321  # lower voltage is hotter. 0.321 V = 50 *C
-
+        self.hot_thresholds = [
+            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
+            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
+            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
+            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
+            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
+        ]
 
     def check_data(self, data: bytes):
         voltages = [float(x) for x in data.decode().split('+')[1:]]
-        for i, v in enumerate(voltages):
-            if v >= self.hot_threshold:
+        print(len(voltages))
+        for i, (v, t) in enumerate(zip(voltages, self.hot_thresholds)):
+            if v <= t:
                 self.handle_hot(i, v)
 
 
