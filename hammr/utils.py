@@ -87,7 +87,7 @@ def get_thermistor_str(filename='thermistors.csv') -> str:
 
 class ThermistorTelemetryHandler:
     def __init__(self):
-        self.hot_threshold = 0.14  # lower voltage is hotter  # 0.14 should be ~350 K
+        self.hot_threshold = 0.321  # lower voltage is hotter. 0.321 V = 50 *C
 
 
     def check_data(self, data: bytes):
@@ -98,4 +98,4 @@ class ThermistorTelemetryHandler:
 
 
     def handle_hot(self, index: int, voltage: float) -> None:
-        print(f"Thermistor {(index+9)%40} is too hot at {voltage} volts.")
+        print(f"Thermistor {index+1} is too hot at {voltage} volts!")
