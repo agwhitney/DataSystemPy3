@@ -8,19 +8,22 @@ import matplotlib.pyplot as plt
 def plot_thermistors():
     fig, ax = plt.subplots(layout='constrained')
     ax.set(title=reader, xlabel='Time (s)', ylabel='Temperature (K)')
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted', (5, (10,3))]
     
     x = reader.thermistors.data['Timestamp'] - reader.thermistors.data['Timestamp'][0]
     for i in range(40):
-        y = reader.thermistors.data[i+1]
-        label = reader.thermistors.meta['Location'].iloc[i]
-        ax.plot(x, y, label=f"{(i//8)+1}-{(i%8)+1} {label}")
+        metarow = reader.thermistors.meta.loc[i]
+        y = reader.thermistors.data[metarow['Index']] - 273
+        label = f"{metarow['Digitizer']} - {metarow['Thermistor']} {metarow['Location']}"
+        ax.plot(x, y, linestyle=linestyles[i//8], label=label)
+        
     leg = fig.legend(loc='outside center right')
     make_pickable(fig, ax, leg)
     toggle_lines_on_number_keys(fig, ax, leg)
     ax.set(
         title=reader.filename,
         xlabel="Time Elapsed (s)",
-        ylabel="Temperature (K)",
+        ylabel="Temperature (*C)",
     )
     return fig, ax
 
@@ -76,7 +79,9 @@ for filename in filenames:
     print(filename)
 
     reader = Reader(filename)
-    plot_thermistors()
+    fig, ax = plot_thermistors()
+    ax.set(ylim=(30, 90))
+    ax.grid()
     # fig, ax = plot_channels()
     # ax.set(xlim=(2, 4), ylim=(10000, 14000))
     # plot_motor()

@@ -15,7 +15,7 @@ def voltage2kelvin(model: Literal['KS502J2', '44906'], voltage: float) -> float:
         case '44906':
             A = 1.28082086269172 * 10**-3
             B = 2.36865057309759 * 10**-4
-            C = 0.902634799967035 * 10**-8
+            C = 9.02634799967035 * 10**-8
             D = 0
     regulated_V = 1.12  # 1.06 in code metadata, 1.12 in L0b word doc
     resist = 5000 * (voltage / (regulated_V - voltage))
