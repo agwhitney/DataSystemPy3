@@ -51,7 +51,7 @@ There are 40 platinum resistance thermometers (PRTs) used to monitor HAMMR's har
 
 Temperatures are polled in software and returned as voltages. The conversion to Kelvin uses the Steinhart-Hart Equation (see [here](https://assets.omega.com/spec/44000_THERMIS_ELEMENTS.pdf)):
 $$
-T^{-1} = A + B\log(R) + C\log(R)^3 + D\log(R)^5
+T^{-1} = A + B\ln(R) + C\ln(R)^3 + D\ln(R)^5
 ,$$
 where
 $$
