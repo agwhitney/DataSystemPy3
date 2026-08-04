@@ -7,12 +7,10 @@ The MasterClient also handles metadata management and can launch a parser (creat
 """
 import argparse
 import json
-import os
 import time
 import shutil
 
 from dataclasses import dataclass
-from datetime import datetime
 from dotenv import load_dotenv
 from logging import Logger
 from pathlib import Path
@@ -20,13 +18,13 @@ from subprocess import Popen
 
 from filepaths import PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from motorcontrol import MotorControl
-from utils import create_log, write_to_log, create_timestamp
+from utils import create_log, write_to_log, create_timestamp, validate_variable
 
 from processL0a.create_l0b import create_l0b
 
 load_dotenv()
-CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
-DATA_PATH = Path( os.path.expandvars(os.getenv('DATA_PATH')) )
+CONFIGS_PATH = Path( validate_variable('CONFIGS_PATH') )
+DATA_PATH = Path( validate_variable('DATA_PATH') )
 
 
 @dataclass

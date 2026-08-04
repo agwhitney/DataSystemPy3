@@ -141,7 +141,7 @@ class SerialTransportThermistors(SerialTransport):
         self.total_adc = len(self.addresses)
         self.network.log.info(f"Number of ADCs = {self.total_adc}")
 
-        self.handler = ThermistorTelemetryHandler()
+        self.handler = ThermistorTelemetryHandler(self.network.log)
 
 
     @staticmethod
@@ -181,6 +181,7 @@ class SerialTransportThermistors(SerialTransport):
 
     def lineReceived(self, line: bytes):
         self.visited_adcs += 1
+        self.handler.check_data(self.visited_adcs, line)
         if self.visited_adcs < self.total_adc:
             self.data += line[:-1]  # strip default (cr)
             # "Next command gives some extratime to the SLAVE to release the comm. bus, further reducing this value could end with comm. problems... up to you!"
@@ -293,3 +294,4 @@ class Instrument():
                 self.serial_client = SerialTransportThermistors(network=self.factory)
             case 'GPS-IMU':
                 self.serial_client = SerialTransportGPSIMU(network=self.factory)
+

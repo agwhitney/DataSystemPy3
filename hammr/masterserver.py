@@ -9,12 +9,12 @@ from pathlib import Path
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
-from utils import create_log, write_to_log
+from utils import create_log, write_to_log, validate_variable
 from fpga import FPGA, FPGAConfig
 from filepaths import PATH_TO_CONFIGS, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 
 load_dotenv()
-CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
+CONFIGS_PATH = Path( validate_variable('CONFIGS_PATH') )
 
 
 

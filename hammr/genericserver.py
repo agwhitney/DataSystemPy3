@@ -1,17 +1,16 @@
 import argparse
 import json
-import os
 
 from dotenv import load_dotenv
 from pathlib import Path
 from twisted.internet import reactor
 from twisted.internet.serialport import SerialPort
 
-from utils import create_log
+from utils import create_log, validate_variable
 from instruments import Instrument
 
 load_dotenv()
-CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
+CONFIGS_PATH = Path( validate_variable('CONFIGS_PATH') )
 
 
 def main():

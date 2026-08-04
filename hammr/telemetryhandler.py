@@ -6,33 +6,38 @@ Include the handler into `instruments.SerialTransportThermistors`.
 
 
 from dotenv import load_dotenv
+from logging import Logger
 import os
 import paho.mqtt.client as mqtt
 import time
 
+from utils import validate_variable, write_to_log
+
 
 load_dotenv()
-BROKER = os.getenv("MQTT_BROKER", "")
-USERNAME = os.getenv("MQTT_USERNAME")
-PASSWORD = os.getenv("MQTT_PASSWORD")
-PORT = os.getenv("MQTT_PORT")
-CERTIFICATE = os.getenv("MQTT_CERT")
+BROKER = validate_variable("MQTT_BROKER")
+USERNAME = validate_variable("MQTT_USERNAME")
+PASSWORD = validate_variable("MQTT_PASSWORD")
+PORT = validate_variable("MQTT_PORT")
+CERTIFICATE = validate_variable("MQTT_CERT")
 topic = "python/mqtt"
 
 
 class ThermistorTelemetryHandler:
-    def __init__(self):
+    def __init__(self, log: Logger | None):
+        self.log = log
         self.hot_threshold = 0.321  # lower voltage is hotter. 0.321 V = 50 *C
-        self.hot_thresholds = [
-            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
-            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
-            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
-            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
-            0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,
-        ]
+        self.hot_thresholds = {
+            1: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
+            2: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
+            3: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
+            4: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
+            5: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
+        }
 
 
     def connect_mqtt(self, broker, port, username, password):
+        # TODO is it preferable to connect once and only publish when necessary? Or do both when required?
         def on_connect(client, userdata, flags, reason_code, properties):
             if reason_code == 0:
                 print("Connected")
@@ -51,11 +56,11 @@ class ThermistorTelemetryHandler:
         return client
 
 
-    def publish(self, client, topic):
+    def publish_test(self, client, topic):
         msg_count = 1
         while True:
             time.sleep(1)
-            msg = f"messages: {msg_count}"
+            msg = f"test from csu - messages: {msg_count}"
             result = client.publish(topic, msg)
             status = result[0]
             if status == 0:
@@ -70,6 +75,36 @@ class ThermistorTelemetryHandler:
     def run(self):
         cl = self.connect_mqtt(BROKER, PORT, USERNAME, PASSWORD)
         cl.loop_start()
-        self.publish(cl, 'python/mqtt')
+        self.publish_mqtt(cl, topic)
+        cl.loop_stop()
+        cl.disconnect()
+
+
+    def check_data(self, digitizer: int, data: bytes) -> None:
+        """Takes data line by line (i.e., per digitizer) and checks against thresholds.
+        Recall that digitizers are recorded as 5-1-2-3-4. Digitizer is sent as 1--5.
+        """
+        row = (digitizer + 5) % 5
+        voltages = data.decode().split('+')[1:]
+        thresholds = self.hot_thresholds[row]
+
+        for i, voltage, threshold in enumerate(zip(voltages, thresholds)):
+            if voltage < threshold:
+                index = (row - 1) * 8 + i
+                self.high_temp_alert(index)
+
+
+    def high_temp_alert(self, index: int):
+        msg = f"Temperature at index {index} is above 50 *C"
+        write_to_log(self.log, msg, 'warn')
+
+        cl = self.connect_mqtt(BROKER, PORT, USERNAME, PASSWORD)
+        cl.loop_start()
+        result = cl.publish(topic, msg)
+        status = result[0]
+        if status == 0:
+            print(f"Sent `{msg}` to topic `{topic}`")
+        else:
+            print(f"Failed to send message to topic `{topic}`")
         cl.loop_stop()
         cl.disconnect()

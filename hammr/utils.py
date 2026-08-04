@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from pathlib import Path
+from typing import Literal
 
 from filepaths import PATH_TO_CONFIGS
 
@@ -47,7 +48,7 @@ def create_log(filename="newlog.log", title="ACQSystem", timestamp=True, level=l
 def write_to_log(
     log: logging.Logger | None,
     message: str,
-    level: str = 'info'
+    level: Literal['debug', 'info', 'warn', 'error'] = 'info'
 ) -> None:
     if not log:
         print(f"(NO LOG) {level}: {message}")
@@ -84,3 +85,9 @@ def get_thermistor_str(filename='thermistors.csv') -> str:
             i += 1
     return s
 
+
+def validate_variable(key: str) -> str:
+    value = os.path.expandvars(os.getenv(key))
+    if not value:
+        raise RuntimeError(f"{value} is not defined in the environment.")
+    return value
