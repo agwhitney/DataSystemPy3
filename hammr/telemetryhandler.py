@@ -5,11 +5,11 @@ Include the handler into `instruments.SerialTransportThermistors`.
 """
 
 
-from dotenv import load_dotenv
-from logging import Logger
-import os
 import paho.mqtt.client as mqtt
 import time
+
+from dotenv import load_dotenv
+from logging import Logger
 
 from utils import validate_variable, write_to_log
 
@@ -36,7 +36,7 @@ class ThermistorTelemetryHandler:
         }
 
 
-    def connect_mqtt(self, broker, port, username, password):
+    def connect_mqtt(self, broker, port, username, password, certificate):
         # TODO is it preferable to connect once and only publish when necessary? Or do both when required?
         def on_connect(client, userdata, flags, reason_code, properties):
             if reason_code == 0:
@@ -50,9 +50,9 @@ class ThermistorTelemetryHandler:
         )
 
         client.on_connect = on_connect
-        client.username_pw_set(USERNAME, PASSWORD)
-        client.tls_set(CERTIFICATE)
-        client.connect(BROKER, int(PORT))
+        client.username_pw_set(username, password)
+        client.tls_set(certificate)
+        client.connect(broker, port)
         return client
 
 
@@ -73,9 +73,9 @@ class ThermistorTelemetryHandler:
 
 
     def run(self):
-        cl = self.connect_mqtt(BROKER, PORT, USERNAME, PASSWORD)
+        cl = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
         cl.loop_start()
-        self.publish_mqtt(cl, topic)
+        self.publish_test(cl, topic)
         cl.loop_stop()
         cl.disconnect()
 
@@ -85,10 +85,10 @@ class ThermistorTelemetryHandler:
         Recall that digitizers are recorded as 5-1-2-3-4. Digitizer is sent as 1--5.
         """
         row = (digitizer + 5) % 5
-        voltages = data.decode().split('+')[1:]
+        voltages = [float(v) for v in data.decode().split('+')[1:]]
         thresholds = self.hot_thresholds[row]
 
-        for i, voltage, threshold in enumerate(zip(voltages, thresholds)):
+        for i, (voltage, threshold) in enumerate(zip(voltages, thresholds)):
             if voltage < threshold:
                 index = (row - 1) * 8 + i
                 self.high_temp_alert(index)
@@ -98,7 +98,7 @@ class ThermistorTelemetryHandler:
         msg = f"Temperature at index {index} is above 50 *C"
         write_to_log(self.log, msg, 'warn')
 
-        cl = self.connect_mqtt(BROKER, PORT, USERNAME, PASSWORD)
+        cl = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
         cl.loop_start()
         result = cl.publish(topic, msg)
         status = result[0]
