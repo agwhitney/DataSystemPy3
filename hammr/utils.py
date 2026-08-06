@@ -4,8 +4,10 @@ Generic  methods.
 import csv
 import logging
 import os
+
 from datetime import datetime
 from dotenv import load_dotenv
+from numpy import log
 from pathlib import Path
 from typing import Literal
 
@@ -91,3 +93,22 @@ def validate_variable(key: str) -> str:
     if not value:
         raise RuntimeError(f"{value} is not defined in the environment.")
     return value
+
+
+def voltage2kelvin(model: Literal['KS502J2', '44906'], voltage: float) -> float:
+    """Copied from processL0b for use with telemetry handler"""
+    match model:
+        case 'KS502J2':
+            A = 1.29337828808 * 10**-3
+            B = 2.34313147501 * 10**-4
+            C = 1.09840791237 * 10**-7
+            D = -6.51108048031 * 10**-11
+        case '44906':
+            A = 1.28082086269172 * 10**-3
+            B = 2.36865057309759 * 10**-4
+            C = 9.02634799967035 * 10**-8
+            D = 0
+    regulated_V = 1.12  # 1.06 in code metadata, 1.12 in L0b word doc
+    resist = 5000 * (voltage / (regulated_V - voltage))
+    temp = 1 / (A + B*log(resist) + C*log(resist)**3 + D*log(resist)**5)
+    return temp

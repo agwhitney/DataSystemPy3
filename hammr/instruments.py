@@ -138,6 +138,7 @@ class SerialTransportThermistors(SerialTransport):
         self.addresses        : list[str] = self.network.config['characteristics']['addresses']
 
         self.visited_adcs = 0
+        self.data = b''
         self.total_adc = len(self.addresses)
         self.network.log.info(f"Number of ADCs = {self.total_adc}")
 
@@ -156,6 +157,10 @@ class SerialTransportThermistors(SerialTransport):
 
 
     def connectionMade(self):
+        """On connection, starts acquiring data.
+        It's unclear to me why a line is explicitly sent before calling start_acquisition(),
+        but this is probably why the saved data is offset.
+        """
         super().connectionMade()
         self.network.log.info("Starting communcation with ADCs")
         cmd = self.poll_command(self.addresses[0])
@@ -176,12 +181,11 @@ class SerialTransportThermistors(SerialTransport):
         self.sendLine(cmd)
 
         self.iteration += 1
-        self.dataline = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode()
+        self.data_header = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode()
 
 
     def lineReceived(self, line: bytes):
         self.visited_adcs += 1
-        self.handler.check_data(self.visited_adcs, line)
         if self.visited_adcs < self.total_adc:
             self.data += line[:-1]  # strip default (cr)
             # "Next command gives some extratime to the SLAVE to release the comm. bus, further reducing this value could end with comm. problems... up to you!"
@@ -191,8 +195,9 @@ class SerialTransportThermistors(SerialTransport):
 
         elif self.visited_adcs == self.total_adc:
             self.data += line[:-1]  # strip default (cr)
-            self.dataline += self.data + ':ENDS\n'.encode()
-            self.write_down(self.dataline)
+            datagram = self.data_header + self.data + ':ENDS\n'.encode()
+            self.write_down(datagram)
+            self.handler.handle_data(self.data)
 
 
 class SerialTransportGPSIMU(SerialTransport):

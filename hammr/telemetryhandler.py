@@ -3,15 +3,15 @@
 Data begins streaming when the AMR server script is run. This handler should be included then as a monitor for whenever the system is running.
 Include the handler into `instruments.SerialTransportThermistors`.
 """
-
-
+import json
 import paho.mqtt.client as mqtt
 import time
 
 from dotenv import load_dotenv
 from logging import Logger
+from typing import Literal
 
-from utils import validate_variable, write_to_log
+from utils import validate_variable, voltage2kelvin, write_to_log
 
 
 load_dotenv()
@@ -26,14 +26,27 @@ topic = "python/mqtt"
 class ThermistorTelemetryHandler:
     def __init__(self, log: Logger | None):
         self.log = log
-        self.hot_threshold = 0.321  # lower voltage is hotter. 0.321 V = 50 *C
-        self.hot_thresholds = {
-            1: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
-            2: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
-            3: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
-            4: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
-            5: [0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321],
-        }
+        self.client = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
+
+        # lower voltage is hotter. 0.321 V = 50 *C
+        # self.hot_thresholds = [
+        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 5
+        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 1
+        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 2
+        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 3
+        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 4
+        # ]
+        self.hot_thresholds = [
+            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 5
+            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 1
+            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 2
+            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 3
+            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 4
+        ]
+
+
+    def __del__(self):
+        self.client.disconnect()
 
 
     def connect_mqtt(self, broker, port, username, password, certificate):
@@ -80,31 +93,31 @@ class ThermistorTelemetryHandler:
         cl.disconnect()
 
 
-    def check_data(self, digitizer: int, data: bytes) -> None:
-        """Takes data line by line (i.e., per digitizer) and checks against thresholds.
-        Recall that digitizers are recorded as 5-1-2-3-4. Digitizer is sent as 1--5.
-        """
-        row = (digitizer + 5) % 5
+    def handle_data(self, data: bytes) -> None:
         voltages = [float(v) for v in data.decode().split('+')[1:]]
-        thresholds = self.hot_thresholds[row]
+        flag: Literal['green', 'red'] = "green"
+        flagged_indices = []
 
-        for i, (voltage, threshold) in enumerate(zip(voltages, thresholds)):
-            if voltage < threshold:
-                index = (row - 1) * 8 + i
-                self.high_temp_alert(index)
+        for i, (voltage, threshold) in enumerate(zip(voltages, self.hot_thresholds)):
+            index = i + 1
+            temp = voltage2kelvin(model='KS50J2', voltage=voltage)
+            if temp > threshold:
+                flagged_indices.append(index)
+                flag = "red"
+        
+        data = json.dumps({'temps': voltages, 'flag': flag, 'flagged_indices': flagged_indices})
+        if flag == "red":
+            write_to_log(self.log, f"Thermistors {flagged_indices} have been flagged as too hot.", level='warn')
+        self.publish_mqtt(data)
 
 
-    def high_temp_alert(self, index: int):
-        msg = f"Temperature at index {index} is above 50 *C"
-        write_to_log(self.log, msg, 'warn')
 
-        cl = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
-        cl.loop_start()
-        result = cl.publish(topic, msg)
+    def publish_mqtt(self, data: str) -> None:
+        self.client.loop_start()
+        result = self.client.publish(topic, data)
         status = result[0]
         if status == 0:
-            print(f"Sent `{msg}` to topic `{topic}`")
+            print(f"Sent `{data}` to topic `{topic}`")
         else:
             print(f"Failed to send message to topic `{topic}`")
-        cl.loop_stop()
-        cl.disconnect()
+        self.client.loop_stop()
