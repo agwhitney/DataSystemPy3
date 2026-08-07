@@ -1,5 +1,6 @@
-"""
-Starts the motor and waits for input before stopping it.
+"""Starts the motor and waits for input before stopping it.
+
+Can't go in scripts because the project imports aren't set up for it.
 """
 import json
 

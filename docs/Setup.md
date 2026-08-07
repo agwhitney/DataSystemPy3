@@ -6,7 +6,7 @@ It should be assumed that the instrument will not have internet access. To apply
 ![Repository diagram](images/repo_structure.png)
 
 ## Initial Setup
-### Step 1: Initialize Instrument Computer
+### Step 1: Initialize the Instrument Computer
 This step should already be done.
 
 On the instrument computer in the home directory `~`:
@@ -21,12 +21,16 @@ This step should already be done on the HP Laptop, but you may also want to do i
 On the controlling computer in the existing project folder (presumably cloned from GitHub), simply add the remote reference: 
 * `git remote add instrument ssh://msl@169.254.51.248/home/msl/DataSystemPy3.git`
 
-To push changes to the instrument computer:
+
+### Step 3: Update Code on the Instrument Computer
+To push changes from the controlling computer to the instrument computer:
 * `git push instrument main`
-  * This updates the "main" branch on the instrument computer.
 
+This updates the "main" branch on the instrument's bare repo. Next, on the instrument computer, pull the changes from the bare repo to the project. In the project folder, run
+* `git fetch` to update the project's reference to the bare repo.
+* `git pull` to update the main branch.
 
-
+If you have changed code on the instrument, use `git restore <file>` to discard the changes to that file. Do not push upstream from the instrument.
 # Hardware
 
 ## USB Connections
@@ -57,7 +61,7 @@ where
 $$
 R = 5000 * (V / (V_r - V))
 $$
-and the regulated voltage $V_r$ is either 1.06 or 1.12 (I've seen conflicting info and use 1.12). The coefficents $A - D$ are determined by calibration and depend on the PRT model. We use the following values:
+and the regulated voltage $V_r$ is either 1.06 or 1.12 (I've seen conflicting info and use 1.12). The coefficents $A - D$ are determined by calibration and depend on the PRT model. We use the following values (the results are nearly equal):
 |   | Model 44906 GSFC         | Model KS502J2              |
 |---|--------------------------|----------------------------|
 | A | 1.29337828808 x 10^-3    | 1.28082086269172 x 10^-3   |

@@ -13,7 +13,7 @@ In a separate shell, running `masterclient.py` will create client subprocesses b
 
 
 ### Running the code
-This project uses `uv` as its project manager. After downloading the project, use `uv sync` to build the virtual environment and `uv run script.py` to run python scripts using that environment.
+This project uses `uv` as its project manager. After downloading the project, use `uv sync` to build the virtual environment and `uv run script.py` to run python scripts using that environment. Building the environment requires internet access.
 
 To start the servers, use the command `uv run hammr/masterserver.py &`. This script will run until it is forcibly stopped using `CTRL + C` or closing the terminal, and must be running for the clients to receive data. The `&` at the end puts this process in the background so that you don't need to open another terminal. It can be brought to the foreground with `fg`.
 
