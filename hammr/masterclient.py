@@ -16,7 +16,7 @@ from logging import Logger
 from pathlib import Path
 from subprocess import Popen
 
-from filepaths import PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_PYTHON
+from filepaths import Pathlike, PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from motorcontrol import MotorControl
 from utils import create_log, write_to_log, create_timestamp, validate_variable
 
@@ -60,7 +60,7 @@ class ClientConfig:
     context        : str = "context"
 
     @classmethod
-    def from_json(cls, filename) -> 'ClientConfig':
+    def from_json(cls, filename: Pathlike) -> 'ClientConfig':
         with open(filename, 'r') as f:
             config = json.load(f)
         parsing_config = ParsingConfig.from_dict(config['parsing'])

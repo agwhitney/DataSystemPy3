@@ -1,7 +1,7 @@
 """Handler for thermistor data for the purposes of monitoring system temps.
 
 Data begins streaming when the AMR server script is run. This handler should be included then as a monitor for whenever the system is running.
-Include the handler into `instruments.SerialTransportThermistors`.
+Include the handler into `instruments.SerialTransportThermistors`. There, data is broadcast to the AMR client and then handled here.
 """
 import json
 import paho.mqtt.client as mqtt
@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from logging import Logger
 from typing import Literal
 
+from filepaths import Pathlike, PATH_TO_CONFIGS
 from utils import validate_variable, voltage2kelvin, write_to_log
 
 
@@ -47,6 +48,12 @@ class ThermistorTelemetryHandler:
 
     def __del__(self):
         self.client.disconnect()
+
+
+    def load_thresholds_from_file(self, filepath: Pathlike | None = None) -> list[float]:
+        if not filepath:
+            filepath = PATH_TO_CONFIGS / 'thermistors.csv'
+        ...
 
 
     def connect_mqtt(self, broker, port, username, password, certificate):
@@ -100,16 +107,16 @@ class ThermistorTelemetryHandler:
 
         for i, (voltage, threshold) in enumerate(zip(voltages, self.hot_thresholds)):
             index = i + 1
-            temp = voltage2kelvin(model='KS50J2', voltage=voltage)
+            # timeit suggests that this conversion is two orders of magnitude slower (2.3 s vs 0.3 s in 10k loops)
+            temp = voltage2kelvin(model='KS502J2', voltage=voltage) - 273.15
             if temp > threshold:
                 flagged_indices.append(index)
                 flag = "red"
-        
-        data = json.dumps({'temps': voltages, 'flag': flag, 'flagged_indices': flagged_indices})
+
+        telemetry = json.dumps({'temps': voltages, 'flag': flag, 'flagged_indices': flagged_indices})
         if flag == "red":
             write_to_log(self.log, f"Thermistors {flagged_indices} have been flagged as too hot.", level='warn')
-        self.publish_mqtt(data)
-
+        self.publish_mqtt(telemetry)
 
 
     def publish_mqtt(self, data: str) -> None:

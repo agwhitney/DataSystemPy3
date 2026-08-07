@@ -18,16 +18,12 @@ LOGS_PATH = Path( os.path.expandvars(os.getenv('LOGS_PATH')) )
 
 
 def create_timestamp() -> str:
-    """
-    Returns a formatted timestamp string.
-    """
+    """Returns a formatted timestamp string."""
     return datetime.now().strftime('%y_%m_%d__%H_%M_%S__')
 
 
 def create_log(filename="newlog.log", title="ACQSystem", timestamp=True, level=logging.INFO) -> logging.Logger:
-    """
-    Called in various places to make a log with consistent formatting.
-    """
+    """Called in various places to make a log with consistent formatting."""
     if not filename.endswith('.log'):
         filename += '.log'
 
@@ -52,6 +48,7 @@ def write_to_log(
     message: str,
     level: Literal['debug', 'info', 'warn', 'error'] = 'info'
 ) -> None:
+    """Write to a given log or, if log is None, print the message."""
     if not log:
         print(f"(NO LOG) {level}: {message}")
         return
@@ -61,14 +58,13 @@ def write_to_log(
         case 'info':
             log.info(message)
         case 'warn':
-            log.warn(message)
+            log.warning(message)
         case 'error':
             log.error(message)
 
 
 def get_thermistor_str(filename='thermistors.csv') -> str:
-    """
-    Called by L0b processor to create a long metadata string of thermistor labels.
+    """Called by L0b processor to create a long metadata string of thermistor labels.
     Assumes a line of headers followed by lines of data. Ignores lines starting with `#`.
     """
     s = ''

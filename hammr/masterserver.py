@@ -1,7 +1,6 @@
 import argparse
 import json
 import logging
-import os
 
 from datetime import datetime
 from dotenv import load_dotenv

@@ -1,9 +1,13 @@
-""" Replaces GeneralPaths.py and uses Path objects.
-The savedata structure is moved to .env and included in scripts using python-dotenv.
-This makes it a little cleaner, I think, and more intuitive to the end-user.
+"""Replaces GeneralPaths.py and uses Path objects.
+
+Previously this also included the save data structure, but this has been moved to .env and loaded
+using python-dotenv. What remains are static values related to the project itself and not its output.
 """
+import os
 import platform
 from pathlib import Path
+
+type Pathlike = str | os.PathLike
 
 
 # TODO These really belong elsewhere, like system_config (except system_config is more like instruments_config)

@@ -12,6 +12,7 @@ import json
 import socket
 import struct
 
+from filepaths import Pathlike
 from utils import write_to_log
 
 
@@ -40,7 +41,7 @@ class FPGAConfig:
     snd : FPGAChannelConfig
 
     @classmethod
-    def from_json(cls, filename) -> 'FPGAConfig':
+    def from_json(cls, filename: Pathlike) -> 'FPGAConfig':
         with open(filename, 'r') as f:
             config = json.load(f)
         amr : dict = config['amr']
