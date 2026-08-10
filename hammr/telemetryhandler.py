@@ -21,7 +21,7 @@ USERNAME = validate_variable("MQTT_USERNAME")
 PASSWORD = validate_variable("MQTT_PASSWORD")
 PORT = validate_variable("MQTT_PORT")
 CERTIFICATE = validate_variable("MQTT_CERT")
-topic = "python/mqtt"
+topic = "csu/PayloadTemperatures"
 
 
 class ThermistorTelemetryHandler:
@@ -30,29 +30,14 @@ class ThermistorTelemetryHandler:
         self.client = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
 
         # lower voltage is hotter. 0.321 V = 50 *C
-        # self.hot_thresholds = [
-        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 5
-        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 1
-        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 2
-        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 3
-        #     0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321, 0.321,  # Digitizer 4
-        # ]
-        self.hot_thresholds = [
-            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 5
-            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 1
-            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 2
-            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 3
-            50, 50, 50, 50, 50, 50, 50, 50,  # Digitizer 4
-        ]
+        self.hot_thresholds = self.load_thresholds_from_file(PATH_TO_CONFIGS / 'thermistors.csv')
 
 
     def __del__(self):
         self.client.disconnect()
 
 
-    def load_thresholds_from_file(self, filepath: Pathlike | None = None) -> list[float]:
-        if not filepath:
-            filepath = PATH_TO_CONFIGS / 'thermistors.csv'
+    def load_thresholds_from_file(self, filepath: Pathlike) -> list[float]:
         ...
 
 
@@ -92,7 +77,7 @@ class ThermistorTelemetryHandler:
                 break
 
 
-    def run(self):
+    def run_test(self):
         cl = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
         cl.loop_start()
         self.publish_test(cl, topic)
@@ -128,3 +113,8 @@ class ThermistorTelemetryHandler:
         else:
             print(f"Failed to send message to topic `{topic}`")
         self.client.loop_stop()
+
+
+if __name__ == '__main__':
+    h = ThermistorTelemetryHandler(None)
+    h.run_test()
