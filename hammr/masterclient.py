@@ -350,7 +350,7 @@ def main():
     log = create_log(
         filename = "Client_ACQSystem.log",
         title = "ACQSystem Client - DAIS 2.0",
-        timestamp = True,
+        prepend_timestamp = True,
     )
 
     # Create a command-line parser

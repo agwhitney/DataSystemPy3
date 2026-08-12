@@ -34,7 +34,7 @@ def main():
 
     # Create another log. I think each instrument will get its own per the timestamp.
     log = create_log(
-        timestamp = True,
+        prepend_timestamp = True,
         filename = f"{config['name']}_Server_ACQSystem.log",
         title = f"{config['name']}_ACQSystem SubServer - DAIS 2.0",
     )

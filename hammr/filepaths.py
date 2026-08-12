@@ -1,7 +1,7 @@
-"""Replaces GeneralPaths.py and uses Path objects.
+"""Defines Path objects within the project, and the Pathlike type annotation.
 
-Previously this also included the save data structure, but this has been moved to .env and loaded
-using python-dotenv. What remains are static values related to the project itself and not its output.
+Previously this also included paths for directing output, but this has been moved to .env and loaded
+using python-dotenv.
 """
 import os
 import platform
@@ -25,6 +25,7 @@ PATH_TO_GENSERVER = code / 'genericserver.py'
 PATH_TO_GENCLIENT = code / 'genericclient.py'
 
 # Handle differences between Linux and Windows systems
+# MacOS is called 'Darwin', but should function the same as Linux.
 # SERIAL_PORT is used to refer to the correct item in system config.
 system = platform.system()
 if system == 'Windows':

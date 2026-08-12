@@ -93,7 +93,6 @@ class TCPHandler(protocol.Protocol):
                 self.transport.write("[MasterServer] Stopping motor".encode())
 
 
-
     def connectionLost(self, reason=None) -> None:
         write_to_log(self.factory.log, f"MasterServer: Connection lost from {self.transport.getPeer()} - Reason: {reason}", level='error')
         write_to_log(self.factory.log, f"MasterServer: Removing TCP client {self} at {self.transport.getPeer()}", level='info')
@@ -178,7 +177,7 @@ if __name__ == '__main__':
         log = create_log(
             title = 'ACQSystem Server - DAIS 2.0',
             filename = "Server_ACQSystem_debug.log",
-            timestamp = True,
+            prepend_timestamp = True,
             level = logging.DEBUG
         )
         write_to_log(log, f"Logging at DEBUG with system config '{args.debug}'", level='debug')
@@ -193,7 +192,7 @@ if __name__ == '__main__':
         log = create_log(
             title = "ACQSystem Server - DAIS 2.0",
             filename = "Server_ACQSystem.log",
-            timestamp = True,
+            prepend_timestamp = True,
         )
 
     # Create an FPGA config object

@@ -1,14 +1,10 @@
-"""
-Data receiver for the serial instruments. The client is basically an open file with a lifetime set at creation,
-and will collect data until that lifetime ends and the file and connection closes.
+"""Run as a subprocess in masterclient.py for each instrument, i.e., the radiometer, digitizers, and GPS-IMU.
 
-AGW Here, like in the servers, I've moved some pseudo-globals to the factory.
-Also, like the servers, it would probably be more correct to have one reactor rather than micromanage three.
-I've added a couple of file.close() to the failed-connection cases.
+Loads the instrument config, creates a log, and runs a twisted client that collects data from the corresponding
+instrument server subprocess that is similarly created in masterserver.py.
 """
 import argparse
 import json
-import os
 
 from datetime import datetime
 from dotenv import load_dotenv
@@ -20,17 +16,28 @@ from twisted.internet.error import ReactorNotRunning
 from twisted.protocols import basic
 from time import time
 
-from utils import create_log
+from utils import create_log, validate_variable
 
 load_dotenv()
-DATA_PATH = Path( os.path.expandvars(os.getenv('DATA_PATH')) )
+DATA_PATH = Path( validate_variable('DATA_PATH') )
+
+
 
 
 def format_timestamp(ts: float, fmt="%H:%M:%S") -> str:
+    """Format printed times as human-readable 'hh:mm:ss'"""
     return datetime.fromtimestamp(ts).strftime(fmt)
     
 
 class TCPClient(basic.Int32StringReceiver):
+    """Data receiver for a serial instrument, i.e., the radiometer, digitizers, and GPS-IMU.
+
+    This client is basically an open file with a lifetime set at creation, and will collect data until that
+    lifetime ends and the file and connection closes. The timing is only checked when data is successfully received.
+
+    Attributes:
+        `end_time`: Time after which the client will stop its reactor loop.
+    """
     def connectionMade(self):
         self.factory.log.info("genericclient.TCPClient.connectionMade Connected to TCP")
         start_time = time()  # seconds since epoch
@@ -85,10 +92,6 @@ class TCPClientFactory(protocol.ClientFactory):
 
 
 def main():
-    """
-    Like genericserver.py, this is called as a subprocess in masterclient.py for each instrument.
-    Py2 had this as a class, but it functions more as a script. 
-    """
     # Parse commandline arguments
     parser = argparse.ArgumentParser(description="Client for the Data Acquisition and Instrument control System (DAIS Client)")
     parser.add_argument('instance_config', help="Client file (.json) to work with")
@@ -105,7 +108,7 @@ def main():
 
     # Create another log analogous to the one in genericserver.py
     log = create_log(
-        timestamp = True,
+        prepend_timestamp = True,
         filename = f"{name}_Client_ACQSystem.log",
         title = f"{name}_ACQSystem SubClient - DAIS 2.0",
     )
