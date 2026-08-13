@@ -16,7 +16,7 @@ from logging import Logger
 from pathlib import Path
 from subprocess import Popen
 
-from filepaths import Pathlike, PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_PYTHON
+from filepaths import Pathlike, PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_TELCLIENT, PATH_TO_PYTHON
 from motorcontrol import MotorControl
 from utils import create_log, write_to_log, create_timestamp, validate_variable
 
@@ -83,6 +83,7 @@ class MasterClient:
     def __init__(self, config: ClientConfig, log: Logger):
         self.log = log
         self.config = config
+        self.telemetry_process = self.start_telemetry_client()
 
         # Additional variables
         self.delay = 3  # "System will wait {self.delay} before starting"
@@ -200,8 +201,12 @@ class MasterClient:
             processes.append(p)
             write_to_log(self.log, f"{self.active_filenames[i]} communication started, Pid: {p.pid}")
             print('--------------------')
-        
         return processes
+
+
+    def start_telemetry_client(self) -> Popen:
+        p = Popen([PATH_TO_PYTHON, PATH_TO_TELCLIENT], shell=False)
+        return p
 
 
     def acquire(self) -> None:
@@ -345,6 +350,9 @@ class MasterClient:
 
         # Launch the parser, if configured to do so
         self.sendto_parser(parse_filename)
+
+        # Kill telemetry process
+        self.telemetry_process.kill()
 
 
 

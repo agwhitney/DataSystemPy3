@@ -23,6 +23,7 @@ PATH_TO_CONFIGS = project / 'config'
 # genericserver and genericclient filepaths
 PATH_TO_GENSERVER = code / 'genericserver.py'
 PATH_TO_GENCLIENT = code / 'genericclient.py'
+PATH_TO_TELCLIENT = code / 'telemetryclient.py'
 
 # Handle differences between Linux and Windows systems
 # MacOS is called 'Darwin', but should function the same as Linux.

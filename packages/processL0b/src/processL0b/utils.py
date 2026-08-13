@@ -6,7 +6,7 @@ from typing import Literal
 
 
 def voltage2kelvin(model: Literal['KS502J2', '44906'], voltage: float) -> float:
-    match model:
+    match model.strip():
         case 'KS502J2':
             A = 1.29337828808 * 10**-3
             B = 2.34313147501 * 10**-4

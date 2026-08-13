@@ -32,11 +32,11 @@ Index,Digitizer,Thermistor,Location,Model,HotThreshold
 38,4,6,60 GHz plate LNA,KS502J2,50
 39,4,7,60 GHz plate DRO,KS502J2,50
 40,4,8,ABEB (external),KS502J2,50
-1,5,1,Optical bench MW-horn, KS502J2,50
-2,5,2,183 GHz (multiplier), KS502J2,50
-3,5,3,Down-conversion (power amplifier back), KS502J2,50
-4,5,4,IF back-end plate, KS502J2,60
-5,5,5,PMCC 1, KS502J2,100
-6,5,6,PMCC 2, KS502J2,100
-7,5,7,PMCC 3, KS502J2,100
-8,5,8,HyMS FPGA, KS502J2,100
+1,5,1,Optical bench MW-horn,KS502J2,50
+2,5,2,183 GHz (multiplier),KS502J2,50
+3,5,3,Down-conversion (power amplifier back),KS502J2,50
+4,5,4,IF back-end plate,KS502J2,60
+5,5,5,PMCC 1,KS502J2,100
+6,5,6,PMCC 2,KS502J2,100
+7,5,7,PMCC 3,KS502J2,100
+8,5,8,HyMS FPGA,KS502J2,100

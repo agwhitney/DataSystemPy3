@@ -14,7 +14,6 @@ from twisted.protocols import basic
 
 from fpga import FPGA, FPGAConfig
 from filepaths import SERIAL_PORT, PATH_TO_CONFIGS
-from telemetryhandler import ThermistorTelemetryHandler
 
 # Used by the radiometer and this seems like the simplest way to provide it
 FPGA_CONFIG = FPGAConfig.from_json(PATH_TO_CONFIGS / 'fpga.json')
@@ -151,8 +150,6 @@ class SerialTransportThermistors(SerialTransport):
         self.total_adc = len(self.addresses)
         self.network.log.info(f"Number of ADCs = {self.total_adc}")
 
-        self.handler = ThermistorTelemetryHandler(self.network.log)
-
 
     @staticmethod
     def poll_command(address: str) -> bytes:
@@ -212,8 +209,6 @@ class SerialTransportThermistors(SerialTransport):
             self.data += line[:-1]  # strip default (cr)
             datagram = self.data_header + self.data + ':ENDS\n'.encode()
             self.write_down(datagram)
-            self.handler.handle_data(self.data)
-
 
 
 class SerialTransportGPSIMU(SerialTransport):

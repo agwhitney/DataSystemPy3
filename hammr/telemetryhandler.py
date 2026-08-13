@@ -6,7 +6,6 @@ Include the handler into `instruments.SerialTransportThermistors`. There, data i
 import csv
 import json
 import paho.mqtt.client as mqtt
-import time
 
 from dotenv import load_dotenv
 from logging import Logger
@@ -26,8 +25,7 @@ topic = "csu/PayloadTemperatures"
 
 
 class ThermistorTelemetryHandler:
-    def __init__(self, log: Logger | None):
-        self.log = log
+    def __init__(self):
         self.client = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
 
         # lower voltage is hotter. 0.321 V = 50 *C
@@ -65,7 +63,7 @@ class ThermistorTelemetryHandler:
         return hot_thresholds
 
 
-    def handle_data(self, data: bytes) -> None:
+    def handle_data(self, datagram: bytes, log: Logger | None) -> None:
         """Checks thermistor data and publishes it via MQTT.
 
         Data are compared as *C to `self.hot_thresholds`. Values outside of thresholds will trigger a flag.
@@ -75,30 +73,29 @@ class ThermistorTelemetryHandler:
             `data`: Combined voltage readings from all thermistors, formatted as floats separated by '+'.
                 The acquisition code returns digitizers in the order 5-1-2-3-4 (likely, unintentionally).
         """
-        try:
-            voltages = [float(v) for v in data.decode().split('+')[1:]]
-            temperatures = [round(voltage2kelvin(model='KS502J2', voltage=v) - 273.15, 2) for v in voltages]
-            flag: Literal['green', 'yellow', 'red'] = 'green'
-            flagged_thermistors = []
+        s = datagram.decode()
+        data_start = s.find('DATA:') + 5
+        data_end = s.find(':ENDS')
+        data = s[data_start : data_end]
+        voltages = [float(v) for v in data.split('+')[1:]]
+        temperatures = [round(voltage2kelvin(model='KS502J2', voltage=v) - 273.15, 2) for v in voltages]
+        flag: Literal['green', 'yellow', 'red'] = 'green'
+        flagged_thermistors = []
 
-            for temp, values in zip(temperatures, self.hot_thresholds):
-                index, threshold = values
-                if temp > threshold:
-                    flagged_thermistors.append((index, temp))
-                    flag = 'red'
+        for temp, values in zip(temperatures, self.hot_thresholds):
+            index, threshold = values
+            if temp > threshold:
+                flagged_thermistors.append((index, temp))
+                flag = 'red'
 
-            telemetry = json.dumps({
-                'voltages': voltages,
-                'temperatures': temperatures,
-                'flag': flag,
-                'flagged_thermistors': flagged_thermistors,
-            })
-            if flag == "red":
-                write_to_log(self.log, f"Thermistors flagged (index, temp): {flagged_thermistors}", level='warn')
-            self.publish_mqtt(telemetry)
-
-        except Exception as e:
-            write_to_log(self.log, str(e), 'warn')
+        telemetry = json.dumps({
+            'voltages': voltages,
+            'temperatures': temperatures,
+            'flag': flag,
+            'flagged_thermistors': flagged_thermistors,
+        })
+        write_to_log(log, telemetry, 'info')
+        self.publish_mqtt(telemetry)
 
 
     def connect_mqtt(self, broker, port, username, password, certificate):
@@ -121,23 +118,6 @@ class ThermistorTelemetryHandler:
         return client
 
 
-    def publish_test(self, client, topic):
-        msg_count = 1
-        while True:
-            time.sleep(1)
-            msg = f"test from csu - messages: {msg_count}"
-            result = client.publish(topic, msg)
-            status = result[0]
-            if status == 0:
-                print(f"Sent `{msg}` to topic `{topic}`")
-            else:
-                print(f"Failed to send message to topic `{topic}`")
-            msg_count += 1
-            if msg_count > 5:
-                break
-
-
-    def run_test(self):
         cl = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
         cl.loop_start()
         self.publish_test(cl, topic)
@@ -154,8 +134,3 @@ class ThermistorTelemetryHandler:
         else:
             print(f"Failed to send message to topic `{topic}`")
         self.client.loop_stop()
-
-
-if __name__ == '__main__':
-    t = ThermistorTelemetryHandler(None)
-    print(t.hot_thresholds)
