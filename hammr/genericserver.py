@@ -1,3 +1,7 @@
+"""Run as a subprocess in masterserver.py for each instrument, i.e., the radiometer, digitizers, and GPS-IMU.
+
+What's created and run is an instrument object, which is a twisted server protocol with a serial connection. 
+"""
 import argparse
 import json
 

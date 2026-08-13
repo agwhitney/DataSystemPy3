@@ -1,12 +1,10 @@
+"""Communicates motor commands (start, stop) to the master server."""
+
 import json
 import socket
 
 
 class MotorControl():
-    """
-    Called in MasterClient. Makes connection to running MasterServer,
-    which handles the actual connection to the FPGA.
-    """
     def __init__(self, ip: str, port: int) -> None:
         self.tcp_address = (ip, port)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -27,10 +25,9 @@ class MotorControl():
 
     
     def send_getsysconfig(self) -> dict:
+        """Gets the system.json config from the master server."""
         self.client_socket.send("SYST".encode())
         syst = self.client_socket.recv(5000)
-        print()
-        # py2 loads config as a class variable, I've opted to return it
         config = json.loads(syst.decode())
         return config
 

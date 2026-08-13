@@ -205,9 +205,11 @@ class MasterClient:
 
 
     def acquire(self) -> None:
-        """
-        Performs data acquisition by creating subprocess clients for each instrument. These connect to the subservers
-        created in masterserver.py and handle data according to the protocols in genericclient.py
+        """Main data acquisition loop.
+
+        Performs data acquisition by creating subprocess clients for each instrument. These connect to and receive data
+        from the subservers created in masterserver.py, and handle that data according to the protocols in genericclient.py
+        and instruments.py
         """
         continuous_mode = True if self.config.num_files == -1 else False
         write_to_log(self.log, f"For configuration using {self.config.server_ip} @ port {self.config.server_port}")
@@ -269,6 +271,7 @@ class MasterClient:
         }
 
         # Loop for as many files are required per the client config file
+        # Setting number of files to -1 will run continuously until the user interrupts with CTRL+C
         n = 0
         while True:
             n += 1
@@ -313,7 +316,7 @@ class MasterClient:
                 write_to_log(self.log, f"Closing file {n}. Total elapsed time: {time.time() - t1:.1f} seconds")
                 self.timestamp = create_timestamp()
 
-            # This intercepts CTRL+C. It also intercepts SIGKILL sent from systemd, but it may be more correct to use a different signal handler pattern.
+            # This intercepts CTRL+C. It also successfully intercepts SIGKILL sent from systemd, but that might just be good fortune.
             except KeyboardInterrupt:
                 write_to_log(self.log, "Received a keyboard interrupt: escaping the acquisition process.")
                 write_to_log(self.log, f"Total elapsed time: {time.time() - t1:.1f} seconds")
