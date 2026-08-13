@@ -1,7 +1,13 @@
+"""First script of two to run for HAMMR-HD data acquisition.
+
+Creates and runs a TCP server that itself starts subprocess-servers for each instrument. Once these are running,
+data is streaming. The second script, masterclient.py, creates the clients that record the data. The main server
+also communicates with the FPGA for motor control.
+"""
+
 import argparse
 import json
 import logging
-import os
 
 from datetime import datetime
 from dotenv import load_dotenv
@@ -9,12 +15,13 @@ from pathlib import Path
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
-from utils import create_log, write_to_log
+from utils import create_log, create_timestamp, write_to_log, validate_variable
 from fpga import FPGA, FPGAConfig
 from filepaths import PATH_TO_CONFIGS, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 
 load_dotenv()
-CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
+CONFIGS_PATH = Path( validate_variable('CONFIGS_PATH') )
+
 
 
 
@@ -27,12 +34,12 @@ class TCPHandler(protocol.Protocol):
     def connectionMade(self):
         write_to_log(self.factory.log, f"MasterServer: New TCP client received from {self.transport.getPeer()} - Instance: {self}")
         self.factory.clients.append(self)
-        # Moved from init
         for i, p in enumerate(self.factory.processes):
             write_to_log(self.factory.log, f"Process number {i} ID {p.pid}", level='debug')
 
 
     def dataReceived(self, data: bytes) -> None:
+        """The only functional commands appear to be SYST, MSTART, and MSTOP. Each is relevant to the motor control."""
         write_to_log(self.factory.log, f"MasterServer: Command received from {self.transport.getPeer()} - {data}")
         match data.decode():
             case 'STOP':  # AGW py2 labels this is not working, with lots of !
@@ -94,19 +101,16 @@ class TCPHandler(protocol.Protocol):
                 self.transport.write("[MasterServer] Stopping motor".encode())
 
 
-
     def connectionLost(self, reason=None) -> None:
         write_to_log(self.factory.log, f"MasterServer: Connection lost from {self.transport.getPeer()} - Reason: {reason}", level='error')
         write_to_log(self.factory.log, f"MasterServer: Removing TCP client {self} at {self.transport.getPeer()}", level='info')
         self.factory.clients.remove(self)
 
 
-
 class TCPHandlerFactory(protocol.Factory):
     protocol = TCPHandler
 
     def __init__(self, log: logging.Logger, processes: list, motor_instr: dict, system_config: dict, fpga_config: FPGAConfig):
-        # AGW py2 set protocol params here, but this is the preferred way.
         self.clients = []
         self.log = log
         self.processes = processes
@@ -116,13 +120,11 @@ class TCPHandlerFactory(protocol.Factory):
 
 
 class MasterServer():
-    def __init__(
-            self,
-            system_config: dict,
-            fpga_config: FPGAConfig,
-            log: logging.Logger | None
-    ):
-        """This loads the config and starts servers for each instrument as subprocesses."""
+    """Starts the main and sub-servers.
+    
+    This is functionally a script.
+    """
+    def __init__(self, system_config: dict, fpga_config: FPGAConfig, log: logging.Logger | None):
         self.log = log
         self.config = system_config
 
@@ -144,7 +146,16 @@ class MasterServer():
         write_to_log(self.log, "Starting online control server -- FYI: the script won't come back while it's running!")
         factory = TCPHandlerFactory(log=self.log, processes=processes, motor_instr=self.config['radiometer'], system_config=self.config, fpga_config=fpga_config)
         reactor.listenTCP(CONTROL_SERVER_PORT, factory)
-        reactor.run()
+
+        try:
+            reactor.run()
+        # This intercepts CTRL+C. It also successfully intercepts SIGKILL sent from systemd, but that might just be good fortune.
+        except KeyboardInterrupt:
+            write_to_log(self.log, "Received a keyboard interrupt: escaping the acquisition process.")
+            for p in processes:
+                print(f"Sending SIGKILL to {p.pid}")
+                p.kill()
+        write_to_log(self.log, f"{create_timestamp()} masterserver.py successfully stopped!", 'info')
 
     
     def start_servers(self) -> list[Popen]:
@@ -164,6 +175,7 @@ class MasterServer():
 
 
 if __name__ == '__main__':
+    # Command line arguments for simpler configuration.
     parser = argparse.ArgumentParser(
         prog = "uv run hammr/masterserver.py &",
         description = "& runs the server in the background. -d provides a chosen system config for debugging."
@@ -171,6 +183,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--debug', type=str, help="Provide a filename to load from config/")
     args = parser.parse_args()
 
+    # Explicitly loading a config file assumes debugging.
     if args.debug:
         config_filepath = PATH_TO_CONFIGS / args.debug
         with open(config_filepath, 'r') as f:
@@ -179,13 +192,13 @@ if __name__ == '__main__':
         log = create_log(
             title = 'ACQSystem Server - DAIS 2.0',
             filename = "Server_ACQSystem_debug.log",
-            timestamp = True,
+            prepend_timestamp = True,
             level = logging.DEBUG
         )
         write_to_log(log, f"Logging at DEBUG with system config '{args.debug}'", level='debug')
 
+    # Default config file is config/system.json
     else:
-        # Read the system config file
         config_filepath = PATH_TO_CONFIGS / 'system.json'
         with open(config_filepath, 'r') as f:
             system_config = json.load(f)
@@ -194,7 +207,7 @@ if __name__ == '__main__':
         log = create_log(
             title = "ACQSystem Server - DAIS 2.0",
             filename = "Server_ACQSystem.log",
-            timestamp = True,
+            prepend_timestamp = True,
         )
 
     # Create an FPGA config object

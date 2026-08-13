@@ -7,26 +7,24 @@ The MasterClient also handles metadata management and can launch a parser (creat
 """
 import argparse
 import json
-import os
 import time
 import shutil
 
 from dataclasses import dataclass
-from datetime import datetime
 from dotenv import load_dotenv
 from logging import Logger
 from pathlib import Path
 from subprocess import Popen
 
-from filepaths import PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_PYTHON
+from filepaths import Pathlike, PATH_TO_CONFIGS, PATH_TO_GENCLIENT, PATH_TO_PYTHON
 from motorcontrol import MotorControl
-from utils import create_log, write_to_log, create_timestamp
+from utils import create_log, write_to_log, create_timestamp, validate_variable
 
 from processL0a.create_l0b import create_l0b
 
 load_dotenv()
-CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
-DATA_PATH = Path( os.path.expandvars(os.getenv('DATA_PATH')) )
+CONFIGS_PATH = Path( validate_variable('CONFIGS_PATH') )
+DATA_PATH = Path( validate_variable('DATA_PATH') )
 
 
 @dataclass
@@ -62,7 +60,7 @@ class ClientConfig:
     context        : str = "context"
 
     @classmethod
-    def from_json(cls, filename) -> 'ClientConfig':
+    def from_json(cls, filename: Pathlike) -> 'ClientConfig':
         with open(filename, 'r') as f:
             config = json.load(f)
         parsing_config = ParsingConfig.from_dict(config['parsing'])
@@ -207,9 +205,11 @@ class MasterClient:
 
 
     def acquire(self) -> None:
-        """
-        Performs data acquisition by creating subprocess clients for each instrument. These connect to the subservers
-        created in masterserver.py and handle data according to the protocols in genericclient.py
+        """Main data acquisition loop.
+
+        Performs data acquisition by creating subprocess clients for each instrument. These connect to and receive data
+        from the subservers created in masterserver.py, and handle that data according to the protocols in genericclient.py
+        and instruments.py
         """
         continuous_mode = True if self.config.num_files == -1 else False
         write_to_log(self.log, f"For configuration using {self.config.server_ip} @ port {self.config.server_port}")
@@ -271,6 +271,7 @@ class MasterClient:
         }
 
         # Loop for as many files are required per the client config file
+        # Setting number of files to -1 will run continuously until the user interrupts with CTRL+C
         n = 0
         while True:
             n += 1
@@ -315,7 +316,7 @@ class MasterClient:
                 write_to_log(self.log, f"Closing file {n}. Total elapsed time: {time.time() - t1:.1f} seconds")
                 self.timestamp = create_timestamp()
 
-            # This intercepts CTRL+C. It also intercepts SIGKILL sent from systemd, but it may be more correct to use a different signal handler pattern.
+            # This intercepts CTRL+C. It also successfully intercepts SIGKILL sent from systemd, but that might just be good fortune.
             except KeyboardInterrupt:
                 write_to_log(self.log, "Received a keyboard interrupt: escaping the acquisition process.")
                 write_to_log(self.log, f"Total elapsed time: {time.time() - t1:.1f} seconds")
@@ -352,7 +353,7 @@ def main():
     log = create_log(
         filename = "Client_ACQSystem.log",
         title = "ACQSystem Client - DAIS 2.0",
-        timestamp = True,
+        prepend_timestamp = True,
     )
 
     # Create a command-line parser

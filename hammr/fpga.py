@@ -12,7 +12,10 @@ import json
 import socket
 import struct
 
+from filepaths import Pathlike
 from utils import write_to_log
+
+
 
 
 @dataclass
@@ -25,7 +28,7 @@ class FPGAChannelConfig:
 
 @dataclass
 class FPGAConfig:
-    """Configuration values used by the FPGA"""
+    """Configuration values used by the FPGA. See config/fpga.json."""
     activate   : int
     deactivate : int
     reset      : int
@@ -40,7 +43,7 @@ class FPGAConfig:
     snd : FPGAChannelConfig
 
     @classmethod
-    def from_json(cls, filename) -> 'FPGAConfig':
+    def from_json(cls, filename: Pathlike) -> 'FPGAConfig':
         with open(filename, 'r') as f:
             config = json.load(f)
         amr : dict = config['amr']
@@ -70,7 +73,14 @@ class FPGAConfig:
 
 
 
+
 class FPGA:
+    """Interacts with the FPGA.
+
+    There is a lot here and, generally speaking, a lot of the details are more specific to the FPGA than to this code.
+    Full documentation would likely be more lengthy than useful. Just recognize that this class controls the motor
+    and configures the radiometer using sequences as defined in config/system.json.
+    """
     inst = {'ac': 0, 'fr': 1, 'lt': 12}
     inst_base = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]  # py2 Inst_S#, with # = 0--9.
     
@@ -233,22 +243,3 @@ class FPGA:
 
     def start_acquisition(self) -> None:
         self.send_and_recv(0, 0, 1)
-
-
-
-if __name__ == '__main__':
-    from filepaths import PATH_TO_CONFIGS
-
-    fpgaconfig = FPGAConfig.from_json(PATH_TO_CONFIGS / 'fpga.json')
-    
-    with open(PATH_TO_CONFIGS / 'system.json') as f:
-        data = json.load(f)['radiometer']
-
-    f = FPGA(data, fpgaconfig, None)
-    print('starting motor')
-    f.motor_control(f.fpgaconfig.motorstart)
-    input("press enter to send STOP")
-    f.motor_control(f.fpgaconfig.motorstop)
-
-    f.disconnect_tcp()
-

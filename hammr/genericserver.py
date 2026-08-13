@@ -1,17 +1,20 @@
+"""Run as a subprocess in masterserver.py for each instrument, i.e., the radiometer, digitizers, and GPS-IMU.
+
+What's created and run is an instrument object, which is a twisted server protocol with a serial connection. 
+"""
 import argparse
 import json
-import os
 
 from dotenv import load_dotenv
 from pathlib import Path
 from twisted.internet import reactor
 from twisted.internet.serialport import SerialPort
 
-from utils import create_log
+from utils import create_log, validate_variable
 from instruments import Instrument
 
 load_dotenv()
-CONFIGS_PATH = Path( os.path.expandvars(os.getenv('CONFIGS_PATH')) )
+CONFIGS_PATH = Path( validate_variable('CONFIGS_PATH') )
 
 
 def main():
@@ -35,7 +38,7 @@ def main():
 
     # Create another log. I think each instrument will get its own per the timestamp.
     log = create_log(
-        timestamp = True,
+        prepend_timestamp = True,
         filename = f"{config['name']}_Server_ACQSystem.log",
         title = f"{config['name']}_ACQSystem SubServer - DAIS 2.0",
     )

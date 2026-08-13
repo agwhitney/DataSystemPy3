@@ -13,6 +13,7 @@ dependencies = [
     "processL0a",
     "processL0b",
     "python-dotenv>=1.2.2",
+    "paho-mqtt>=2.1.0",
 ]
 
 [tool.uv.sources]

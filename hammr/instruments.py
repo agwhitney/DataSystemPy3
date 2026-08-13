@@ -1,13 +1,9 @@
-"""
-Server protocol for the instruments, and the serial protocols for their transports. The serial protocols do the heavy lifting.
-Once the connection is made, data is being emitted. This is received and recorded by the respective instrument client in `genericclient.py`.
+"""Server and serial protocols for the radiometer, digitizers, and GPS-IMU.
 
-https://stackoverflow.com/questions/4715340/python-twisted-receive-command-from-tcp-write-to-serial-device-return-response
-I'm making a change - the serial client will have a reference to the TCP network, so it has access to the client list and log
-This is in place of having the client list as a global. Fear is that the follow-up to the solution was used in py2, meaning this doesn't work.
+Once the serial connection is established, data is streaming to the instrument server. The `write_down()` method in
+`SerialTransport` broadcasts this data to connected clients, which simply record it as is.
 
-I've removed the two Connection classes. It seems the plan was to introduce compatability for different types of connections,
-but the final version only implements Serial. Literally all it does is load instr_config['serial_connection'] to a class.
+The `Instrument` class is exported and creates the protocol and serial connection.
 """
 import struct
 import time
@@ -18,9 +14,12 @@ from twisted.protocols import basic
 
 from fpga import FPGA, FPGAConfig
 from filepaths import SERIAL_PORT, PATH_TO_CONFIGS
+from telemetryhandler import ThermistorTelemetryHandler
 
 # Used by the radiometer and this seems like the simplest way to provide it
 FPGA_CONFIG = FPGAConfig.from_json(PATH_TO_CONFIGS / 'fpga.json')
+
+
 
 
 class TCPInstrument(protocol.Protocol):
@@ -74,6 +73,12 @@ class TCPInstrumentFactory(protocol.Factory):
 
 
 class SerialTransport(basic.LineReceiver):
+    """Parent class for instrument-specific serial connections.
+
+    Each instrument has `lineReceived()` or `dataReceived()` methods that handle data (the former will trim delimeters).
+    The output is formatted as a line containing the iteration number, a character representing the instrument,
+    a timestamp, and the data.
+    """
     iteration = 0
     
     def __init__(self, network: TCPInstrumentFactory):
@@ -105,15 +110,14 @@ class SerialTransport(basic.LineReceiver):
 
 
     def write_down(self, data):
-        """
-        Writes via transport to clients in network.
-        """
+        """Writes via transport to clients in network."""
         # print(data)  # Use for debugging, to check that data is streaming.
         self.network.notifyAll(data)
 
 
 class SerialTransportRadiometer(SerialTransport):
     def __init__(self, network):
+        """Configures the FPGA."""
         super().__init__(network)
 
         fpga = FPGA(systemconfig=self.network.config, fpgaconfig=FPGA_CONFIG, log=self.network.log)
@@ -130,6 +134,12 @@ class SerialTransportRadiometer(SerialTransport):
 
 
 class SerialTransportThermistors(SerialTransport):
+    """Serial transport for digitizers (thermistors).
+
+    Works by calling a function at the polling interval defined, which triggers a loop that polls each digitizer.
+    I get the impression that there's some timing weirdness here, and that it subtly shows up in post-processing.
+    Also contains a telemetry handler object, called after data is broadcast with `write_down()`.
+    """
     def __init__(self, network):
         super().__init__(network)
         self.delimiter        : bytes = self.network.config['characteristics']['delimiter'].encode()
@@ -137,15 +147,19 @@ class SerialTransportThermistors(SerialTransport):
         self.addresses        : list[str] = self.network.config['characteristics']['addresses']
 
         self.visited_adcs = 0
+        self.data = b''
         self.total_adc = len(self.addresses)
         self.network.log.info(f"Number of ADCs = {self.total_adc}")
 
+        self.handler = ThermistorTelemetryHandler(self.network.log)
+
 
     @staticmethod
-    def poll_command(address: str):
-        """
+    def poll_command(address: str) -> bytes:
+        """Serial command to get thermistor temperatures from digitizers.
+
         Polling command to thermistor to read analog input, formatted as `#AA(cr)`
-        where AA is the address (00 to FF) and (cr) is 0x0D == 13 -> chr(13) == \r.
+        where AA is the address (00 to FF) and (cr) is 0x0D == 13 -> chr(13) == \\r.
         Returns voltage data from all channels on address in format `>(data)(cr)`.
         Data looks like +1.2345 for each channel.
         """
@@ -153,6 +167,11 @@ class SerialTransportThermistors(SerialTransport):
 
 
     def connectionMade(self):
+        """Starts the polling loop.
+
+        It's unclear to me why a line is explicitly sent before calling start_acquisition(),
+        but this is probably why the saved data is offset.
+        """
         super().connectionMade()
         self.network.log.info("Starting communcation with ADCs")
         cmd = self.poll_command(self.addresses[0])
@@ -161,32 +180,40 @@ class SerialTransportThermistors(SerialTransport):
 
     
     def start_acquisition(self):
-        """Sets a loop to call self.get_data() at the polling interval (seconds)"""
+        """Sets a loop to call `get_data()` at the polling interval (seconds)"""
         self.lc = task.LoopingCall(self.get_data)
         self.lc.start(self.polling_interval)
 
     
     def get_data(self):
+        """Starts the polling. `lineReceived()` completes it."""
         self.visited_adcs = 0
+        self.data = b''
         cmd = self.poll_command(self.addresses[self.visited_adcs])
         self.sendLine(cmd)
 
         self.iteration += 1
-        self.dataline = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode()
+        self.data_header = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode()
 
 
     def lineReceived(self, line: bytes):
         self.visited_adcs += 1
+
+        # If there are still digitizers, this will poll the next one and effectively re-run this method.
         if self.visited_adcs < self.total_adc:
-            self.dataline += line[:-1]
-            # "Next command gives some extratime to the SLAVE to release the comm. bus, further reducing this value could end with comm. problems... up to you!"
+            self.data += line[:-1]  # strip default (cr)
+            # "Next command gives some extratime to the SLAVE to release the comm. bus, further reducing this value could end with comm. problems... up to you! -XB(?)"
             time.sleep(0.2)
             cmd = self.poll_command(self.addresses[self.visited_adcs])
             self.sendLine(cmd)
 
+        # If at the last digitizer, package and send the data to client and telemetry handler.
         elif self.visited_adcs == self.total_adc:
-            self.dataline += line[:-1] + ':ENDS\n'.encode()  # strip default (cr)
-            self.write_down(self.dataline)
+            self.data += line[:-1]  # strip default (cr)
+            datagram = self.data_header + self.data + ':ENDS\n'.encode()
+            self.write_down(datagram)
+            self.handler.handle_data(self.data)
+
 
 
 class SerialTransportGPSIMU(SerialTransport):
@@ -204,9 +231,7 @@ class SerialTransportGPSIMU(SerialTransport):
 
     @staticmethod
     def crc16(buffer: bytes):
-        """
-        Calculates Cyclic Redundancy Check (CRC) value for a given command of size `buffer`. Manual pg. 7.
-        """
+        """Calculates Cyclic Redundancy Check (CRC) value for a given command of size `buffer`. Manual pg. 7."""
         poly = 0x8408
         crc = 0
         i = 0
@@ -225,10 +250,10 @@ class SerialTransportGPSIMU(SerialTransport):
 
 
     def connectionMade(self):
-        """
-        Sends a configuration command to the GPS.
+        """Sends a configuration command to the GPS.
+
         This configuration sets continuous mode at the given update frequency (pgs. 7, 26).
-        I'm fairly convinced that this doesn't get acknowledged...
+        I'm not certain that the command actually gets acknowledged.
         Time and position data is provided by connected GPS satellite.
         """
         super().connectionMade()
@@ -254,9 +279,6 @@ class SerialTransportGPSIMU(SerialTransport):
 
 
     def lineReceived(self, data: bytes):
-        """
-        LineReceiver.dataReceived() trims the delimiter and calls LineReceiver.lineReceived().
-        """
         self.iteration += 1
         line = f"PAC{self.letterid}:{self.iteration}TIME:{time.time()}DATA:".encode() + data + ":ENDS\n".encode()
         self.write_down(line)
@@ -265,11 +287,7 @@ class SerialTransportGPSIMU(SerialTransport):
 
 
 class Instrument():
-    """
-    Holds details to create an instrument server listening on a TCP port via a serial connection.
-    Protocols are above, and connection details are provided in the passed config (forked from the server config).
-    This is applied in genericserver.py.
-    """
+    """Combines a server protocol and serial transport protocol."""
     def __init__(self, config: dict, log: Logger):
         # Store connection details from config
         self.connection = config['serial_connection']
@@ -288,3 +306,4 @@ class Instrument():
                 self.serial_client = SerialTransportThermistors(network=self.factory)
             case 'GPS-IMU':
                 self.serial_client = SerialTransportGPSIMU(network=self.factory)
+
