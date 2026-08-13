@@ -75,21 +75,30 @@ class ThermistorTelemetryHandler:
             `data`: Combined voltage readings from all thermistors, formatted as floats separated by '+'.
                 The acquisition code returns digitizers in the order 5-1-2-3-4 (likely, unintentionally).
         """
-        voltages = [float(v) for v in data.decode().split('+')[1:]]
-        flag: Literal['green', 'yellow', 'red'] = 'green'
-        flagged_indices = []
+        try:
+            voltages = [float(v) for v in data.decode().split('+')[1:]]
+            temperatures = [round(voltage2kelvin(model='KS502J2', voltage=v) - 273.15, 2) for v in voltages]
+            flag: Literal['green', 'yellow', 'red'] = 'green'
+            flagged_thermistors = []
 
-        for voltage, values in zip(voltages, self.hot_thresholds):
-            index, threshold = values
-            temp = voltage2kelvin(model='KS502J2', voltage=voltage) - 273.15
-            if temp > threshold:
-                flagged_indices.append(index)
-                flag = 'red'
+            for temp, values in zip(temperatures, self.hot_thresholds):
+                index, threshold = values
+                if temp > threshold:
+                    flagged_thermistors.append((index, temp))
+                    flag = 'red'
 
-        telemetry = json.dumps({'temps': voltages, 'flag': flag, 'flagged_indices': flagged_indices})
-        if flag == "red":
-            write_to_log(self.log, f"Thermistors {flagged_indices} have been flagged as too hot.", level='warn')
-        self.publish_mqtt(telemetry)
+            telemetry = json.dumps({
+                'voltages': voltages,
+                'temperatures': temperatures,
+                'flag': flag,
+                'flagged_thermistors': flagged_thermistors,
+            })
+            if flag == "red":
+                write_to_log(self.log, f"Thermistors flagged (index, temp): {flagged_thermistors}", level='warn')
+            self.publish_mqtt(telemetry)
+
+        except Exception as e:
+            write_to_log(self.log, str(e), 'warn')
 
 
     def connect_mqtt(self, broker, port, username, password, certificate):

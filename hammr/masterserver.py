@@ -15,7 +15,7 @@ from pathlib import Path
 from twisted.internet import protocol, reactor
 from subprocess import Popen
 
-from utils import create_log, write_to_log, validate_variable
+from utils import create_log, create_timestamp, write_to_log, validate_variable
 from fpga import FPGA, FPGAConfig
 from filepaths import PATH_TO_CONFIGS, PATH_TO_GENSERVER, CONTROL_SERVER_PORT, PATH_TO_PYTHON
 
@@ -146,7 +146,16 @@ class MasterServer():
         write_to_log(self.log, "Starting online control server -- FYI: the script won't come back while it's running!")
         factory = TCPHandlerFactory(log=self.log, processes=processes, motor_instr=self.config['radiometer'], system_config=self.config, fpga_config=fpga_config)
         reactor.listenTCP(CONTROL_SERVER_PORT, factory)
-        reactor.run()
+
+        try:
+            reactor.run()
+        # This intercepts CTRL+C. It also successfully intercepts SIGKILL sent from systemd, but that might just be good fortune.
+        except KeyboardInterrupt:
+            write_to_log(self.log, "Received a keyboard interrupt: escaping the acquisition process.")
+            for p in processes:
+                print(f"Sending SIGKILL to {p.pid}")
+                p.kill()
+        write_to_log(self.log, f"{create_timestamp()} masterserver.py successfully stopped!", 'info')
 
     
     def start_servers(self) -> list[Popen]:

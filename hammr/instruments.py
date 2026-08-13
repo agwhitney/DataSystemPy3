@@ -215,6 +215,7 @@ class SerialTransportThermistors(SerialTransport):
             self.handler.handle_data(self.data)
 
 
+
 class SerialTransportGPSIMU(SerialTransport):
     """
     Serial connection details for the IG-500N unit are contained in the "IG Devices Serial Protocol Specifications" manual by SBG.

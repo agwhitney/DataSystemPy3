@@ -1,4 +1,4 @@
-# Map of HAMMR-HD thermistors updated 18 December 2025
+# Map of HAMMR-HD thermistors updated 13 August 2026
 Index,Digitizer,Thermistor,Location,Model,HotThreshold
 9,1,1,Cal. target (upper left),KS502J2,50
 10,1,2,Cal. target (lower left),KS502J2,50
@@ -16,15 +16,15 @@ Index,Digitizer,Thermistor,Location,Model,HotThreshold
 22,2,6,AMR-NS-34 H,44906,50
 23,2,7,AMR-NS-18/24 V,44906,50
 24,2,8,AMR-NS-34 V,44906,50
-25,3,1,5 V DC-to-DC converter,KS502J2,50
-26,3,2,On-board computer,KS502J2,50
-27,3,3,Paraboloid (backside bottom),KS502J2,50
-28,3,4,Paraboloid (backside middle),KS502J2,50
-29,3,5,Paraboloid (backside top),KS502J2,50
-30,3,6,Motor controller,KS502J2,50
-31,3,7,12 V DC-to-DC converter,KS502J2,50
-32,3,8,Motor,KS502J2,50
-33,4,1,Digital back-end plate,KS502J2,50
+25,3,1,5 V DC-to-DC converter,KS502J2,80
+26,3,2,On-board computer,KS502J2,70
+27,3,3,Paraboloid (backside bottom),KS502J2,80
+28,3,4,Paraboloid (backside middle),KS502J2,80
+29,3,5,Paraboloid (backside top),KS502J2,80
+30,3,6,Motor controller,KS502J2,70
+31,3,7,12 V DC-to-DC converter,KS502J2,80
+32,3,8,Motor,KS502J2,70
+33,4,1,Digital back-end plate,KS502J2,60
 34,4,2,118 GHz (DRO),KS502J2,50
 35,4,3,118 GHz plate,KS502J2,50
 36,4,4,60 GHz plate (beside heater),KS502J2,50
@@ -34,9 +34,9 @@ Index,Digitizer,Thermistor,Location,Model,HotThreshold
 40,4,8,ABEB (external),KS502J2,50
 1,5,1,Optical bench MW-horn, KS502J2,50
 2,5,2,183 GHz (multiplier), KS502J2,50
-3,5,3, Down-conversion (power amplifier back), KS502J2,50
-4,5,4, Not Connected, KS502J2,50
-5,5,5, Not Connected, KS502J2,50
-6,5,6, Not Connected, KS502J2,50
-7,5,7, Not Connected, KS502J2,50
-8,5,8, Not Connected, KS502J2,50
+3,5,3,Down-conversion (power amplifier back), KS502J2,50
+4,5,4,IF back-end plate, KS502J2,60
+5,5,5,PMCC 1, KS502J2,100
+6,5,6,PMCC 2, KS502J2,100
+7,5,7,PMCC 3, KS502J2,100
+8,5,8,HyMS FPGA, KS502J2,100
