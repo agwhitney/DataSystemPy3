@@ -6,6 +6,7 @@ Include the handler into `instruments.SerialTransportThermistors`. There, data i
 import csv
 import json
 import paho.mqtt.client as mqtt
+import socket
 
 from dotenv import load_dotenv
 from logging import Logger
@@ -26,15 +27,15 @@ TOPIC = validate_variable("MQTT_TOPIC")
 
 class ThermistorTelemetryHandler:
     def __init__(self, log: Logger | None):
-        self.client = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
         self.log = log
+        try:
+            self.client = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
+        except socket.gaierror:
+            write_to_log(self.log, "Failed to connect to MQTT server. Check network connection. Will try again at next new file.", 'error')
+            raise ConnectionError("Failed to connect to MQTT server. Check network connection. Will try again at next new file.")
 
         # lower voltage is hotter. 0.321 V = 50 *C
         self.hot_thresholds = self.load_thresholds_from_csv(PATH_TO_CONFIGS / 'thermistors.csv')
-
-
-    def __del__(self):
-        self.client.disconnect()
 
 
     def load_thresholds_from_csv(self, filepath: Pathlike) -> list[tuple[int, float]]:
@@ -92,7 +93,7 @@ class ThermistorTelemetryHandler:
             'flag': flag,
             'flagged_thermistors': flagged_thermistors,
         })
-        write_to_log(self.log, telemetry, 'info')
+        write_to_log(self.log, telemetry, 'debug')
         self.publish_mqtt(telemetry)
 
 
@@ -101,7 +102,7 @@ class ThermistorTelemetryHandler:
             if reason_code == 0:
                 write_to_log(self.log, "Connected to MQTT broker", 'info')
             else:
-                write_to_log(self.log, f"Connection failed, return code {reason_code}", 'error')
+                write_to_log(self.log, f"Connection to MQTT broker failed, return code {reason_code}. Check credentials.", 'error')
 
         client = mqtt.Client(
             client_id='csu',
