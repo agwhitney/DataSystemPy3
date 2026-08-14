@@ -56,7 +56,11 @@ def main():
     )
 
     # Connect client to thermistor data server
-    factory = TCPClientFactory(log)
+    try:
+        factory = TCPClientFactory(log)
+    except ConnectionError as e:
+        log.error(e)
+        return
     reactor.connectTCP('127.0.0.1', 8055, factory)
     reactor.run()
 
