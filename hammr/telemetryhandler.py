@@ -31,7 +31,7 @@ class ThermistorTelemetryHandler:
         try:
             self.client = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
         except socket.gaierror:
-            raise ConnectionError
+            raise ConnectionError("Failed to connect to MQTT server. Check network connection. Will try again at next new file.")
 
         # lower voltage is hotter. 0.321 V = 50 *C
         self.hot_thresholds = self.load_thresholds_from_csv(PATH_TO_CONFIGS / 'thermistors.csv')
@@ -40,7 +40,7 @@ class ThermistorTelemetryHandler:
     def load_thresholds_from_csv(self, filepath: Pathlike) -> list[tuple[int, float]]:
         """Specifically, read the HotThreshold column from config/thermistors.csv
 
-        Returns a sorted list of (index, threshold) tuples. 
+        Returns a sorted list of (index, threshold) tuples.
         """
         hot_thresholds = []
         with open(filepath, 'r', newline='') as f:

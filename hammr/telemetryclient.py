@@ -23,7 +23,7 @@ class TCPClient(basic.Int32StringReceiver):
         try:
             self.factory.handler.handle_data(data)
         except Exception as e:
-            self.factory.log.error(f"Ignored an error: <{e}>")
+            self.factory.log.error(f"Ignored an unspecified error: <{e}>")
 
 
 class TCPClientFactory(protocol.ClientFactory):
@@ -59,7 +59,8 @@ def main():
     try:
         factory = TCPClientFactory(log)
     except ConnectionError as e:
-        log.error(e)
+        log.error(str(e))
+        log.info('A new log will be created at that time.')
         return
     reactor.connectTCP('127.0.0.1', 8055, factory)
     reactor.run()
