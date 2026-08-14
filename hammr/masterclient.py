@@ -330,6 +330,11 @@ class MasterClient:
                     p.kill()
                 break
 
+            # If the telemetry client failed, try to run it again
+            if self.telemetry_process.poll() is not None:
+                write_to_log(self.log, "The telemetry client process failed or ended. Attempting to start again.", 'error')
+                self.telemetry_process = self.start_telemetry_client()
+
         # Write metadata for parser to file 
         with open(parse_filename, 'w') as f:
             f.write(json.dumps(parse_metadata, indent=4))
