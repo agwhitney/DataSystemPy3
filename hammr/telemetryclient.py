@@ -21,9 +21,9 @@ class TCPClient(basic.Int32StringReceiver):
     
     def dataReceived(self, data: bytes):
         try:
-            self.factory.handler.handle_data(data, self.factory.log)
+            self.factory.handler.handle_data(data)
         except Exception as e:
-            print(f"Telemetry handler error ignored: <{e}>")
+            self.factory.log.error(f"Ignored an error: <{e}>")
 
 
 class TCPClientFactory(protocol.ClientFactory):
@@ -31,7 +31,7 @@ class TCPClientFactory(protocol.ClientFactory):
 
     def __init__(self, log):
         self.log = log
-        self.handler = ThermistorTelemetryHandler()
+        self.handler = ThermistorTelemetryHandler(log)
 
     
     def clientConnectionFailed(self, connector, reason):
@@ -55,7 +55,7 @@ def main():
         title = "Telemetry SubClient - DAIS 2.0",
     )
 
-    # Connect client
+    # Connect client to thermistor data server
     factory = TCPClientFactory(log)
     reactor.connectTCP('127.0.0.1', 8055, factory)
     reactor.run()

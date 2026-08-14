@@ -25,8 +25,9 @@ topic = "csu/PayloadTemperatures"
 
 
 class ThermistorTelemetryHandler:
-    def __init__(self):
+    def __init__(self, log: Logger | None):
         self.client = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
+        self.log = log
 
         # lower voltage is hotter. 0.321 V = 50 *C
         self.hot_thresholds = self.load_thresholds_from_csv(PATH_TO_CONFIGS / 'thermistors.csv')
@@ -39,9 +40,6 @@ class ThermistorTelemetryHandler:
     def load_thresholds_from_csv(self, filepath: Pathlike) -> list[tuple[int, float]]:
         """Specifically, read the HotThreshold column from config/thermistors.csv
 
-        Args:
-            `filepath`: 
-        
         Returns a sorted list of (index, threshold) tuples. 
         """
         hot_thresholds = []
@@ -63,7 +61,7 @@ class ThermistorTelemetryHandler:
         return hot_thresholds
 
 
-    def handle_data(self, datagram: bytes, log: Logger | None) -> None:
+    def handle_data(self, datagram: bytes) -> None:
         """Checks thermistor data and publishes it via MQTT.
 
         Data are compared as *C to `self.hot_thresholds`. Values outside of thresholds will trigger a flag.
@@ -94,23 +92,21 @@ class ThermistorTelemetryHandler:
             'flag': flag,
             'flagged_thermistors': flagged_thermistors,
         })
-        write_to_log(log, telemetry, 'info')
+        write_to_log(self.log, telemetry, 'info')
         self.publish_mqtt(telemetry)
 
 
     def connect_mqtt(self, broker, port, username, password, certificate):
-        # TODO is it preferable to connect once and only publish when necessary? Or do both when required?
         def on_connect(client, userdata, flags, reason_code, properties):
             if reason_code == 0:
-                print("Connected")
+                write_to_log(self.log, "Connected to MQTT broker", 'info')
             else:
-                print(f"Connection failed, return code {reason_code}")
+                write_to_log(self.log, f"Connection failed, return code {reason_code}", 'error')
 
         client = mqtt.Client(
             client_id='csu',
             callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
         )
-
         client.on_connect = on_connect
         client.username_pw_set(username, password)
         client.tls_set(certificate)
@@ -118,19 +114,12 @@ class ThermistorTelemetryHandler:
         return client
 
 
-        cl = self.connect_mqtt(BROKER, int(PORT), USERNAME, PASSWORD, CERTIFICATE)
-        cl.loop_start()
-        self.publish_test(cl, topic)
-        cl.loop_stop()
-        cl.disconnect()
-
-
     def publish_mqtt(self, data: str) -> None:
         self.client.loop_start()
         result = self.client.publish(topic, data)
         status = result[0]
         if status == 0:
-            print(f"Sent `{data}` to topic `{topic}`")
+            write_to_log(self.log, "Telemetry sent to MQTT broker", 'info')
         else:
-            print(f"Failed to send message to topic `{topic}`")
+            write_to_log(self.log, "Failed to send message to MQTT broker", 'error')
         self.client.loop_stop()
