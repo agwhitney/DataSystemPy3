@@ -21,7 +21,7 @@ USERNAME = validate_variable("MQTT_USERNAME")
 PASSWORD = validate_variable("MQTT_PASSWORD")
 PORT = validate_variable("MQTT_PORT")
 CERTIFICATE = validate_variable("MQTT_CERT")
-topic = "csu/PayloadTemperatures"
+TOPIC = validate_variable("MQTT_TOPIC")
 
 
 class ThermistorTelemetryHandler:
@@ -116,7 +116,7 @@ class ThermistorTelemetryHandler:
 
     def publish_mqtt(self, data: str) -> None:
         self.client.loop_start()
-        result = self.client.publish(topic, data)
+        result = self.client.publish(TOPIC, data)
         status = result[0]
         if status == 0:
             write_to_log(self.log, "Telemetry sent to MQTT broker", 'info')
