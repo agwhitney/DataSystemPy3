@@ -1,3 +1,9 @@
+"""Check that the FPGA is connected.
+
+Output will be "Success" if the connection is made, and "TimeoutError" if not.
+"""
+
+
 import socket
 
 address = ('10.10.10.2', 30)

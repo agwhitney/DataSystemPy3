@@ -1,5 +1,9 @@
-""" init_acq_folders.py -- Adam Whitney 6/3/26
-This script will create the directory structure for AMR acquisition as defined in the .env file. 
+"""Create folder structure for AMR acquisition.
+
+Outputs go to the ACQROOT folder, which is defined in the .env file. The following subfolders are created:
+- data
+- logs
+- configs 
 """
 from dotenv import load_dotenv
 from pathlib import Path

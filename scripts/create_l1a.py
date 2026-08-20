@@ -1,3 +1,8 @@
+"""Very early (not working) attempt to create L1a files from L0b files.
+
+See instead on Github: `agwhitney/ProcessCodeNew`, which wraps Xavi's existing process code.
+"""
+
 import pandas as pd
 
 from processL0b.reader import Reader

@@ -1,3 +1,13 @@
+"""Quick looks for raw data (L0a) from instrument .bin files.
+
+I think this script was sort of hacked together for the CRISTAL campaign, but the plots
+that are output should be helpful enough. These plots are for: motor position, radiometer counts,
+thermistor temperatures, and GPS position.
+
+A GUI will pop up. Select one or more instrument .bin files.
+"""
+
+
 # Copied readers for now because things there are still coupled to tables
 import time
 import struct

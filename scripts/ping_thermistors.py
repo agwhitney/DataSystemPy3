@@ -1,5 +1,6 @@
-"""
-Handy functions for debugging thermistor hardware and output.
+"""Check that the thermistors are connected.
+
+Output will be 8 labeled lines, and you should see data as voltages from 1, 2, 3, 4, 5.
 """
 import serial
 import time

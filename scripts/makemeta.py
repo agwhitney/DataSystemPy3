@@ -1,6 +1,6 @@
 """Create a metadata file for an incomplete instrument run defined by client.json.
-A proper solution within the paradigm would update a metadata file at each step
-rather than all at once at the end.
+
+THIS SHOULD NO LONGER BE NECESSARY, because the acquistion software will cleanly stop if CTRL + C is pressed.
 
 Usage: Select the numbered files to include using the GUI; for example, files 1of50, 2of50, etc.
 The script cares most about numbers, so repeats are okay, but don't mix measurements.

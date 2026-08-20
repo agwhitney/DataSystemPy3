@@ -1,3 +1,13 @@
+"""Take a metadata file and create a L0B file from it.
+
+This script is a GUI wrapper for the `create_l0b()` method in `processL0a`.
+Select one or more metadata files (produced after acquisition and ending in .json). Do not select raw instrument data.
+Output HDF5 files will be placed in `[data]/l0b`, where `[data]` is the folder containing the metadata file.
+
+Args:
+    combine_files (bool): If True, combine all inputs into a single output file. If False, create a separate output file for each input.
+"""
+
 import argparse
 from tkinter import filedialog
 

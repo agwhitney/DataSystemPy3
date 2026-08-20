@@ -1,3 +1,10 @@
+"""Quick looks for L0b files.
+
+Use (or add!) plotting methods as desired, and customize at the bottom.
+
+A GUI will pop up. Select one or more L0b files.
+"""
+
 from processL0b.reader import Reader
 from processL0b.plot_utils import make_pickable, toggle_lines_on_number_keys
 
